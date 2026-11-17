@@ -5,12 +5,13 @@ import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
 import { 
   Users, CheckCircle2, Clock, HelpCircle, Trophy, 
-  ArrowUpRight, AlertCircle, RefreshCw, Award, Send 
+  ArrowUpRight, AlertCircle, RefreshCw, Award, Send, Trash2
 } from 'lucide-react'
 
 export default function AdminOverviewPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [clearing, setClearing] = useState(false)
   const [stats, setStats] = useState({
     totalRegistered: 0,
     totalSubmitted: 0,
@@ -90,6 +91,34 @@ export default function AdminOverviewPage() {
     }
   }
 
+  // Action: Clear All Test Submissions, Attempts & Generated Certificates
+  const handleClearTestData = async (clearProfiles: boolean = false) => {
+    const confirmPrompt = clearProfiles
+      ? 'ARE YOU SURE? This will wipe all test participants, registrations, quiz attempts, results, certificates, and email logs. (Admin accounts will remain safe).'
+      : 'Clear all test submissions, quiz attempts, generated certificates, and email logs? (Registered student profiles will be retained).'
+
+    if (!confirm(confirmPrompt)) return
+
+    setClearing(true)
+    setStatusMessage(null)
+    try {
+      const res = await fetch('/api/admin/clear-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clearStudents: clearProfiles }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) throw new Error(json.error || 'Failed to clear data')
+
+      setStatusMessage(json.message || 'Test data cleared successfully!')
+      await loadData()
+    } catch (err: any) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setClearing(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 pb-16">
       <AdminNav />
@@ -107,14 +136,26 @@ export default function AdminOverviewPage() {
             </p>
           </div>
 
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl shadow-xs transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Metrics</span>
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => handleClearTestData(false)}
+              disabled={clearing}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              title="Clears attempts, responses, certificates, and email jobs so you can re-test"
+            >
+              <Trash2 className={`w-3.5 h-3.5 ${clearing ? 'animate-spin' : ''}`} />
+              <span>{clearing ? 'Clearing Data...' : 'Reset Test Submissions & Certs'}</span>
+            </button>
+
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh Metrics</span>
+            </button>
+          </div>
         </div>
 
         {statusMessage && (
