@@ -8,7 +8,7 @@ import { formatTime, formatDate } from '@/lib/utils'
 import { 
   Trophy, Award, CheckCircle2, Download, ArrowLeft, 
   Share2, QrCode, Sparkles, Clock, Check, ShieldCheck,
-  CheckCircle, XCircle, ChevronDown, ChevronUp, BookOpen
+  CheckCircle, XCircle, ChevronDown, ChevronUp, BookOpen, Mail
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -143,6 +143,27 @@ export default function StudentResultPage({
           <span className="text-xs text-gray-400 font-mono">
             Attempt ID: {attemptId.slice(0, 8)}...
           </span>
+        </div>
+
+        {/* Email Certificate Dispatch Notice Banner */}
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-900">
+                Examination Finished &amp; Recorded!
+              </h4>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Thank you for participating. <span className="font-semibold text-blue-900">Your official digital certificate (PDF) will be sent to your registered email address shortly</span> after final result synchronization.
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span>PDF via Email</span>
+          </div>
         </div>
 
         {/* Hero Scorecard */}

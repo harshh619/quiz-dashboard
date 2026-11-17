@@ -55,12 +55,24 @@ export async function POST(request: Request) {
     const verificationUrl = `${currentOrigin}/verify/${validCertNumber}`
     const score = payload.score ?? 0
     const totalQuestions = payload.totalQuestions ?? 30
+    const certificateType = payload.certificate_type || payload.certificateType || 'participation'
 
-    // Dispatch email
+    // Fetch student profile details for college & course
+    const { data: studentProf } = await supabase
+      .from('profiles')
+      .select('college_name, course')
+      .eq('email', job.to_email)
+      .limit(1)
+      .single()
+
+    // Dispatch email with PDF attachment
     const result = await sendCertificateEmail({
       to: job.to_email,
       studentName: job.to_name || 'Participant',
+      collegeName: studentProf?.college_name || '',
+      course: studentProf?.course || '',
       certificateNumber: validCertNumber,
+      certificateType,
       verificationUrl,
       score,
       totalQuestions,
