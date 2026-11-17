@@ -109,6 +109,17 @@ export default function StudentDashboardPage() {
       })
       if (error) throw error
       setUserRegistrations(prev => [...prev, compId])
+
+      // Check if competition has not started yet; if so, redirect immediately to waiting room
+      const comp = competitions.find(c => c.id === compId)
+      if (comp) {
+        const startTime = new Date(comp.scheduled_start).getTime()
+        const now = Date.now()
+        if (now < startTime) {
+          router.push(`/waiting-room/${compId}`)
+          return
+        }
+      }
     } catch (err) {
       console.error('Registration failed:', err)
       alert('Registration failed. Please try again.')

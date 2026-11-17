@@ -16,8 +16,7 @@ export default function AdminCompetitionsPage() {
     title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
     description: 'National Quiz Competition for Pharmacy & Microbiology students.',
     scheduled_start: '',
-    scheduled_end: '',
-    duration_seconds: 600,
+    duration_minutes: 10,
     total_questions: 30,
     passing_score: 18,
     max_participants: 1000,
@@ -25,10 +24,15 @@ export default function AdminCompetitionsPage() {
   })
 
   useEffect(() => {
+    // Round to nearest minute
+    const now = new Date()
+    now.setSeconds(0, 0)
+    const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+
     setNewComp(prev => ({
       ...prev,
-      scheduled_start: new Date().toISOString().slice(0, 16),
-      scheduled_end: new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 16),
+      scheduled_start: localIso,
+      duration_minutes: 10,
     }))
   }, [])
 
@@ -84,11 +88,23 @@ export default function AdminCompetitionsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const { data, error } = await supabase.from('competitions').insert([{
-        ...newComp,
-        scheduled_start: new Date(newComp.scheduled_start).toISOString(),
-        scheduled_end: new Date(newComp.scheduled_end).toISOString(),
-      }]).select().single()
+      const startTime = new Date(newComp.scheduled_start)
+      const durationMin = Number(newComp.duration_minutes) || 10
+      const endTime = new Date(startTime.getTime() + durationMin * 60 * 1000)
+
+      const payload = {
+        title: newComp.title,
+        description: newComp.description,
+        scheduled_start: startTime.toISOString(),
+        scheduled_end: endTime.toISOString(),
+        duration_seconds: durationMin * 60,
+        total_questions: newComp.total_questions,
+        passing_score: newComp.passing_score,
+        max_participants: newComp.max_participants,
+        status: newComp.status,
+      }
+
+      const { data, error } = await supabase.from('competitions').insert([payload]).select().single()
 
       if (error) throw error
 
@@ -104,7 +120,7 @@ export default function AdminCompetitionsPage() {
       }
 
       setShowCreateModal(false)
-      setStatusMsg('New competition created with 30 questions linked!')
+      setStatusMsg(`New competition created with ${durationMin} minutes duration and 30 questions linked!`)
       await loadCompetitions()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Creation failed'
@@ -238,7 +254,7 @@ export default function AdminCompetitionsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-gray-700 mb-1">Start Time *</label>
                   <input
@@ -246,18 +262,48 @@ export default function AdminCompetitionsPage() {
                     required
                     value={newComp.scheduled_start}
                     onChange={(e) => setNewComp({ ...newComp, scheduled_start: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-300"
+                    className="w-full p-2.5 rounded-lg border border-gray-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                   />
+                  <span className="text-[10px] text-gray-500 mt-0.5 block">
+                    Starting date &amp; time of the quiz
+                  </span>
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-gray-700 mb-1">End Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={newComp.scheduled_end}
-                    onChange={(e) => setNewComp({ ...newComp, scheduled_end: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-gray-300"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-gray-700">Duration (Minutes) *</label>
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold text-xs">
+                      {newComp.duration_minutes} Mins
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="1"
+                        max="180"
+                        step="1"
+                        value={newComp.duration_minutes}
+                        onChange={(e) => setNewComp({ ...newComp, duration_minutes: Number(e.target.value) })}
+                        className="w-full accent-blue-600 cursor-pointer"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        required
+                        value={newComp.duration_minutes}
+                        onChange={(e) => setNewComp({ ...newComp, duration_minutes: Math.max(1, Number(e.target.value)) })}
+                        className="w-16 p-2 rounded-lg border border-gray-300 text-center font-bold text-xs"
+                      />
+                    </div>
+                    {newComp.scheduled_start && (
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 block">
+                        Calculated End Time: <strong>{new Date(new Date(newComp.scheduled_start).getTime() + (Number(newComp.duration_minutes) || 10) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong> ({new Date(new Date(newComp.scheduled_start).getTime() + (Number(newComp.duration_minutes) || 10) * 60000).toLocaleDateString()})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Competition } from '@/types'
 import { Clock, ShieldAlert, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import SandGlassAnimation from '@/components/quiz/SandGlassAnimation'
 
 export default function WaitingRoomPage({
   params,
@@ -105,6 +106,12 @@ export default function WaitingRoomPage({
 
         {/* Countdown Box */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-6 sm:p-8 text-center shadow-2xl">
+          {!isUnlocked && (
+            <div className="mb-4">
+              <SandGlassAnimation isRunning={true} />
+            </div>
+          )}
+
           <div className="text-xs uppercase tracking-widest text-blue-300 font-semibold mb-4">
             {isUnlocked ? 'Exam is Live!' : 'Time Until Exam Unlocks'}
           </div>
