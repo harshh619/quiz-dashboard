@@ -23,16 +23,13 @@ export default function CertificateVerificationPage({
   useEffect(() => {
     async function verify() {
       try {
-        const { data, error: certError } = await supabase
-          .from('certificates')
-          .select('*, student:profiles(*), competition:competitions(*)')
-          .eq('certificate_number', code)
-          .single()
+        const res = await fetch(`/api/verify/${encodeURIComponent(code)}`)
+        const json = await res.json()
 
-        if (certError || !data) {
-          setError('Certificate record not found or code is invalid.')
+        if (!res.ok || json.error) {
+          setError(json.error || 'Certificate record not found or code is invalid.')
         } else {
-          setCert(data)
+          setCert(json.certificate)
         }
       } catch (err: unknown) {
         setError('Verification lookup failed.')
@@ -42,7 +39,7 @@ export default function CertificateVerificationPage({
     }
 
     verify()
-  }, [code, supabase])
+  }, [code])
 
   if (loading) {
     return (

@@ -28,8 +28,31 @@ export async function POST(request: Request) {
     }
 
     const payload = job.payload || {}
-    const certNumber = payload.certificateNumber || 'AMR-WAAW-2026'
-    const verificationUrl = payload.verificationUrl || `${new URL(request.url).origin}/verify/${certNumber}`
+    // Support both snake_case (from RPC trigger) and camelCase
+    const certNumber = payload.certificate_number || payload.certificateNumber
+    
+    // Fallback: If not in payload, query certificates table directly for this student
+    let validCertNumber = certNumber
+    if (!validCertNumber) {
+      const { data: certRow } = await supabase
+        .from('certificates')
+        .select('certificate_number')
+        .eq('student_id', job.student_id || '')
+        .order('issued_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (certRow?.certificate_number) {
+        validCertNumber = certRow.certificate_number
+      }
+    }
+
+    if (!validCertNumber) {
+      return NextResponse.json({ error: 'No certificate found for this participant.' }, { status: 404 })
+    }
+
+    const currentOrigin = new URL(request.url).origin
+    const verificationUrl = `${currentOrigin}/verify/${validCertNumber}`
     const score = payload.score ?? 0
     const totalQuestions = payload.totalQuestions ?? 30
 
@@ -37,7 +60,7 @@ export async function POST(request: Request) {
     const result = await sendCertificateEmail({
       to: job.to_email,
       studentName: job.to_name || 'Participant',
-      certificateNumber: certNumber,
+      certificateNumber: validCertNumber,
       verificationUrl,
       score,
       totalQuestions,
