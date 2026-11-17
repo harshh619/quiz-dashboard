@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { formatTime, formatDate } from '@/lib/utils'
 import { 
   Trophy, Award, CheckCircle2, Download, ArrowLeft, 
-  Share2, QrCode, Sparkles, Clock, Check, ShieldCheck 
+  Share2, QrCode, Sparkles, Clock, Check, ShieldCheck,
+  CheckCircle, XCircle, ChevronDown, ChevronUp, BookOpen
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -26,6 +27,8 @@ export default function StudentResultPage({
   const [profile, setProfile] = useState<any>(null)
   const [competition, setCompetition] = useState<any>(null)
   const [certificate, setCertificate] = useState<any>(null)
+  const [responses, setResponses] = useState<any[]>([])
+  const [showReview, setShowReview] = useState(false)
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
   const [downloading, setDownloading] = useState(false)
 
@@ -49,6 +52,16 @@ export default function StudentResultPage({
           setAttempt(att)
           setProfile(att.student)
           setCompetition(att.competition)
+
+          // Fetch responses with questions for answer review
+          const { data: respList } = await supabase
+            .from('quiz_responses')
+            .select('selected_option, question:question_bank(id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, topic)')
+            .eq('attempt_id', attemptId)
+
+          if (respList) {
+            setResponses(respList)
+          }
 
           // Fetch certificate if already generated
           const { data: cert } = await supabase
@@ -231,7 +244,7 @@ export default function StudentResultPage({
             <button
               onClick={handleDownloadCertificate}
               disabled={downloading}
-              className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>{downloading ? 'Preparing Download...' : 'Download Official Certificate (PDF)'}</span>
@@ -248,6 +261,143 @@ export default function StudentResultPage({
             )}
           </div>
         </div>
+
+        {/* Question by Question Review Accordion */}
+        {responses.length > 0 && (
+          <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
+            <button
+              onClick={() => setShowReview(!showReview)}
+              className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 text-blue-700 rounded-xl">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-gray-900">
+                    Review Your Answers &amp; Explanations
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    See correct answers, your selected options, and detailed explanations for all {responses.length} questions.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-blue-700">
+                <span>{showReview ? 'Hide Answers' : 'View Answers'}</span>
+                {showReview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
+
+            {showReview && (
+              <div className="p-5 border-t border-gray-100 space-y-6 bg-slate-50/40">
+                {responses.map((item, index) => {
+                  const q = item.question
+                  if (!q) return null
+                  const isCorrect = item.selected_option === q.correct_option
+                  const options = [
+                    { key: 'A', text: q.option_a },
+                    { key: 'B', text: q.option_b },
+                    { key: 'C', text: q.option_c },
+                    { key: 'D', text: q.option_d },
+                  ]
+
+                  return (
+                    <div
+                      key={q.id || index}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        isCorrect
+                          ? 'bg-white border-emerald-200 shadow-xs'
+                          : 'bg-white border-red-200 shadow-xs'
+                      }`}
+                    >
+                      {/* Question Header */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center">
+                            {index + 1}
+                          </span>
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                            {q.topic || 'AMR'}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
+                            isCorrect
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {isCorrect ? (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Correct
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3.5 h-3.5" />
+                              Incorrect
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Question Text */}
+                      <p className="text-sm font-semibold text-gray-900 mb-3">
+                        {q.question_text}
+                      </p>
+
+                      {/* Options Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        {options.map((opt) => {
+                          const isSelected = item.selected_option === opt.key
+                          const isThisCorrect = q.correct_option === opt.key
+
+                          let optClass = 'bg-gray-50 border-gray-200 text-gray-700'
+                          if (isThisCorrect) {
+                            optClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold'
+                          } else if (isSelected && !isCorrect) {
+                            optClass = 'bg-red-50 border-red-400 text-red-900 font-semibold'
+                          }
+
+                          return (
+                            <div
+                              key={opt.key}
+                              className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${optClass}`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold">{opt.key}.</span>
+                                <span>{opt.text}</span>
+                              </div>
+                              {isThisCorrect && (
+                                <span className="text-[10px] text-emerald-700 font-bold uppercase">
+                                  ✓ Correct Answer
+                                </span>
+                              )}
+                              {isSelected && !isThisCorrect && (
+                                <span className="text-[10px] text-red-700 font-bold uppercase">
+                                  ✗ Your Answer
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Explanation */}
+                      {q.explanation && (
+                        <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-950">
+                          <span className="font-bold text-blue-900">Explanation: </span>
+                          <span>{q.explanation}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
