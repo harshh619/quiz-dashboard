@@ -72,9 +72,7 @@ export default function RegisterProfilePage() {
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email!,
+        .update({
           full_name: formData.full_name.trim(),
           college_name: formData.college_name.trim(),
           course: formData.course,
@@ -84,6 +82,7 @@ export default function RegisterProfilePage() {
           profile_completed: true,
           updated_at: new Date().toISOString(),
         })
+        .eq('id', user.id)
 
       if (updateError) throw updateError
 
