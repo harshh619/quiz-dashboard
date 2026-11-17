@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
-import { Mail, CheckCircle2, AlertCircle, RefreshCw, Send, Clock } from 'lucide-react'
+import { Mail, CheckCircle2, AlertCircle, RefreshCw, Send, Clock, RotateCw } from 'lucide-react'
 
 export default function AdminEmailsPage() {
   const supabase = createClient()
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
-  const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [resendingId, setResendingId] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const loadJobs = async () => {
     setLoading(true)
@@ -28,34 +29,64 @@ export default function AdminEmailsPage() {
     loadJobs()
   }, [])
 
-  // Process email queue
+  // Single email resend
+  const handleResendSingle = async (job: any) => {
+    setResendingId(job.id)
+    setStatusMsg(null)
+    try {
+      const res = await fetch('/api/resend-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || data.reason || 'Failed to resend')
+      }
+
+      setStatusMsg({
+        type: 'success',
+        text: `Certificate email successfully re-sent to ${job.to_email} from msunagpur@gmail.com!`
+      })
+      await loadJobs()
+    } catch (err: any) {
+      setStatusMsg({
+        type: 'error',
+        text: `Resend failed: ${err.message}. Please verify GMAIL_APP_PASSWORD in Vercel settings.`
+      })
+    } finally {
+      setResendingId(null)
+    }
+  }
+
+  // Process email queue batch
   const handleProcessQueue = async () => {
     setProcessing(true)
     setStatusMsg(null)
     try {
-      // Simulate/trigger batch dispatch
       const pendingJobs = jobs.filter(j => j.status === 'pending')
       if (pendingJobs.length === 0) {
-        setStatusMsg('No pending emails in the queue.')
+        setStatusMsg({ type: 'success', text: 'No pending emails in the queue.' })
         setProcessing(false)
         return
       }
 
-      // Mark first batch as sent for demo / production Resend integration
       for (const job of pendingJobs.slice(0, 10)) {
-        await supabase
-          .from('email_jobs')
-          .update({
-            status: 'sent',
-            last_attempted_at: new Date().toISOString(),
-          })
-          .eq('id', job.id)
+        await fetch('/api/resend-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: job.id }),
+        })
       }
 
-      setStatusMsg(`Successfully dispatched ${Math.min(pendingJobs.length, 10)} emails!`)
+      setStatusMsg({
+        type: 'success',
+        text: `Successfully processed batch of ${Math.min(pendingJobs.length, 10)} emails!`
+      })
       await loadJobs()
     } catch (err: unknown) {
-      alert('Error processing email queue')
+      setStatusMsg({ type: 'error', text: 'Error processing email queue' })
     } finally {
       setProcessing(false)
     }
@@ -75,10 +106,10 @@ export default function AdminEmailsPage() {
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
               <Mail className="w-6 h-6 text-blue-600" />
-              <span>Email Delivery Queue (Resend)</span>
+              <span>Email Delivery Queue (msunagpur@gmail.com)</span>
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Batch processing for certificate delivery and notifications to prevent server overload.
+              Automated delivery &amp; resend controls for student certificate emails.
             </p>
           </div>
 
@@ -86,14 +117,15 @@ export default function AdminEmailsPage() {
             <button
               onClick={handleProcessQueue}
               disabled={processing || pendingCount === 0}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>{processing ? 'Processing Batch...' : 'Process Next Batch (25)'}</span>
             </button>
             <button
               onClick={loadJobs}
-              className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
+              className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 cursor-pointer"
+              title="Refresh"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -101,9 +133,17 @@ export default function AdminEmailsPage() {
         </div>
 
         {statusMsg && (
-          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{statusMsg}</span>
+          <div className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${
+            statusMsg.type === 'error'
+              ? 'bg-red-50 border border-red-200 text-red-700'
+              : 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+          }`}>
+            {statusMsg.type === 'error' ? (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            )}
+            <span>{statusMsg.text}</span>
           </div>
         )}
 
@@ -139,12 +179,13 @@ export default function AdminEmailsPage() {
                   <th className="px-5 py-3">Type</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Created At</th>
+                  <th className="px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
                 {jobs.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-gray-400">
+                    <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
                       No email jobs in queue. When you finalize competition, certificate emails are automatically queued here.
                     </td>
                   </tr>
@@ -173,6 +214,16 @@ export default function AdminEmailsPage() {
                       </td>
                       <td className="px-5 py-3 text-gray-400">
                         {new Date(j.created_at).toLocaleTimeString('en-IN')}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => handleResendSingle(j)}
+                          disabled={resendingId === j.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold border border-blue-200 transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                          <RotateCw className={`w-3.5 h-3.5 ${resendingId === j.id ? 'animate-spin' : ''}`} />
+                          <span>{resendingId === j.id ? 'Resending...' : 'Resend Email'}</span>
+                        </button>
                       </td>
                     </tr>
                   ))
