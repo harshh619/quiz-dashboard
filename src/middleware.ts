@@ -36,6 +36,13 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // Auto-redirect admin directly to admin dashboard if they visit home or login while logged in
+  if (user && (pathname === '/' || pathname === '/login')) {
+    if (user.email === 'msunagpur@gmail.com') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+  }
+
   // Protected routes check
   const isProtectedRoute = pathname.startsWith('/dashboard') ||
     pathname.startsWith('/quiz') ||
@@ -45,6 +52,19 @@ export async function middleware(request: NextRequest) {
 
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // If non-admin tries to access /admin, redirect them to student dashboard
+  if (user && pathname.startsWith('/admin') && user.email !== 'msunagpur@gmail.com') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return supabaseResponse

@@ -39,6 +39,11 @@ export default function StudentDashboardPage() {
           .eq('id', user.id)
           .single()
 
+        if (prof?.role === 'admin' || user.email === 'msunagpur@gmail.com') {
+          router.replace('/admin/dashboard')
+          return
+        }
+
         if (!prof || !prof.college_name) {
           router.push('/register')
           return
