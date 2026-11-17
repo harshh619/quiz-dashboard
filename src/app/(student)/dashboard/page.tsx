@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, ROUTES } from '@/constants'
 import { Profile, Competition, QuizAttempt, Certificate } from '@/types'
@@ -134,9 +135,13 @@ export default function StudentDashboardPage() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-700 text-white rounded-lg font-bold flex items-center justify-center shadow-sm">
-              AMR
-            </div>
+            <Image
+              src="/logo.png"
+              alt="AMR 2026 Logo"
+              width={38}
+              height={38}
+              className="object-contain"
+            />
             <div>
               <h1 className="font-bold text-gray-900 text-sm leading-tight">{APP_NAME}</h1>
               <p className="text-[11px] text-gray-500">Student Portal</p>

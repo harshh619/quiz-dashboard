@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, APP_TAGLINE } from '@/constants'
 import { AlertCircle, CheckCircle, ShieldCheck, Mail } from 'lucide-react'
@@ -95,9 +96,14 @@ function LoginContent() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Emblem / Badge */}
         <div className="flex justify-center">
-          <div className="h-16 w-16 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 font-bold text-2xl">
-            AMR
-          </div>
+          <Image
+            src="/logo.png"
+            alt="AMR 2026 Logo"
+            width={72}
+            height={72}
+            className="object-contain drop-shadow-md"
+            priority
+          />
         </div>
         <h2 className="mt-4 text-center text-2xl font-bold tracking-tight text-gray-900">
           {APP_NAME}

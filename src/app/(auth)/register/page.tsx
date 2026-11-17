@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { COURSES, APP_NAME } from '@/constants'
 import { User, School, BookOpen, Calendar, Phone, CheckCircle, AlertCircle } from 'lucide-react'
@@ -107,8 +108,15 @@ export default function RegisterProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex h-12 w-12 bg-blue-700 rounded-xl items-center justify-center text-white font-bold text-xl shadow-md shadow-blue-500/20 mb-3">
-            AMR
+          <div className="flex justify-center mb-3">
+            <Image
+              src="/logo.png"
+              alt="AMR 2026 Logo"
+              width={64}
+              height={64}
+              className="object-contain drop-shadow-md"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Participant Profile Registration</h1>
           <p className="text-sm text-gray-600 mt-1">

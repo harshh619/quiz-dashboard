@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, Calendar, HelpCircle, Trophy, 
@@ -34,10 +35,14 @@ export default function AdminNav() {
         <div className="flex items-center justify-between h-14">
           
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-xs text-white">
-                AMR
-              </div>
+            <Link href="/admin/dashboard" className="flex items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="AMR 2026 Logo"
+                width={36}
+                height={36}
+                className="object-contain"
+              />
               <span className="font-bold text-sm tracking-tight hidden sm:inline">
                 Admin Control Center
               </span>
