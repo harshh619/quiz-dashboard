@@ -55,7 +55,7 @@ export default function StudentDashboardPage() {
         const { data: comps } = await supabase
           .from('competitions')
           .select('*')
-          .in('status', ['scheduled', 'waiting_room', 'active'])
+          .neq('status', 'draft')
           .order('scheduled_start', { ascending: true })
 
         setCompetitions(comps || [])

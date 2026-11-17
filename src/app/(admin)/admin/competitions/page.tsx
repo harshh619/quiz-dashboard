@@ -206,18 +206,22 @@ export default function AdminCompetitionsPage() {
 
               {/* Status Controls */}
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-500 font-medium mr-2">Change Status:</span>
-                {(['draft', 'scheduled', 'waiting_room', 'active', 'closed', 'results_published'] as const).map((st) => (
+                <span className="text-xs text-gray-500 font-medium mr-2">Status:</span>
+                {([
+                  { key: 'draft', label: 'Draft' },
+                  { key: 'scheduled', label: 'Scheduled (Auto Live by Time)' },
+                  { key: 'results_published', label: 'Result Published' },
+                ] as const).map((st) => (
                   <button
-                    key={st}
-                    onClick={() => handleUpdateStatus(comp.id, st)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-colors ${
-                      comp.status === st
-                        ? 'bg-blue-600 text-white'
+                    key={st.key}
+                    onClick={() => handleUpdateStatus(comp.id, st.key)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                      comp.status === st.key
+                        ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {st.replace('_', ' ')}
+                    {st.label}
                   </button>
                 ))}
               </div>
