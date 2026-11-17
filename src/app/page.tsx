@@ -52,51 +52,55 @@ export default function HomePage() {
           </span>
         </div>
 
-        {/* Official Partner & Authority Logos (Clean Showcase) */}
-        <div className="flex items-center justify-center gap-4 sm:gap-7 my-5 py-3.5 px-6 bg-white/90 backdrop-blur-xs border border-gray-100 rounded-3xl max-w-xl mx-auto shadow-sm">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="Nagpur Municipal Corporation (NMC)">
+        {/* Official Partner & Authority Logos (Clean & Balanced Showcase) */}
+        <div className="flex items-center justify-center gap-4 sm:gap-6 my-6 py-4 px-6 bg-white/95 backdrop-blur-xs border border-gray-100 rounded-3xl max-w-xl mx-auto shadow-sm">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="Nagpur Municipal Corporation (NMC)">
             <Image
               src="/nmc.png"
               alt="Nagpur Municipal Corporation (NMC)"
-              width={64}
-              height={64}
-              className="object-contain drop-shadow-xs max-h-full"
+              width={80}
+              height={80}
+              className="object-contain max-h-full drop-shadow-xs"
+              priority
             />
           </div>
 
-          <div className="h-8 w-px bg-gray-200" />
+          <div className="h-10 w-px bg-gray-200" />
 
-          <div className="w-14 h-14 sm:w-16 sm:h-16 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="National Centre for Disease Control (NCDC)">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center p-1.5 hover:scale-105 transition-transform" title="National Centre for Disease Control (NCDC)">
             <Image
               src="/ncdc.png"
               alt="National Centre for Disease Control (NCDC)"
-              width={56}
-              height={56}
-              className="object-contain drop-shadow-xs max-h-full"
+              width={75}
+              height={75}
+              className="object-contain max-h-full drop-shadow-xs"
+              priority
             />
           </div>
 
-          <div className="h-8 w-px bg-gray-200" />
+          <div className="h-10 w-px bg-gray-200" />
 
-          <div className="w-14 h-14 sm:w-16 sm:h-16 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="Integrated Disease Surveillance Programme (IDSP)">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="Integrated Disease Surveillance Programme (IDSP)">
             <Image
               src="/idsp.png"
               alt="Integrated Disease Surveillance Programme (IDSP)"
-              width={64}
-              height={64}
-              className="object-contain drop-shadow-xs max-h-full"
+              width={80}
+              height={80}
+              className="object-contain max-h-full drop-shadow-xs"
+              priority
             />
           </div>
 
-          <div className="h-8 w-px bg-gray-200" />
+          <div className="h-10 w-px bg-gray-200" />
 
-          <div className="w-14 h-14 sm:w-16 sm:h-16 relative flex items-center justify-center p-1 hover:scale-105 transition-transform" title="One Health Mission">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex items-center justify-center p-0.5 hover:scale-105 transition-transform" title="One Health Mission">
             <Image
               src="/onehealth.png"
               alt="One Health Mission"
-              width={64}
-              height={64}
-              className="object-contain drop-shadow-xs max-h-full"
+              width={82}
+              height={82}
+              className="object-contain max-h-full drop-shadow-xs"
+              priority
             />
           </div>
         </div>

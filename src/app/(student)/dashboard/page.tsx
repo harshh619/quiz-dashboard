@@ -51,10 +51,11 @@ export default function StudentDashboardPage() {
         }
         setProfile(prof)
 
-        // Fetch active/scheduled competitions
+        // Fetch active/scheduled competitions (Exclude drafts)
         const { data: comps } = await supabase
           .from('competitions')
           .select('*')
+          .in('status', ['scheduled', 'waiting_room', 'active'])
           .order('scheduled_start', { ascending: true })
 
         setCompetitions(comps || [])

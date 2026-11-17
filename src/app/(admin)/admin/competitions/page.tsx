@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
-import { Calendar, Plus, Clock, Users, Play, Square, CheckCircle2 } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, Play, Square, CheckCircle2, Trash2 } from 'lucide-react'
 
 export default function AdminCompetitionsPage() {
   const supabase = createClient()
@@ -59,6 +59,25 @@ export default function AdminCompetitionsPage() {
       await loadCompetitions()
     } catch (err: unknown) {
       alert('Failed to update status')
+    }
+  }
+
+  const handleDeleteCompetition = async (compId: string, title: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${title}"? This cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('competitions')
+        .delete()
+        .eq('id', compId)
+
+      if (error) throw error
+      setStatusMsg('Competition deleted successfully!')
+      await loadCompetitions()
+    } catch (err: any) {
+      alert(`Failed to delete competition: ${err.message}`)
     }
   }
 
@@ -139,6 +158,15 @@ export default function AdminCompetitionsPage() {
                   </div>
                   <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
                 </div>
+
+                <button
+                  onClick={() => handleDeleteCompetition(comp.id, comp.title)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
+                  title="Delete Competition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Quiz</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
