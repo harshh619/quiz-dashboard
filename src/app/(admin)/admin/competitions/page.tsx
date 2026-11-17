@@ -1,0 +1,258 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import AdminNav from '@/components/admin/AdminNav'
+import { createClient } from '@/lib/supabase/client'
+import { Calendar, Plus, Clock, Users, Play, Square, CheckCircle2 } from 'lucide-react'
+
+export default function AdminCompetitionsPage() {
+  const supabase = createClient()
+  const [competitions, setCompetitions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<string | null>(null)
+
+  const [newComp, setNewComp] = useState({
+    title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
+    description: 'National Quiz Competition for Pharmacy & Microbiology students.',
+    scheduled_start: '',
+    scheduled_end: '',
+    duration_seconds: 600,
+    total_questions: 30,
+    passing_score: 18,
+    max_participants: 1000,
+    status: 'scheduled',
+  })
+
+  useEffect(() => {
+    setNewComp(prev => ({
+      ...prev,
+      scheduled_start: new Date().toISOString().slice(0, 16),
+      scheduled_end: new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 16),
+    }))
+  }, [])
+
+  const loadCompetitions = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('competitions')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    setCompetitions(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadCompetitions()
+  }, [])
+
+  const handleUpdateStatus = async (compId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('competitions')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', compId)
+
+      if (error) throw error
+      setStatusMsg(`Competition status updated to ${status}!`)
+      await loadCompetitions()
+    } catch (err: unknown) {
+      alert('Failed to update status')
+    }
+  }
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const { data, error } = await supabase.from('competitions').insert([{
+        ...newComp,
+        scheduled_start: new Date(newComp.scheduled_start).toISOString(),
+        scheduled_end: new Date(newComp.scheduled_end).toISOString(),
+      }]).select().single()
+
+      if (error) throw error
+
+      // Link first 30 questions from question_bank
+      const { data: questions } = await supabase.from('question_bank').select('id').limit(30)
+      if (questions && questions.length > 0) {
+        const links = questions.map((q, idx) => ({
+          competition_id: data.id,
+          question_id: q.id,
+          display_order: idx + 1,
+        }))
+        await supabase.from('competition_questions').insert(links)
+      }
+
+      setShowCreateModal(false)
+      setStatusMsg('New competition created with 30 questions linked!')
+      await loadCompetitions()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Creation failed'
+      alert(msg)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-gray-900 pb-16">
+      <AdminNav />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-blue-600" />
+              <span>Competitions &amp; Exam Schedule</span>
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Control live exam start times, durations, and student registration status.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Competition</span>
+          </button>
+        </div>
+
+        {statusMsg && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{statusMsg}</span>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {competitions.map((comp) => (
+            <div key={comp.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-gray-900">{comp.title}</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                      {comp.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
+                <div>
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Start Time</span>
+                  <span className="font-semibold text-gray-800">{new Date(comp.scheduled_start).toLocaleString('en-IN')}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">End Time</span>
+                  <span className="font-semibold text-gray-800">{new Date(comp.scheduled_end).toLocaleString('en-IN')}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Duration &amp; Qs</span>
+                  <span className="font-semibold text-gray-800">{comp.duration_seconds / 60} Mins ({comp.total_questions} MCQs)</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Capacity</span>
+                  <span className="font-semibold text-gray-800">Max {comp.max_participants} Students</span>
+                </div>
+              </div>
+
+              {/* Status Controls */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+                <span className="text-xs text-gray-500 font-medium mr-2">Change Status:</span>
+                {(['draft', 'scheduled', 'waiting_room', 'active', 'closed', 'results_published'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => handleUpdateStatus(comp.id, st)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                      comp.status === st
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {st.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </main>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-gray-900">Schedule New Competition</h3>
+            <form onSubmit={handleCreate} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">Competition Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={newComp.title}
+                  onChange={(e) => setNewComp({ ...newComp, title: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-300"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={newComp.description}
+                  onChange={(e) => setNewComp({ ...newComp, description: e.target.value })}
+                  className="w-full p-2 rounded-lg border border-gray-300"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">Start Time *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={newComp.scheduled_start}
+                    onChange={(e) => setNewComp({ ...newComp, scheduled_start: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-300"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">End Time *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={newComp.scheduled_end}
+                    onChange={(e) => setNewComp({ ...newComp, scheduled_end: e.target.value })}
+                    className="w-full p-2 rounded-lg border border-gray-300"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800"
+                >
+                  Create &amp; Link 30 Questions
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  )
+}
