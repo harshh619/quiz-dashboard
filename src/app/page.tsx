@@ -129,16 +129,23 @@ export default function HomePage() {
 
       {/* Stats Cards */}
       <section className="max-w-4xl mx-auto px-4 pb-12 w-full">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
           {[
             { label: 'Questions', value: '30 MCQs' },
             { label: 'Duration', value: '10 Minutes' },
             { label: 'Top Prizes', value: '1st, 2nd, 3rd' },
             { label: 'Verified Certificate', value: 'All Participants' },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 text-center shadow-xs">
-              <div className="text-xl sm:text-2xl font-black text-blue-700">{stat.value}</div>
-              <div className="text-xs text-gray-500 mt-1 font-medium">{stat.label}</div>
+            <div
+              key={stat.label}
+              className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 text-center shadow-xs flex flex-col justify-center items-center min-h-[110px]"
+            >
+              <div className="text-xl sm:text-2xl font-black text-blue-700 leading-tight">
+                {stat.value}
+              </div>
+              <div className="text-xs text-gray-500 mt-1 font-medium leading-tight">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>
