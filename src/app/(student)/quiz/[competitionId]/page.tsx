@@ -80,11 +80,19 @@ export default function LiveQuizPage({
         const qList: QuestionItem[] = data.questions || []
         setQuestions(qList)
 
-        // Hydrate existing answers if resumed
+        // Hydrate existing answers from server & localStorage fallback
         const initialAnswers: Record<string, 'A' | 'B' | 'C' | 'D'> = {}
+        let localCachedAnswers: Record<string, 'A' | 'B' | 'C' | 'D'> = {}
+        try {
+          const cached = localStorage.getItem(`quiz_answers_${data.attempt_id}`)
+          if (cached) localCachedAnswers = JSON.parse(cached)
+        } catch {}
+
         qList.forEach(q => {
           if (q.selected_option) {
             initialAnswers[q.id] = q.selected_option
+          } else if (localCachedAnswers[q.id]) {
+            initialAnswers[q.id] = localCachedAnswers[q.id]
           }
         })
         setAnswers(initialAnswers)
@@ -161,8 +169,14 @@ export default function LiveQuizPage({
     const currentQ = questions[currentIndex]
     if (!currentQ || !attemptId || !studentId) return
 
-    // Optimistic UI update
-    setAnswers(prev => ({ ...prev, [currentQ.id]: option }))
+    // Optimistic UI update & localStorage backup
+    setAnswers(prev => {
+      const updated = { ...prev, [currentQ.id]: option }
+      try {
+        localStorage.setItem(`quiz_answers_${attemptId}`, JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
     setAutosaveStatus('saving')
 
     try {

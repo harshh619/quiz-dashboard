@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, Calendar, HelpCircle, Trophy, 
-  Award, Mail, ArrowLeft, LogOut 
+import {
+  LayoutDashboard, Calendar, HelpCircle, Trophy,
+  Award, Mail, ArrowLeft, LogOut
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -32,8 +32,8 @@ export default function AdminNav() {
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14">
-          
+        <div className="flex items-le kiyanter justify-between h-14">
+
           <div className="flex items-center gap-4">
             <Link href="/admin/dashboard" className="flex items-center gap-2.5">
               <Image
@@ -79,11 +79,10 @@ export default function AdminNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${isActive
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span>{item.label}</span>
