@@ -381,9 +381,32 @@ export default function StudentResultPage({
 
             {/* Official Certificate Preview Card */}
             <div className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
-              <div className="text-[10px] sm:text-[11px] font-extrabold tracking-widest text-blue-900 uppercase">
-                METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR · NMC
+              {/* Top 4 Official Partner Logos: 2 Left (NMC, NCDC) · Center Title · 2 Right (IDSP, One Health) */}
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/nmc.png" alt="Nagpur Municipal Corporation" className="h-9 sm:h-11 w-auto object-contain" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/ncdc.png" alt="NCDC Delhi" className="h-9 sm:h-11 w-auto object-contain" />
+                </div>
+
+                <div className="min-w-0 flex-1 px-1">
+                  <div className="text-[9px] sm:text-[11px] font-extrabold tracking-widest text-blue-900 uppercase leading-tight">
+                    METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
+                  </div>
+                  <div className="text-[8px] sm:text-[9px] font-semibold tracking-wider text-slate-500 uppercase mt-0.5">
+                    UNDER NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/idsp.png" alt="IDSP" className="h-9 sm:h-11 w-auto object-contain" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/onehealth.png" alt="National One Health Mission" className="h-9 sm:h-11 w-auto object-contain" />
+                </div>
               </div>
+
               <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mt-1">
                 WORLD AMR AWARENESS WEEK (WAAW) 2026
               </div>

@@ -1,32 +1,83 @@
+import fs from 'fs'
+import path from 'path'
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { CertificateSignatory, getCertificateSignatories } from '@/lib/signatories'
 import { buildSignedQrVerificationUrl } from '@/lib/certificateQr'
 
-async function fetchPngAsDataUrlWithDimensions(url: string): Promise<{
+interface LoadedPng {
   dataUrl: string
   width: number
   height: number
-} | null> {
+}
+
+const PUBLIC_LOGO_CACHE = new Map<string, LoadedPng>()
+const FALLBACK_PUBLIC_BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://quiz-msu-nagpur.vercel.app'
+
+function parsePngDimensions(buf: Buffer): { width: number; height: number } {
+  let width = 300
+  let height = 100
+  if (
+    buf.length >= 24 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47
+  ) {
+    width = buf.readUInt32BE(16) || 300
+    height = buf.readUInt32BE(20) || 100
+  }
+  return { width, height }
+}
+
+async function loadPublicLogoPng(filename: string): Promise<LoadedPng | null> {
+  const cached = PUBLIC_LOGO_CACHE.get(filename)
+  if (cached) return cached
+
+  let buf: Buffer | null = null
+
+  // 1. Fast local disk read from public/ (zero network overhead)
+  try {
+    const filePath = path.join(process.cwd(), 'public', filename)
+    if (fs.existsSync(filePath)) {
+      buf = fs.readFileSync(filePath)
+    }
+  } catch (err) {
+    console.warn(`Local disk read failed for ${filename}, trying HTTP fallback:`, err)
+  }
+
+  // 2. Fallback to deployed public URL if serverless bundle omitted public/
+  if (!buf) {
+    try {
+      const res = await fetch(`${FALLBACK_PUBLIC_BASE_URL}/${filename}`, { cache: 'force-cache' })
+      if (res.ok) {
+        buf = Buffer.from(await res.arrayBuffer())
+      }
+    } catch (err) {
+      console.error(`HTTP fallback failed for logo ${filename}:`, err)
+    }
+  }
+
+  if (!buf) return null
+
+  const { width, height } = parsePngDimensions(buf)
+  const loaded: LoadedPng = {
+    dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+    width,
+    height,
+  }
+  PUBLIC_LOGO_CACHE.set(filename, loaded)
+  return loaded
+}
+
+async function fetchPngAsDataUrlWithDimensions(url: string): Promise<LoadedPng | null> {
   try {
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const arrayBuffer = await res.arrayBuffer()
     const buf = Buffer.from(arrayBuffer)
-
-    // Verify PNG magic signature (89 50 4E 47) and read IHDR dimensions
-    let width = 300
-    let height = 100
-    if (
-      buf.length >= 24 &&
-      buf[0] === 0x89 &&
-      buf[1] === 0x50 &&
-      buf[2] === 0x4e &&
-      buf[3] === 0x47
-    ) {
-      width = buf.readUInt32BE(16) || 300
-      height = buf.readUInt32BE(20) || 100
-    }
+    const { width, height } = parsePngDimensions(buf)
 
     const base64 = buf.toString('base64')
     return {
@@ -84,6 +135,46 @@ export async function generateCertificatePdfBuffer({
   doc.setDrawColor(217, 119, 6) // Golden Amber
   doc.setLineWidth(1)
   doc.rect(14, 14, width - 28, height - 28)
+
+  // 2.5 Top Official Partner Logos (Full-Resolution PNGs: 2 Left [NMC, NCDC] · 2 Right [IDSP, One Health])
+  const headerLogos = await Promise.all([
+    loadPublicLogoPng('nmc.png'),
+    loadPublicLogoPng('ncdc.png'),
+    loadPublicLogoPng('idsp.png'),
+    loadPublicLogoPng('onehealth.png'),
+  ])
+
+  const logoSlots = [
+    { img: headerLogos[0], centerX: 33, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_nmc' },
+    { img: headerLogos[1], centerX: 62, centerY: 31, maxW: 20, maxH: 21, alias: 'logo_ncdc' },
+    { img: headerLogos[2], centerX: 235, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_idsp' },
+    { img: headerLogos[3], centerX: 264, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_onehealth' },
+  ]
+
+  for (const slot of logoSlots) {
+    if (!slot.img) continue
+    const aspect = slot.img.width / slot.img.height
+    let drawW = slot.maxW
+    let drawH = drawW / aspect
+    if (drawH > slot.maxH) {
+      drawH = slot.maxH
+      drawW = drawH * aspect
+    }
+    try {
+      doc.addImage(
+        slot.img.dataUrl,
+        'PNG',
+        slot.centerX - drawW / 2,
+        slot.centerY - drawH / 2,
+        drawW,
+        drawH,
+        slot.alias,
+        'FAST'
+      )
+    } catch (err) {
+      console.error(`Error embedding header logo ${slot.alias}:`, err)
+    }
+  }
 
   // 3. Top Header: Authority & Initiative
   doc.setFont('helvetica', 'bold')
