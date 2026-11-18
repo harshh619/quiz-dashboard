@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import type { CertificateSignatory } from '@/lib/signatories'
 import {
   Award, Upload, CheckCircle2, AlertCircle, UserCheck,
-  ExternalLink, Plus, Trash2, Save, Eye, Loader2, X, Download
+  ExternalLink, Plus, Trash2, Save, Eye, Loader2, X, Download,
+  ArrowLeftRight, ChevronLeft, ChevronRight, Star
 } from 'lucide-react'
 
 export default function AdminCertificatesPage() {
@@ -82,6 +83,53 @@ export default function AdminCertificatesPage() {
     }
     setSignatories((prev) => prev.filter((s) => s.id !== id))
     setStatusMsg({ type: 'success', text: 'Signatory removed. Click "Save Changes" to apply to PDFs.' })
+  }
+
+  const handleMoveSignatory = (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= signatories.length) return
+    setSignatories((prev) => {
+      const next = [...prev]
+      const temp = next[index]
+      next[index] = next[targetIndex]
+      next[targetIndex] = temp
+      return next
+    })
+    setStatusMsg({
+      type: 'success',
+      text: 'Signatory position updated! Click "Save Changes" to apply to PDFs.',
+    })
+  }
+
+  const handleMakePrimary = (index: number) => {
+    if (index === signatories.length - 1) return
+    setSignatories((prev) => {
+      const next = [...prev]
+      const [picked] = next.splice(index, 1)
+      next.push(picked) // Primary is always rightmost on the PDF!
+      return next
+    })
+    setStatusMsg({
+      type: 'success',
+      text: 'Moved to Primary (Right side on PDF)! Click "Save Changes" to confirm.',
+    })
+  }
+
+  const handleSwapOrder = () => {
+    if (signatories.length < 2) return
+    setSignatories((prev) => [...prev].reverse())
+    setStatusMsg({
+      type: 'success',
+      text: 'Swapped Primary (Right) & Secondary (Left) signatories! Click "Save Changes" to confirm.',
+    })
+  }
+
+  const getPositionLabel = (idx: number, total: number) => {
+    if (total === 1) return { role: 'Primary Signatory', pos: 'Right on PDF', isPrimary: true }
+    if (idx === total - 1) return { role: 'Primary Signatory', pos: 'Right Side on PDF', isPrimary: true }
+    if (total === 2 && idx === 0) return { role: 'Secondary Signatory', pos: 'Left Side on PDF', isPrimary: false }
+    if (idx === 0) return { role: 'Secondary #1', pos: 'Left Side on PDF', isPrimary: false }
+    return { role: `Secondary #${idx + 1}`, pos: 'Center on PDF', isPrimary: false }
   }
 
   const handleUploadPng = async (signatoryId: string, file: File | null) => {
@@ -239,18 +287,31 @@ export default function AdminCertificatesPage() {
                 Official Certificate Signatories ({signatories.length} of 4 Active)
               </h3>
               <p className="text-[11px] text-gray-500">
-                Add or remove signatories as needed. Certificate PDF spacing adjusts automatically for 1, 2, 3, or 4 signatories.
+                Government protocol: <strong>Secondary</strong> appears on the <strong>Left</strong> and <strong>Primary</strong> always appears on the <strong>Right</strong> side of the PDF.
               </p>
             </div>
 
-            <button
-              onClick={handleAddSignatory}
-              disabled={signatories.length >= 4}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Signatory</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {signatories.length >= 2 && (
+                <button
+                  onClick={handleSwapOrder}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  title="Switch Primary (Right) and Secondary (Left) positions"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span>Switch Primary / Secondary</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleAddSignatory}
+                disabled={signatories.length >= 4}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Signatory</span>
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -259,22 +320,76 @@ export default function AdminCertificatesPage() {
             </div>
           ) : (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${signatories.length >= 3 ? 'xl:grid-cols-3' : ''} gap-4`}>
-              {signatories.map((sig, idx) => (
-                <div key={sig.id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
-                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5">
-                      <UserCheck className="w-3.5 h-3.5" />
-                      Signatory #{idx + 1}
-                    </span>
-                    <button
-                      onClick={() => handleRemoveSignatory(sig.id)}
-                      disabled={signatories.length <= 1}
-                      title="Remove this signatory"
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg disabled:opacity-30 cursor-pointer transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove</span>
-                    </button>
+              {signatories.map((sig, idx) => {
+                const posMeta = getPositionLabel(idx, signatories.length)
+                return (
+                <div
+                  key={sig.id}
+                  className={`bg-white rounded-2xl border p-5 shadow-xs space-y-4 transition-all ${
+                    posMeta.isPrimary ? 'border-amber-300 ring-1 ring-amber-200/70' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-100 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`text-xs font-bold px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 ${
+                          posMeta.isPrimary
+                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        }`}
+                      >
+                        {posMeta.isPrimary ? <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" /> : <UserCheck className="w-3.5 h-3.5" />}
+                        {posMeta.role}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                        ({posMeta.pos})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {signatories.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSignatory(idx, -1)}
+                            disabled={idx === 0}
+                            title="Move Left (Secondary)"
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveSignatory(idx, 1)}
+                            disabled={idx === signatories.length - 1}
+                            title="Move Right (Primary)"
+                            className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+
+                      {!posMeta.isPrimary && (
+                        <button
+                          type="button"
+                          onClick={() => handleMakePrimary(idx)}
+                          title="Set as Primary Signatory (Right side on PDF)"
+                          className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-lg cursor-pointer transition-colors"
+                        >
+                          Make Primary
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleRemoveSignatory(sig.id)}
+                        disabled={signatories.length <= 1}
+                        title="Remove this signatory"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg disabled:opacity-30 cursor-pointer transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3 text-xs">
@@ -391,7 +506,8 @@ export default function AdminCertificatesPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
