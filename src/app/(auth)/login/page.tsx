@@ -1,35 +1,188 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import Script from 'next/script'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, APP_TAGLINE } from '@/constants'
-import { AlertCircle, CheckCircle, ShieldCheck, Mail } from 'lucide-react'
+import { AlertCircle, CheckCircle, ShieldCheck, Mail, Building2 } from 'lucide-react'
+
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  '860148988905-2nonqgt1sb77gi6q4h062fmtmpg0t3od.apps.googleusercontent.com'
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string
+            callback: (response: { credential: string }) => void
+            nonce?: string
+            auto_select?: boolean
+            ux_mode?: 'popup' | 'redirect'
+            itp_support?: boolean
+          }) => void
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              type?: 'standard' | 'icon'
+              theme?: 'outline' | 'filled_blue' | 'filled_black'
+              size?: 'large' | 'medium' | 'small'
+              text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin'
+              shape?: 'rectangular' | 'pill' | 'circle' | 'square'
+              logo_alignment?: 'left' | 'center'
+              width?: number
+            }
+          ) => void
+        }
+      }
+    }
+  }
+}
+
+async function generateNoncePair(): Promise<{ rawNonce: string; hashedNonce: string }> {
+  const bytes = new Uint8Array(32)
+  window.crypto.getRandomValues(bytes)
+  const rawNonce = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  const hashBuffer = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawNonce))
+  const hashedNonce = Array.from(new Uint8Array(hashBuffer), (b) =>
+    b.toString(16).padStart(2, '0')
+  ).join('')
+  return { rawNonce, hashedNonce }
+}
 
 function LoginContent() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const [gsiReady, setGsiReady] = useState(false)
+  const [gsiError, setGsiError] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isTestMode, setIsTestMode] = useState(false)
 
+  const googleBtnRef = useRef<HTMLDivElement | null>(null)
+  const rawNonceRef = useRef<string>('')
+  const initializedRef = useRef(false)
   const supabase = createClient()
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
     if (errorParam) {
       if (errorParam === 'auth_failed') {
-        setMessage({ type: 'error', text: 'Authentication failed. Please check your Supabase & Google OAuth configuration.' })
+        setMessage({ type: 'error', text: 'Authentication failed. Please try signing in again.' })
       } else {
         setMessage({ type: 'error', text: decodeURIComponent(errorParam) })
       }
     }
   }, [searchParams])
 
-  // Google OAuth Login
-  const handleGoogleLogin = async () => {
+  const redirectAfterLogin = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, college_name')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role === 'admin' || user.email === 'msunagpur@gmail.com') {
+        window.location.href = '/admin/dashboard'
+        return
+      }
+      if (!profile || !profile.college_name) {
+        window.location.href = '/register'
+        return
+      }
+    }
+    window.location.href = '/dashboard'
+  }, [supabase])
+
+  const initGoogleSignIn = useCallback(async () => {
+    if (initializedRef.current || !window.google?.accounts?.id || !googleBtnRef.current) return
+    initializedRef.current = true
+
+    try {
+      const { rawNonce, hashedNonce } = await generateNoncePair()
+      rawNonceRef.current = rawNonce
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        nonce: hashedNonce,
+        auto_select: false,
+        ux_mode: 'popup',
+        itp_support: true,
+        callback: async (response: { credential: string }) => {
+          try {
+            setLoading(true)
+            setMessage(null)
+
+            const { error } = await supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: response.credential,
+              nonce: rawNonceRef.current,
+            })
+
+            if (error) throw error
+
+            setMessage({ type: 'success', text: 'Verified! Redirecting to your portal...' })
+            await redirectAfterLogin()
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Google Sign-In failed'
+            setMessage({ type: 'error', text: msg })
+            setLoading(false)
+            // Regenerate fresh nonce for next attempt
+            initializedRef.current = false
+            void initGoogleSignIn()
+          }
+        },
+      })
+
+      const containerWidth = googleBtnRef.current.offsetWidth || 340
+      const btnWidth = Math.min(Math.max(containerWidth, 240), 380)
+
+      googleBtnRef.current.innerHTML = ''
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'center',
+        width: btnWidth,
+      })
+
+      setGsiReady(true)
+    } catch (err) {
+      console.error('Google Sign-In init error:', err)
+      setGsiError(true)
+    }
+  }, [redirectAfterLogin, supabase])
+
+  // Handle case where GSI script is already cached/loaded on navigation
+  useEffect(() => {
+    if (window.google?.accounts?.id) {
+      void initGoogleSignIn()
+      return
+    }
+    const timer = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        clearInterval(timer)
+        void initGoogleSignIn()
+      }
+    }, 150)
+    const timeout = setTimeout(() => clearInterval(timer), 6000)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(timeout)
+    }
+  }, [initGoogleSignIn])
+
+  // Fallback OAuth (only used if Google GSI script is blocked by browser/ad-blocker)
+  const handleFallbackOAuth = async () => {
     try {
       setLoading(true)
       setMessage(null)
@@ -39,7 +192,7 @@ function LoginContent() {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           },
         },
       })
@@ -59,10 +212,8 @@ function LoginContent() {
     setMessage(null)
     try {
       if (password) {
-        // Sign in or sign up with password
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
         if (signInError) {
-          // If user doesn't exist, try signing them up
           const { error: signUpError } = await supabase.auth.signUp({
             email,
             password,
@@ -74,15 +225,16 @@ function LoginContent() {
           setMessage({ type: 'success', text: 'Account created! Redirecting to dashboard...' })
         }
       } else {
-        // Magic link
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         })
         if (error) throw error
         setMessage({ type: 'success', text: 'Magic link sent to your email!' })
+        setLoading(false)
+        return
       }
-      window.location.href = '/dashboard'
+      await redirectAfterLogin()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication failed'
       setMessage({ type: 'error', text: msg })
@@ -92,9 +244,15 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="afterInteractive"
+        onLoad={() => void initGoogleSignIn()}
+        onError={() => setGsiError(true)}
+      />
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Emblem / Badge */}
         <div className="flex justify-center">
           <Image
             src="/logo.png"
@@ -113,9 +271,18 @@ function LoginContent() {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/50 rounded-2xl border border-gray-100 sm:px-10">
-          
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-7 px-6 shadow-xl shadow-slate-200/50 rounded-2xl border border-gray-100 sm:px-9">
+
+          {/* Official Government / Municipal Organizer Banner */}
+          <div className="mb-5 p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-center gap-2.5 text-left">
+            <Building2 className="w-4 h-4 text-blue-700 shrink-0" />
+            <div className="text-[11px] leading-snug text-blue-950">
+              <span className="font-bold">Official Portal:</span> Metropolitan Surveillance Unit (MSU), Nagpur Municipal Corporation ·{' '}
+              <span className="font-semibold text-blue-700">msunagpur@gmail.com</span>
+            </div>
+          </div>
+
           {message && (
             <div className={`mb-5 p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${
               message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
@@ -125,35 +292,39 @@ function LoginContent() {
             </div>
           )}
 
-          {/* Primary Action: Google Sign In */}
-          <div>
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              type="button"
-              className="w-full flex justify-center items-center gap-3 py-3 px-4 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-all duration-150 disabled:opacity-50"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>{loading ? 'Connecting to Google...' : 'Continue with Google'}</span>
-            </button>
-            <p className="mt-2 text-center text-[11px] text-gray-400">
+          {/* Primary Action: Direct Google Identity Services Sign-In (No supabase.co redirect URL!) */}
+          <div className="space-y-2.5">
+            {loading && (
+              <div className="w-full flex justify-center items-center gap-2.5 py-3 px-4 rounded-xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-800">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-700 border-t-transparent"></div>
+                <span>Verifying your Google account...</span>
+              </div>
+            )}
+
+            <div className={`relative w-full min-h-[44px] ${loading ? 'hidden' : 'block'}`}>
+              <div
+                className="w-full flex justify-center"
+                ref={googleBtnRef}
+              />
+
+              {!gsiReady && !gsiError && (
+                <div className="absolute inset-0 w-full h-[44px] rounded-xl bg-gray-100 animate-pulse flex items-center justify-center text-xs text-gray-400">
+                  Loading Google Sign-In...
+                </div>
+              )}
+            </div>
+
+            {gsiError && !loading && (
+              <button
+                onClick={handleFallbackOAuth}
+                type="button"
+                className="w-full flex justify-center items-center gap-3 py-3 px-4 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-all"
+              >
+                <span>Continue with Google</span>
+              </button>
+            )}
+
+            <p className="text-center text-[11px] text-gray-400">
               Mandatory Google verification prevents duplicate attempts.
             </p>
           </div>
@@ -163,8 +334,8 @@ function LoginContent() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setIsTestMode(!isTestMode)}
                 className="bg-white px-2 text-gray-500 hover:text-blue-600 underline font-medium"
               >
