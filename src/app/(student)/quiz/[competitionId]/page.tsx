@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
+import { parseCategoryTopic } from '@/lib/questionCategories'
 import { 
   Clock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, 
   Send, ShieldAlert, Check, HelpCircle 
@@ -305,7 +306,7 @@ export default function LiveQuizPage({
             {/* Topic, Autosave (mobile) & Display number */}
             <div className="flex items-center justify-between gap-2 mb-3.5 sm:mb-4 pb-3 border-b border-gray-100 flex-wrap">
               <span className="text-[10px] sm:text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider truncate max-w-[65%]">
-                {currentQ?.topic || 'AMR Topic'}
+                {parseCategoryTopic(currentQ?.topic).displayLabel}
               </span>
               <div className="flex items-center gap-2.5 ml-auto">
                 <span className="md:hidden text-[10px] font-medium">

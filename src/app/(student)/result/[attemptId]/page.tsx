@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime, formatDate } from '@/lib/utils'
+import { parseCategoryTopic } from '@/lib/questionCategories'
 import { 
   Trophy, Award, CheckCircle2, Download, ArrowLeft, 
   Share2, QrCode, Sparkles, Clock, Check, ShieldCheck,
@@ -338,7 +339,7 @@ export default function StudentResultPage({
                             {index + 1}
                           </span>
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                            {q.topic || 'AMR'}
+                            {parseCategoryTopic(q.topic).displayLabel}
                           </span>
                         </div>
 

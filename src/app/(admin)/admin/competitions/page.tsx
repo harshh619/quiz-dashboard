@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
-import { Calendar, Plus, Clock, Users, Play, Square, CheckCircle2, Trash2 } from 'lucide-react'
+import { extractAllCategories, parseCategoryTopic } from '@/lib/questionCategories'
+import { Calendar, Plus, CheckCircle2, Trash2 } from 'lucide-react'
 
 export default function AdminCompetitionsPage() {
   const supabase = createClient()
   const [competitions, setCompetitions] = useState<any[]>([])
+  const [bankQuestions, setBankQuestions] = useState<Array<{ id: string; topic: string }>>([])
+  const [selectedQuestionCategory, setSelectedQuestionCategory] = useState('all')
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
@@ -38,14 +41,27 @@ export default function AdminCompetitionsPage() {
 
   const loadCompetitions = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('competitions')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [{ data }, { data: qData }] = await Promise.all([
+      supabase.from('competitions').select('*').order('created_at', { ascending: false }),
+      supabase.from('question_bank').select('id, topic'),
+    ])
 
     setCompetitions(data || [])
+    setBankQuestions((qData as Array<{ id: string; topic: string }>) || [])
     setLoading(false)
   }
+
+  const questionCategories = useMemo(
+    () => extractAllCategories(bankQuestions),
+    [bankQuestions]
+  )
+
+  const matchingBankQuestions = useMemo(() => {
+    if (selectedQuestionCategory === 'all') return bankQuestions
+    return bankQuestions.filter(
+      (q) => parseCategoryTopic(q.topic).category === selectedQuestionCategory
+    )
+  }, [bankQuestions, selectedQuestionCategory])
 
   useEffect(() => {
     loadCompetitions()
@@ -88,6 +104,12 @@ export default function AdminCompetitionsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const questionsToLink = matchingBankQuestions.slice(0, 30)
+      if (questionsToLink.length === 0) {
+        alert(`No questions found in category "${selectedQuestionCategory}". Please add questions to this category first or select another category.`)
+        return
+      }
+
       const startTime = new Date(newComp.scheduled_start)
       const durationMin = Number(newComp.duration_minutes) || 10
       const endTime = new Date(startTime.getTime() + durationMin * 60 * 1000)
@@ -98,8 +120,8 @@ export default function AdminCompetitionsPage() {
         scheduled_start: startTime.toISOString(),
         scheduled_end: endTime.toISOString(),
         duration_seconds: durationMin * 60,
-        total_questions: newComp.total_questions,
-        passing_score: newComp.passing_score,
+        total_questions: questionsToLink.length,
+        passing_score: Math.ceil(questionsToLink.length * 0.6),
         max_participants: newComp.max_participants,
         status: 'draft',
       }
@@ -108,19 +130,20 @@ export default function AdminCompetitionsPage() {
 
       if (error) throw error
 
-      // Link first 30 questions from question_bank
-      const { data: questions } = await supabase.from('question_bank').select('id').limit(30)
-      if (questions && questions.length > 0) {
-        const links = questions.map((q, idx) => ({
-          competition_id: data.id,
-          question_id: q.id,
-          display_order: idx + 1,
-        }))
-        await supabase.from('competition_questions').insert(links)
-      }
+      // Link questions from the selected Question Bank category
+      const links = questionsToLink.map((q, idx) => ({
+        competition_id: data.id,
+        question_id: q.id,
+        display_order: idx + 1,
+      }))
+      await supabase.from('competition_questions').insert(links)
 
       setShowCreateModal(false)
-      setStatusMsg(`New competition saved as Draft (${durationMin} mins, 30 questions linked). Switch status to "Scheduled" when ready to publish!`)
+      setStatusMsg(
+        `New competition saved as Draft (${durationMin} mins, ${questionsToLink.length} questions linked${
+          selectedQuestionCategory !== 'all' ? ` from "${selectedQuestionCategory}"` : ''
+        }). Switch status to "Scheduled" when ready to publish!`
+      )
       await loadCompetitions()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Creation failed'
@@ -311,6 +334,30 @@ export default function AdminCompetitionsPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">Question Bank Category *</label>
+                <select
+                  value={selectedQuestionCategory}
+                  onChange={(e) => setSelectedQuestionCategory(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-gray-300 text-xs bg-white font-medium text-gray-800"
+                >
+                  <option value="all">All Categories ({bankQuestions.length} Qs available)</option>
+                  {questionCategories.map((cat) => {
+                    const count = bankQuestions.filter(
+                      (q) => parseCategoryTopic(q.topic).category === cat
+                    ).length
+                    return (
+                      <option key={cat} value={cat}>
+                        {cat} ({count} Qs available)
+                      </option>
+                    )
+                  })}
+                </select>
+                <span className="text-[10px] text-gray-500 mt-0.5 block">
+                  Up to 30 questions from this category will be linked automatically.
+                </span>
+              </div>
+
               <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
@@ -323,7 +370,7 @@ export default function AdminCompetitionsPage() {
                   type="submit"
                   className="flex-1 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800"
                 >
-                  Create &amp; Link 30 Questions
+                  Create &amp; Link {Math.min(30, matchingBankQuestions.length)} Questions
                 </button>
               </div>
             </form>
