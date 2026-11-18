@@ -178,6 +178,19 @@ export default function HomePage() {
           <p className="text-[11px] text-gray-500">
             In technical collaboration with NCDC Delhi &amp; IDSP India · World AMR Awareness Week (WAAW) 2026
           </p>
+          <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-gray-400">
+            <Link href="/privacy" className="hover:text-white underline-offset-2 hover:underline">
+              Privacy Policy
+            </Link>
+            <span>·</span>
+            <Link href="/terms" className="hover:text-white underline-offset-2 hover:underline">
+              Terms of Service
+            </Link>
+            <span>·</span>
+            <a href="mailto:msunagpur@gmail.com" className="hover:text-white underline-offset-2 hover:underline">
+              msunagpur@gmail.com
+            </a>
+          </div>
         </div>
       </footer>
     </main>
