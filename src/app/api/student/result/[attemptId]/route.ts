@@ -52,12 +52,16 @@ export async function GET(
     // Auto-finalize competition if exam window has ended (+ grace buffer)
     const { finalized, unlockAtIso } = await ensureCompetitionAutoFinalized(attempt.competition_id)
 
-    // Fetch responses, issued certificate, and rank in parallel
-    const [{ data: responses }, { data: cert }, { data: compResult }] = await Promise.all([
-      admin
-        .from('quiz_responses')
-        .select('selected_option, question:question_bank(id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, topic)')
-        .eq('attempt_id', attemptId),
+    const scheduledEnd = attempt.competition?.scheduled_end
+    const scheduledEndMs = scheduledEnd ? new Date(scheduledEnd).getTime() : 0
+    const compStatus = attempt.competition?.status
+    const isCompetitionEnded =
+      compStatus === 'closed' ||
+      compStatus === 'results_published' ||
+      (scheduledEndMs > 0 && Date.now() >= scheduledEndMs)
+
+    // Fetch issued certificate and rank in parallel first
+    const [{ data: cert }, { data: compResult }] = await Promise.all([
       admin
         .from('certificates')
         .select('*')
@@ -69,6 +73,18 @@ export async function GET(
         .eq('attempt_id', attemptId)
         .maybeSingle(),
     ])
+
+    // Anti-cheating lock: NEVER expose answer keys or explanations until the competition timer ends (or admin publishes results)
+    const answerKeyUnlocked = isCompetitionEnded || finalized || Boolean(cert)
+
+    let responses: unknown[] = []
+    if (answerKeyUnlocked) {
+      const { data: respRows } = await admin
+        .from('quiz_responses')
+        .select('selected_option, question:question_bank(id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, topic)')
+        .eq('attempt_id', attemptId)
+      responses = respRows || []
+    }
 
     // If finalized & certificate exists, automatically dispatch this student's pending email once (atomic lock prevents duplicates)
     if (cert && attempt.student?.email) {
@@ -84,7 +100,6 @@ export async function GET(
       }).catch((e) => console.error('Background auto-email error:', e))
     }
 
-    const scheduledEnd = attempt.competition?.scheduled_end
     const computedUnlockAt =
       unlockAtIso ||
       (scheduledEnd
@@ -129,7 +144,8 @@ export async function GET(
       authCode,
       rank: compResult?.rank ?? attempt.rank ?? null,
       isWinner: compResult?.is_winner ?? false,
-      responses: responses || [],
+      responses,
+      answerKeyUnlocked,
       isFinalized: finalized || Boolean(cert),
       unlockAt: computedUnlockAt,
       serverTime: new Date().toISOString(),

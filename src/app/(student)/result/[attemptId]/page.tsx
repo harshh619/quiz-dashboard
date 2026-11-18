@@ -8,7 +8,7 @@ import { parseCategoryTopic } from '@/lib/questionCategories'
 import {
   Trophy, Award, Download, ArrowLeft, QrCode, Sparkles, Clock,
   ShieldCheck, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  BookOpen, Mail, Loader2, Medal
+  BookOpen, Mail, Loader2, Medal, Lock
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -64,6 +64,7 @@ export default function StudentResultPage({
   const [authCode, setAuthCode] = useState<string | null>(null)
   const [rank, setRank] = useState<number | null>(null)
   const [responses, setResponses] = useState<any[]>([])
+  const [answerKeyUnlocked, setAnswerKeyUnlocked] = useState(false)
   const [unlockAt, setUnlockAt] = useState<string | null>(null)
   const [serverOffsetMs, setServerOffsetMs] = useState(0)
   const [secondsUntilUnlock, setSecondsUntilUnlock] = useState<number | null>(null)
@@ -93,6 +94,7 @@ export default function StudentResultPage({
       setAuthCode(data.authCode || null)
       setRank(data.rank ?? null)
       setResponses(data.responses || [])
+      setAnswerKeyUnlocked(Boolean(data.answerKeyUnlocked))
       setUnlockAt(data.unlockAt || null)
 
       const offset = data.serverTime
@@ -100,7 +102,7 @@ export default function StudentResultPage({
         : 0
       setServerOffsetMs(offset)
 
-      if (data.unlockAt && !data.certificate) {
+      if (data.unlockAt && (!data.certificate || !data.answerKeyUnlocked)) {
         const diff = Math.max(
           0,
           Math.ceil((new Date(data.unlockAt).getTime() - (Date.now() + offset)) / 1000)
@@ -134,9 +136,9 @@ export default function StudentResultPage({
     loadResult(false)
   }, [loadResult])
 
-  // Live countdown to auto-unlock official certificate once exam window closes!
+  // Live countdown to auto-unlock official certificate & answer key once exam window closes!
   useEffect(() => {
-    if (certificate || !unlockAt) return
+    if ((certificate && answerKeyUnlocked) || !unlockAt) return
 
     const unlockMs = new Date(unlockAt).getTime()
     let triggered = false
@@ -153,7 +155,7 @@ export default function StudentResultPage({
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [certificate, unlockAt, serverOffsetMs, loadResult])
+  }, [certificate, answerKeyUnlocked, unlockAt, serverOffsetMs, loadResult])
 
   // Direct Official PDF Certificate Download (NOT webpage print!)
   const handleDownloadCertificate = async () => {
@@ -471,8 +473,30 @@ export default function StudentResultPage({
           </div>
         )}
 
-        {/* Question by Question Review Accordion */}
-        {responses.length > 0 && (
+        {/* Question by Question Review Accordion — Strictly Locked Until Competition Timer Ends */}
+        {!answerKeyUnlocked ? (
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-amber-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl shrink-0">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-gray-900">
+                  Answer Key &amp; Explanations Locked
+                </h3>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                  To ensure fair play while other participants are still taking the quiz{endTimeLabel ? ` (closes at ${endTimeLabel})` : ''}, the Answer Key &amp; detailed solutions will automatically unlock once the competition timer ends.
+                </p>
+              </div>
+            </div>
+            {secondsUntilUnlock !== null && secondsUntilUnlock > 0 && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-mono font-bold shrink-0 self-start sm:self-center">
+                <Clock className="w-3.5 h-3.5 text-amber-700" />
+                <span>{formatTime(secondsUntilUnlock)}</span>
+              </div>
+            )}
+          </div>
+        ) : responses.length > 0 && (
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
             <button
               onClick={() => setShowReview(!showReview)}
