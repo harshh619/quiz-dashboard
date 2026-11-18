@@ -29,8 +29,8 @@ export async function GET(request: Request) {
 
     const pdfBuffer = await generateCertificatePdfBuffer({
       studentName: 'Sample Participant Name',
-      collegeName: 'Government College of Pharmacy, Nagpur',
-      course: 'B.Pharm',
+      collegeName: 'Indira Gandhi (IGR) UPHC',
+      course: 'Pharmacist',
       certificateNumber: 'AMR-WAAW-2026-SAMPLE',
       certificateType: certType,
       verificationUrl: `${PRODUCTION_APP_URL}/verify/AMR-WAAW-2026-SAMPLE`,

@@ -446,7 +446,9 @@ export default function StudentResultPage({
                   {profile?.full_name}
                 </div>
                 <div className="text-xs text-gray-600 break-words">
-                  {profile?.college_name} ({profile?.course})
+                  {(!profile?.course || profile.course.toLowerCase() === 'pharmacist')
+                    ? `Pharmacist, ${profile?.college_name || ''}`
+                    : `${profile?.college_name} (${profile?.course})`}
                 </div>
               </div>
 

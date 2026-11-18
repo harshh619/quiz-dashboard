@@ -373,9 +373,10 @@
 
     function renderVerified(cert, sigPreview) {
       const awardTitle = formatAward(cert.a);
+      const isPharm = !cert.cr || cert.cr.toLowerCase() === "pharmacist";
       const institution = cert.c
-        ? `${cert.c}${cert.cr ? ` (${cert.cr})` : ""}`
-        : (cert.cr || "Health Sciences Institution");
+        ? (isPharm ? `Pharmacist, ${cert.c}` : `${cert.c}${cert.cr ? ` (${cert.cr})` : ""}`)
+        : (cert.cr || "NMC Health Facility");
 
       const scoreText = (typeof cert.s === "number")
         ? `${cert.s} / ${cert.t || 30}`
@@ -415,7 +416,7 @@
             </div>
             <div class="detail-box full">
               <div class="detail-label">Issuing Authority</div>
-              <div class="detail-val">Metropolitan Surveillance Unit (MSU), Nagpur · Under Nagpur Municipal Corporation (NMC), Nagpur</div>
+              <div class="detail-val">Nagpur Municipal Corporation (NMC), Nagpur · Metropolitan Surveillance Unit (MSU), Nagpur</div>
             </div>
           </div>
 

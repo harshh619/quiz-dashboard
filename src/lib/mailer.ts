@@ -92,18 +92,20 @@ export async function sendCertificateEmail({
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       <div style="background-color: #1e3a8a; color: #fff; padding: 24px; text-align: center;">
-        <h1 style="margin: 0; font-size: 22px;">World AMR Awareness Week 2026</h1>
-        <p style="margin: 5px 0 0; font-size: 14px; opacity: 0.9;">Metropolitan Surveillance Unit Nagpur (NMC)</p>
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: bold; letter-spacing: 0.6px; text-transform: uppercase;">Nagpur Municipal Corporation (NMC), Nagpur</p>
+        <h1 style="margin: 0; font-size: 21px;">World AMR Awareness Week (WAAW) 2026</h1>
+        <p style="margin: 5px 0 0; font-size: 13px; opacity: 0.9;">Metropolitan Surveillance Unit (MSU), Nagpur</p>
       </div>
 
       <div style="padding: 24px;">
         <p style="font-size: 16px;">Dear <b>${studentName}</b>,</p>
-        <p>Congratulations on completing the <b>National Online Quiz Competition on Antimicrobial Resistance (AMR)</b>!</p>
+        <p>Congratulations on completing the <b>Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR)</b>!</p>
 
         <div style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 16px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0 0 8px;"><b>Certificate ID:</b> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${certificateNumber}</code></p>
+          ${collegeName ? `<p style="margin: 0 0 8px;"><b>Health Facility:</b> ${collegeName}</p>` : ''}
           <p style="margin: 0 0 8px;"><b>Score Secured:</b> ${score} / ${totalQuestions}</p>
-          <p style="margin: 0;"><b>Issued by:</b> Metropolitan Surveillance Unit, Nagpur</p>
+          <p style="margin: 0;"><b>Issued by:</b> Nagpur Municipal Corporation (NMC) · Metropolitan Surveillance Unit (MSU), Nagpur</p>
         </div>
 
         <p style="color: #15803d; font-weight: bold; background: #f0fdf4; padding: 10px 14px; border-radius: 6px; border: 1px solid #bbf7d0;">
@@ -124,7 +126,7 @@ export async function sendCertificateEmail({
 
       <div style="background-color: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
         Sent officially from <b>${senderEmail}</b><br/>
-        Metropolitan Surveillance Unit (MSU), Nagpur Municipal Corporation
+        Nagpur Municipal Corporation (NMC), Nagpur · Metropolitan Surveillance Unit (MSU), Nagpur
       </div>
     </div>
   `

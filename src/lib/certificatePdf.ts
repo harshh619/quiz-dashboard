@@ -225,17 +225,29 @@ export async function generateCertificatePdfBuffer({
   doc.setLineWidth(0.8)
   doc.line(width / 2 - 60, 81.5, width / 2 + 60, 81.5)
 
-  // 8. Academic / Institution details & Appreciation text
+  // 8. Designation / Health Facility details & Appreciation text
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10.5)
+  doc.setFontSize(11)
   doc.setTextColor(51, 65, 85)
-  const collegeInfo = collegeName ? `of ${collegeName}${course ? ` (${course})` : ''}` : ''
-  if (collegeInfo) {
-    doc.text(collegeInfo, width / 2, 88.5, { align: 'center' })
+  const isPharmacist = !course || course.toLowerCase() === 'pharmacist'
+  const affiliationLine = collegeName
+    ? isPharmacist
+      ? `Pharmacist, ${collegeName}`
+      : `of ${collegeName}${course ? ` (${course})` : ''}`
+    : isPharmacist
+    ? 'Pharmacist'
+    : course || ''
+
+  if (affiliationLine) {
+    doc.text(affiliationLine, width / 2, 88.5, { align: 'center' })
   }
 
-  const descText =
-    'for participating in the Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Global Antimicrobial Stewardship.'
+  let achievementPhrase = 'for actively participating in'
+  if (certificateType === 'first_prize') achievementPhrase = 'for securing First Prize in'
+  else if (certificateType === 'second_prize') achievementPhrase = 'for securing Second Prize in'
+  else if (certificateType === 'third_prize') achievementPhrase = 'for securing Third Prize in'
+
+  const descText = `${achievementPhrase} the Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.`
   const splitDesc = doc.splitTextToSize(descText, 215)
   doc.text(splitDesc, width / 2, 97.5, { align: 'center' })
 

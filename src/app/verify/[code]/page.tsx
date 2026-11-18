@@ -106,13 +106,13 @@ export default function CertificateVerificationPage({
               </div>
 
               <div className="pb-3 border-b border-gray-100 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Institution / College</span>
+                <span className="text-gray-500 font-medium">Health Facility</span>
                 <span className="font-semibold text-gray-800 text-right max-w-xs">{cert?.student?.college_name}</span>
               </div>
 
               <div className="pb-3 border-b border-gray-100 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Program / Course</span>
-                <span className="font-semibold text-gray-800">{cert?.student?.course}</span>
+                <span className="text-gray-500 font-medium">Role / Category</span>
+                <span className="font-semibold text-gray-800">{cert?.student?.course || 'Pharmacist'}</span>
               </div>
 
               <div className="pb-3 border-b border-gray-100 flex justify-between items-center">
@@ -140,7 +140,7 @@ export default function CertificateVerificationPage({
             {/* Organizing Authority Footer */}
             <div className="pt-4 border-t border-gray-100 text-center">
               <p className="text-[11px] text-gray-400">
-                Organized under the World AMR Awareness Week (WAAW) Academic Sensitization Initiative.
+                Nagpur Municipal Corporation (NMC), Nagpur · Metropolitan Surveillance Unit (MSU), Nagpur · World AMR Awareness Week (WAAW) 2026
               </p>
             </div>
 
