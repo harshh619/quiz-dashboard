@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Script from 'next/script'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, APP_TAGLINE } from '@/constants'
-import { AlertCircle, CheckCircle, ShieldCheck, Mail, Building2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, ShieldCheck, Building2 } from 'lucide-react'
 
 const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
@@ -60,9 +60,6 @@ function LoginContent() {
   const [gsiReady, setGsiReady] = useState(false)
   const [gsiError, setGsiError] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isTestMode, setIsTestMode] = useState(false)
 
   const googleBtnRef = useRef<HTMLDivElement | null>(null)
   const rawNonceRef = useRef<string>('')
@@ -134,7 +131,6 @@ function LoginContent() {
             const msg = err instanceof Error ? err.message : 'Google Sign-In failed'
             setMessage({ type: 'error', text: msg })
             setLoading(false)
-            // Regenerate fresh nonce for next attempt
             initializedRef.current = false
             void initGoogleSignIn()
           }
@@ -162,7 +158,6 @@ function LoginContent() {
     }
   }, [redirectAfterLogin, supabase])
 
-  // Handle case where GSI script is already cached/loaded on navigation
   useEffect(() => {
     if (window.google?.accounts?.id) {
       void initGoogleSignIn()
@@ -204,45 +199,6 @@ function LoginContent() {
     }
   }
 
-  // Email / Password for Testing / Admin
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    setMessage(null)
-    try {
-      if (password) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-        if (signInError) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: { full_name: email.split('@')[0] },
-            },
-          })
-          if (signUpError) throw signUpError
-          setMessage({ type: 'success', text: 'Account created! Redirecting to dashboard...' })
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-        })
-        if (error) throw error
-        setMessage({ type: 'success', text: 'Magic link sent to your email!' })
-        setLoading(false)
-        return
-      }
-      await redirectAfterLogin()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed'
-      setMessage({ type: 'error', text: msg })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
       <Script
@@ -272,13 +228,13 @@ function LoginContent() {
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-7 px-6 shadow-xl shadow-slate-200/50 rounded-2xl border border-gray-100 sm:px-9">
+        <div className="bg-white py-7 px-5 sm:px-9 shadow-xl shadow-slate-200/50 rounded-2xl border border-gray-100">
 
           {/* Official Government / Municipal Organizer Banner */}
-          <div className="mb-5 p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-center gap-2.5 text-left">
-            <Building2 className="w-4 h-4 text-blue-700 shrink-0" />
+          <div className="mb-5 p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2.5 text-left">
+            <Building2 className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
             <div className="text-[11px] leading-snug text-blue-950">
-              <span className="font-bold">Official Portal:</span> Metropolitan Surveillance Unit (MSU), Nagpur Municipal Corporation ·{' '}
+              <span className="font-bold">Official Portal:</span> Metropolitan Surveillance Unit (MSU), Nagpur · Nagpur Municipal Corporation (NMC), Nagpur ·{' '}
               <span className="font-semibold text-blue-700">msunagpur@gmail.com</span>
             </div>
           </div>
@@ -292,8 +248,8 @@ function LoginContent() {
             </div>
           )}
 
-          {/* Primary Action: Direct Google Identity Services Sign-In (No supabase.co redirect URL!) */}
-          <div className="space-y-2.5">
+          {/* Primary Action: Direct Google Identity Services Sign-In */}
+          <div className="space-y-3">
             {loading && (
               <div className="w-full flex justify-center items-center gap-2.5 py-3 px-4 rounded-xl bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-800">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-700 border-t-transparent"></div>
@@ -301,7 +257,7 @@ function LoginContent() {
               </div>
             )}
 
-            <div className={`relative w-full min-h-[44px] ${loading ? 'hidden' : 'block'}`}>
+            <div className={`relative w-full min-h-[44px] overflow-hidden ${loading ? 'hidden' : 'block'}`}>
               <div
                 className="w-full flex justify-center"
                 ref={googleBtnRef}
@@ -328,62 +284,6 @@ function LoginContent() {
               Mandatory Google verification prevents duplicate attempts.
             </p>
           </div>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <button
-                type="button"
-                onClick={() => setIsTestMode(!isTestMode)}
-                className="bg-white px-2 text-gray-500 hover:text-blue-600 underline font-medium"
-              >
-                {isTestMode ? 'Hide Email / Test Login' : 'Admin & Test Login'}
-              </button>
-            </div>
-          </div>
-
-          {/* Test / Admin Login */}
-          {isTestMode && (
-            <form onSubmit={handleEmailAuth} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Email Address</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@example.com"
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700">
-                  Password <span className="text-gray-400">(leave blank for Magic Link)</span>
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors disabled:opacity-50"
-              >
-                <Mail className="w-4 h-4" />
-                <span>{loading ? 'Processing...' : 'Sign in with Email'}</span>
-              </button>
-            </form>
-          )}
 
           {/* Security Notice */}
           <div className="mt-6 pt-5 border-t border-gray-100 flex items-start gap-2.5 text-gray-500">
