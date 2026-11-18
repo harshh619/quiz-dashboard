@@ -47,12 +47,25 @@ export async function POST(request: Request) {
     // 7. Delete queued & dispatched email jobs
     await admin.from('email_jobs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
-    // 8. Reset competition status back to 'active'
-    await admin.from('competitions').update({ status: 'active' }).neq('id', '00000000-0000-0000-0000-000000000000')
+    // 8. Reset non-draft competition status back to 'scheduled'
+    await admin
+      .from('competitions')
+      .update({ status: 'scheduled' })
+      .neq('status', 'draft')
 
     // 9. If requested to clear test student profiles (keep admin profiles safe)
     if (clearStudents) {
+      const { data: students } = await admin
+        .from('profiles')
+        .select('id')
+        .neq('role', 'admin')
+        .neq('email', 'msunagpur@gmail.com')
+
       await admin.from('profiles').delete().neq('role', 'admin').neq('email', 'msunagpur@gmail.com')
+
+      for (const s of students || []) {
+        await admin.auth.admin.deleteUser(s.id)
+      }
     }
 
     return NextResponse.json({

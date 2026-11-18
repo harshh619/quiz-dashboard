@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, Calendar, HelpCircle, Trophy,
+  LayoutDashboard, Calendar, Users, HelpCircle, Trophy,
   Award, Mail, ArrowLeft, LogOut
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,7 @@ export default function AdminNav() {
   const navItems = [
     { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Competitions', href: '/admin/competitions', icon: Calendar },
+    { label: 'Participants', href: '/admin/participants', icon: Users },
     { label: 'Question Bank', href: '/admin/questions', icon: HelpCircle },
     { label: 'Results & Ranks', href: '/admin/results', icon: Trophy },
     { label: 'Certificates & Signatures', href: '/admin/certificates', icon: Award },

@@ -77,11 +77,17 @@ export default function AdminOverviewPage() {
     setActionLoading(true)
     setStatusMessage(null)
     try {
-      const { data, error } = await supabase.rpc('finalize_competition', {
-        p_competition_id: compId,
+      const res = await fetch('/api/admin/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ competitionId: compId }),
       })
-      if (error) throw error
-      setStatusMessage(`Leaderboard finalized! ${data.total_finalized} certificates generated & queued for email.`)
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Finalization failed')
+
+      setStatusMessage(
+        `Leaderboard finalized! ${data.total_finalized} certificates generated & queued cleanly (no duplicate emails).`
+      )
       await loadData()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Finalization failed'
