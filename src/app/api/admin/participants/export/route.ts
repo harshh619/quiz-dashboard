@@ -241,9 +241,9 @@ export async function GET() {
     styleHeaderRow(metricHeader)
 
     const summaryMetrics = [
-      ['Total Participating Colleges / Institutions', collegeList.length, 'Unique institutions'],
-      ['Total Registered Students', students.length, 'All registered profiles'],
-      ['Total Students Who Played Quiz', totalAttempted, `${totalSubmitted} submitted`],
+      ['Total Participating Health Facilities', collegeList.length, 'Unique facilities / institutions'],
+      ['Total Registered Participants', students.length, 'All registered profiles'],
+      ['Total Participants Who Played Quiz', totalAttempted, `${totalSubmitted} submitted`],
       ['Total Verified Certificates Issued', (certificates || []).length, 'Merit + Participation'],
     ]
 
@@ -256,7 +256,7 @@ export async function GET() {
     })
 
     summarySheet.addRow([])
-    const courseHeader = summarySheet.addRow(['Course / Degree Breakdown', 'Registered Students', 'Quiz Attempted'])
+    const courseHeader = summarySheet.addRow(['Participant Category / Role', 'Registered Participants', 'Quiz Attempted'])
     styleHeaderRow(courseHeader)
 
     Array.from(courseMap.entries())
@@ -269,15 +269,15 @@ export async function GET() {
       })
 
     // ========================================================
-    // SHEET 2: College-wise Summary
+    // SHEET 2: Facility-wise Summary
     // ========================================================
-    const collegeSheet = workbook.addWorksheet('College-wise Summary', {
+    const collegeSheet = workbook.addWorksheet('Facility-wise Summary', {
       views: [{ state: 'frozen', ySplit: 1 }],
     })
     collegeSheet.columns = [
       { header: 'Sr. No.', key: 'sr', width: 10 },
-      { header: 'College / Institution Name', key: 'college', width: 46 },
-      { header: 'Registered Students', key: 'registered', width: 20 },
+      { header: 'Health Facility / Institution', key: 'college', width: 46 },
+      { header: 'Registered Participants', key: 'registered', width: 22 },
       { header: 'Quiz Attempted', key: 'attempted', width: 18 },
       { header: 'Highest Score', key: 'highest', width: 16 },
       { header: 'Average Score', key: 'average', width: 16 },
@@ -309,7 +309,7 @@ export async function GET() {
     // Total Row
     const totalRow = collegeSheet.addRow({
       sr: '',
-      college: `TOTAL (${collegeList.length} Colleges)`,
+      college: `TOTAL (${collegeList.length} Health Facilities)`,
       registered: collegeList.reduce((acc, c) => acc + c.registered, 0),
       attempted: collegeList.reduce((acc, c) => acc + c.attempted, 0),
       highest: '',
@@ -338,10 +338,10 @@ export async function GET() {
       { header: 'Registration ID', key: 'reg_id', width: 24 },
       { header: 'Full Name', key: 'full_name', width: 26 },
       { header: 'Email Address', key: 'email', width: 30 },
-      { header: 'Mobile / WhatsApp', key: 'mobile', width: 18 },
-      { header: 'College / Institution Name', key: 'college', width: 38 },
-      { header: 'Course / Degree', key: 'course', width: 16 },
-      { header: 'Year / Semester', key: 'year_sem', width: 24 },
+      { header: 'Mobile Number', key: 'mobile', width: 18 },
+      { header: 'Health Facility / Institution', key: 'college', width: 38 },
+      { header: 'Role / Category', key: 'course', width: 16 },
+      { header: 'Location / Details', key: 'year_sem', width: 24 },
       { header: 'Quiz Status', key: 'status', width: 16 },
       { header: 'Score', key: 'score', width: 10 },
       { header: 'Total Qs', key: 'total_qs', width: 10 },

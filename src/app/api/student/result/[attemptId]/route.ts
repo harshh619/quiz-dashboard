@@ -74,8 +74,9 @@ export async function GET(
         .maybeSingle(),
     ])
 
-    // Anti-cheating lock: NEVER expose answer keys or explanations until the competition timer ends (or admin publishes results)
+    // Anti-cheating lock: NEVER expose score, accuracy, or answer keys until the competition timer ends (or admin publishes results)
     const answerKeyUnlocked = isCompetitionEnded || finalized || Boolean(cert)
+    const scoreUnlocked = answerKeyUnlocked
 
     let responses: unknown[] = []
     if (answerKeyUnlocked) {
@@ -135,16 +136,21 @@ export async function GET(
       authCode = built.authCode
     }
 
+    const safeAttempt = scoreUnlocked
+      ? attempt
+      : { ...attempt, score: null, rank: null }
+
     return NextResponse.json({
-      attempt,
+      attempt: safeAttempt,
       profile: attempt.student,
       competition: attempt.competition,
       certificate: cert || null,
       qrPayload,
       authCode,
-      rank: compResult?.rank ?? attempt.rank ?? null,
-      isWinner: compResult?.is_winner ?? false,
+      rank: scoreUnlocked ? (compResult?.rank ?? attempt.rank ?? null) : null,
+      isWinner: scoreUnlocked ? (compResult?.is_winner ?? false) : false,
       responses,
+      scoreUnlocked,
       answerKeyUnlocked,
       isFinalized: finalized || Boolean(cert),
       unlockAt: computedUnlockAt,

@@ -16,8 +16,10 @@ interface ParticipantRow {
   created_at: string
   registrations_count: number
   attempts_count: number
+  attempt_status?: 'registered' | 'in_progress' | 'submitted' | 'timed_out'
   latest_score: number | null
   latest_total: number | null
+  score_unlocked?: boolean
   is_protected?: boolean
 }
 
@@ -60,7 +62,7 @@ export default function AdminParticipantsPage() {
       window.URL.revokeObjectURL(url)
       setStatusMsg({
         type: 'success',
-        text: `Summary Excel Report downloaded (${participants.length} students across ${uniqueCollegesCount} colleges)!`,
+        text: `Summary Excel Report downloaded (${participants.length} participants across ${uniqueCollegesCount} health facilities)!`,
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Excel export failed'
@@ -70,28 +72,34 @@ export default function AdminParticipantsPage() {
     }
   }
 
-  const loadParticipants = async () => {
-    setLoading(true)
+  const loadParticipants = async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const res = await fetch('/api/admin/participants', { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to load participants')
       setParticipants(data.participants || [])
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error loading participants'
-      setStatusMsg({ type: 'error', text: msg })
+      if (!silent) {
+        const msg = err instanceof Error ? err.message : 'Error loading participants'
+        setStatusMsg({ type: 'error', text: msg })
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadParticipants()
+    void loadParticipants(false)
+    const interval = setInterval(() => {
+      void loadParticipants(true)
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleDeleteParticipant = async (p: ParticipantRow) => {
     const ok = confirm(
-      `Delete participant "${p.full_name || p.email}"?\n\nThis removes their profile, past registrations, quiz attempts, and login record so they can register completely fresh with updated Year/Semester.`
+      `Delete participant "${p.full_name || p.email}"?\n\nThis removes their profile, past registrations, quiz attempts, and login record so they can register completely fresh.`
     )
     if (!ok) return
 
@@ -117,7 +125,7 @@ export default function AdminParticipantsPage() {
   const handleDeleteAll = async () => {
     if (participants.length === 0) return
     const ok = confirm(
-      `DELETE ALL ${participants.length} REGISTERED PARTICIPANTS?\n\nThis will permanently delete all student accounts, profiles, registrations, quiz attempts, certificates, and email logs so students can re-register fresh next session/year.\n\n(Admin accounts will remain completely safe.)`
+      `DELETE ALL ${participants.length} REGISTERED PARTICIPANTS?\n\nThis will permanently delete all participant accounts, profiles, registrations, quiz attempts, certificates, and email logs so participants can re-register fresh.\n\n(Admin accounts will remain completely safe.)`
     )
     if (!ok) return
 
@@ -165,7 +173,7 @@ export default function AdminParticipantsPage() {
               <span>Registered Participants</span>
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              View or delete registered student profiles so students can re-register with updated Year &amp; Semester in future quizzes.
+              Live directory of registered participants (auto-updates every 5 seconds). Scores reveal automatically after quiz timeout.
             </p>
           </div>
 
@@ -187,7 +195,7 @@ export default function AdminParticipantsPage() {
               <span>{deletingAll ? 'Deleting All...' : 'Delete All Participants'}</span>
             </button>
             <button
-              onClick={loadParticipants}
+              onClick={() => void loadParticipants(false)}
               className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 cursor-pointer"
               title="Refresh"
             >
@@ -218,7 +226,7 @@ export default function AdminParticipantsPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
               <Building2 className="w-3.5 h-3.5 text-purple-600" />
-              Colleges
+              Health Facilities
             </span>
             <div className="text-2xl font-bold text-purple-700 mt-1">{uniqueCollegesCount}</div>
           </div>
@@ -254,7 +262,7 @@ export default function AdminParticipantsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by student name, email, college, course, year/semester, mobile, or Reg ID..."
+              placeholder="Search by participant name, email, health facility, mobile, or Reg ID..."
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:border-blue-600"
             />
           </div>
@@ -263,7 +271,7 @@ export default function AdminParticipantsPage() {
         {/* Participants Table */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Student Directory</h3>
+            <h3 className="text-sm font-bold text-gray-900">Participants Directory</h3>
             <span className="text-xs text-gray-400">
               Showing {filtered.length} of {participants.length}
             </span>
@@ -274,9 +282,9 @@ export default function AdminParticipantsPage() {
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <tr>
                   <th className="px-4 py-3">Participant</th>
-                  <th className="px-4 py-3">College / Course / Year &amp; Sem</th>
+                  <th className="px-4 py-3">Health Facility / Role</th>
                   <th className="px-4 py-3">Mobile &amp; Reg ID</th>
-                  <th className="px-4 py-3">Quizzes</th>
+                  <th className="px-4 py-3">Status &amp; Score</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
@@ -305,7 +313,7 @@ export default function AdminParticipantsPage() {
                         <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
                           <GraduationCap className="w-3 h-3 text-blue-600 shrink-0" />
                           <span>
-                            {p.course || '-'} {p.year_semester ? `· ${p.year_semester}` : ''}
+                            {p.course || 'Participant'} {p.year_semester ? `· ${p.year_semester}` : ''}
                           </span>
                         </div>
                       </td>
@@ -319,17 +327,22 @@ export default function AdminParticipantsPage() {
                         <span className="text-[11px] font-semibold text-gray-700">
                           {p.attempts_count} attempt{p.attempts_count === 1 ? '' : 's'}
                         </span>
-                        {p.latest_score !== null && (
+                        {(p.attempt_status === 'submitted' || p.attempt_status === 'timed_out') && p.score_unlocked === false ? (
+                          <div className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-800">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Score After Timeout</span>
+                          </div>
+                        ) : p.latest_score !== null ? (
                           <div className="text-[10px] font-mono font-bold text-emerald-700">
                             Score: {p.latest_score} / {p.latest_total}
                           </div>
-                        )}
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {p.is_protected ? (
                           <span
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold"
-                            title="Protected because this student belongs to a Locked Official Competition"
+                            title="Protected because this participant belongs to a Locked Official Competition"
                           >
                             <Lock className="w-3 h-3" />
                             <span>Protected</span>

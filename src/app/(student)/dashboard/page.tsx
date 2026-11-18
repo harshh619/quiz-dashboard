@@ -182,7 +182,7 @@ export default function StudentDashboardPage() {
             />
             <div className="min-w-0">
               <h1 className="font-bold text-gray-900 text-xs sm:text-sm leading-tight truncate">{APP_NAME}</h1>
-              <p className="text-[10px] sm:text-[11px] text-gray-500 truncate">Student Portal</p>
+              <p className="text-[10px] sm:text-[11px] text-gray-500 truncate">Participant Portal</p>
             </div>
           </div>
 

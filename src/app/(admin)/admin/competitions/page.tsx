@@ -19,7 +19,7 @@ export default function AdminCompetitionsPage() {
 
   const [newComp, setNewComp] = useState({
     title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
-    description: 'National Quiz Competition for Health Sciences Students.',
+    description: 'Online Quiz Competition for Pharmacists.',
     scheduled_start: '',
     duration_minutes: 10,
     total_questions: 30,
@@ -201,7 +201,7 @@ export default function AdminCompetitionsPage() {
               <span>Competitions &amp; Exam Schedule</span>
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Control live exam start times, durations, and student registration status.
+              Control live exam start times, durations, and participant registration status.
             </p>
           </div>
 
@@ -260,7 +260,7 @@ export default function AdminCompetitionsPage() {
                       title={
                         isLocked
                           ? 'Protected from Clear Test Data & deletion. Click to unlock.'
-                          : 'Lock to protect all student certificates & data from Clear Test Data'
+                          : 'Lock to protect all participant certificates & data from Clear Test Data'
                       }
                     >
                       {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -301,7 +301,7 @@ export default function AdminCompetitionsPage() {
                 </div>
                 <div>
                   <span className="text-gray-400 block text-[10px] uppercase font-semibold">Capacity</span>
-                  <span className="font-semibold text-gray-800">Max {comp.max_participants} Students</span>
+                  <span className="font-semibold text-gray-800">Max {comp.max_participants} Participants</span>
                 </div>
               </div>
 

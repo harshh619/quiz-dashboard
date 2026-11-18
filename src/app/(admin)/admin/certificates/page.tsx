@@ -265,11 +265,10 @@ export default function AdminCertificatesPage() {
 
         {statusMsg && (
           <div
-            className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${
-              statusMsg.type === 'error'
-                ? 'bg-red-50 border border-red-200 text-red-700'
-                : 'bg-emerald-50 border border-emerald-200 text-emerald-900'
-            }`}
+            className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${statusMsg.type === 'error'
+              ? 'bg-red-50 border border-red-200 text-red-700'
+              : 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+              }`}
           >
             {statusMsg.type === 'error' ? (
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
@@ -324,158 +323,187 @@ export default function AdminCertificatesPage() {
               {signatories.map((sig, idx) => {
                 const posMeta = getPositionLabel(idx, signatories.length)
                 return (
-                <div
-                  key={sig.id}
-                  className={`bg-white rounded-2xl border p-5 shadow-xs space-y-4 transition-all ${
-                    posMeta.isPrimary ? 'border-amber-300 ring-1 ring-amber-200/70' : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-100 flex-wrap">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`text-xs font-bold px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 ${
-                          posMeta.isPrimary
+                  <div
+                    key={sig.id}
+                    className={`bg-white rounded-2xl border p-5 shadow-xs space-y-4 transition-all ${posMeta.isPrimary ? 'border-amber-300 ring-1 ring-amber-200/70' : 'border-gray-200'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-100 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`text-xs font-bold px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 ${posMeta.isPrimary
                             ? 'bg-amber-100 text-amber-900 border border-amber-200'
                             : 'bg-blue-50 text-blue-700 border border-blue-100'
-                        }`}
-                      >
-                        {posMeta.isPrimary ? <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" /> : <UserCheck className="w-3.5 h-3.5" />}
-                        {posMeta.role}
-                      </span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                        ({posMeta.pos})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {signatories.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSignatory(idx, -1)}
-                            disabled={idx === 0}
-                            title="Move Left (Secondary)"
-                            className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSignatory(idx, 1)}
-                            disabled={idx === signatories.length - 1}
-                            title="Move Right (Primary)"
-                            className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-
-                      {!posMeta.isPrimary && (
-                        <button
-                          type="button"
-                          onClick={() => handleMakePrimary(idx)}
-                          title="Set as Primary Signatory (Right side on PDF)"
-                          className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-lg cursor-pointer transition-colors"
+                            }`}
                         >
-                          Make Primary
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => handleRemoveSignatory(sig.id)}
-                        disabled={signatories.length <= 1}
-                        title="Remove this signatory"
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg disabled:opacity-30 cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block text-gray-600 font-semibold mb-1">
-                        Name of Signatory *
-                      </label>
-                      <input
-                        type="text"
-                        value={sig.name}
-                        onChange={(e) => handleFieldChange(sig.id, 'name', e.target.value)}
-                        placeholder="e.g. Dr. Anuja Maitreya"
-                        className="w-full p-2.5 rounded-lg border border-gray-300 font-semibold text-gray-900 focus:border-blue-600 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-600 font-semibold mb-1">
-                        Designation / Role *
-                      </label>
-                      <input
-                        type="text"
-                        value={sig.designation}
-                        onChange={(e) => handleFieldChange(sig.id, 'designation', e.target.value)}
-                        placeholder="e.g. Epidemiologist, MSU Nagpur"
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-600 font-semibold mb-1">
-                        Department / Organization Line 1 (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={sig.organization || ''}
-                        onChange={(e) => handleFieldChange(sig.id, 'organization', e.target.value)}
-                        placeholder="e.g. Metropolitan Surveillance Unit (MSU), Nagpur"
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-600 font-semibold mb-1">
-                        Organization / Institution Line 2 (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={sig.organizationLine2 || ''}
-                        onChange={(e) => handleFieldChange(sig.id, 'organizationLine2', e.target.value)}
-                        placeholder="e.g. Nagpur Municipal Corporation, Nagpur"
-                        className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
-                      />
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        Prints directly on a separate clean line below Line 1 on the PDF certificate.
-                      </p>
-                    </div>
-
-                    {/* Transparent PNG Signature Upload */}
-                    <div className="pt-1">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-gray-600 font-semibold">
-                          Digital Signature (PNG Only)
-                        </label>
-                        {sig.signatureUrl && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePng(sig.id)}
-                            className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-600 hover:underline cursor-pointer"
-                          >
-                            <X className="w-3 h-3" /> Remove PNG
-                          </button>
-                        )}
+                          {posMeta.isPrimary ? <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          {posMeta.role}
+                        </span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                          ({posMeta.pos})
+                        </span>
                       </div>
 
-                      {sig.signatureUrl ? (
-                        <div className="rounded-xl border border-emerald-200 bg-slate-50 p-3 flex flex-col items-center gap-2">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={sig.signatureUrl}
-                            alt={`${sig.name} signature`}
-                            className="max-h-14 w-auto object-contain"
-                          />
-                          <label className="text-[11px] font-semibold text-blue-700 hover:underline cursor-pointer">
-                            {uploadingId === sig.id ? 'Uploading...' : 'Replace Signature PNG'}
+                      <div className="flex items-center gap-1">
+                        {signatories.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSignatory(idx, -1)}
+                              disabled={idx === 0}
+                              title="Move Left (Secondary)"
+                              className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveSignatory(idx, 1)}
+                              disabled={idx === signatories.length - 1}
+                              title="Move Right (Primary)"
+                              className="p-1 text-gray-500 hover:bg-gray-100 rounded-lg disabled:opacity-25 cursor-pointer"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+
+                        {!posMeta.isPrimary && (
+                          <button
+                            type="button"
+                            onClick={() => handleMakePrimary(idx)}
+                            title="Set as Primary Signatory (Right side on PDF)"
+                            className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-lg cursor-pointer transition-colors"
+                          >
+                            Make Primary
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleRemoveSignatory(sig.id)}
+                          disabled={signatories.length <= 1}
+                          title="Remove this signatory"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg disabled:opacity-30 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div>
+                        <label className="block text-gray-600 font-semibold mb-1">
+                          Name of Signatory *
+                        </label>
+                        <input
+                          type="text"
+                          value={sig.name}
+                          onChange={(e) => handleFieldChange(sig.id, 'name', e.target.value)}
+                          placeholder="e.g. Dr. Anuja Maitreya"
+                          className="w-full p-2.5 rounded-lg border border-gray-300 font-semibold text-gray-900 focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-gray-600 font-semibold mb-1">
+                          Designation / Role *
+                        </label>
+                        <input
+                          type="text"
+                          value={sig.designation}
+                          onChange={(e) => handleFieldChange(sig.id, 'designation', e.target.value)}
+                          placeholder="e.g. Epidemiologist, MSU Nagpur"
+                          className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-gray-600 font-semibold mb-1">
+                          Department / Organization Line 1 (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={sig.organization || ''}
+                          onChange={(e) => handleFieldChange(sig.id, 'organization', e.target.value)}
+                          placeholder="e.g. Metropolitan Surveillance Unit (MSU), Nagpur"
+                          className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-gray-600 font-semibold mb-1">
+                          Organization / Institution Line 2 (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={sig.organizationLine2 || ''}
+                          onChange={(e) => handleFieldChange(sig.id, 'organizationLine2', e.target.value)}
+                          placeholder="e.g. Nagpur Municipal Corporation, Nagpur"
+                          className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          Prints directly on a separate clean line below Line 1 on the PDF certificate.
+                        </p>
+                      </div>
+
+                      {/* Transparent PNG Signature Upload */}
+                      <div className="pt-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-gray-600 font-semibold">
+                            Digital Signature (PNG Only)
+                          </label>
+                          {sig.signatureUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePng(sig.id)}
+                              className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-600 hover:underline cursor-pointer"
+                            >
+                              <X className="w-3 h-3" /> Remove PNG
+                            </button>
+                          )}
+                        </div>
+
+                        {sig.signatureUrl ? (
+                          <div className="rounded-xl border border-emerald-200 bg-slate-50 p-3 flex flex-col items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={sig.signatureUrl}
+                              alt={`${sig.name} signature`}
+                              className="max-h-14 w-auto object-contain"
+                            />
+                            <label className="text-[11px] font-semibold text-blue-700 hover:underline cursor-pointer">
+                              {uploadingId === sig.id ? 'Uploading...' : 'Replace Signature PNG'}
+                              <input
+                                type="file"
+                                accept="image/png"
+                                className="hidden"
+                                disabled={uploadingId === sig.id}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0] || null
+                                  e.target.value = ''
+                                  void handleUploadPng(sig.id, f)
+                                }}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <label className="block border-2 border-dashed border-gray-300 rounded-xl p-4 text-center bg-gray-50 hover:bg-blue-50/40 hover:border-blue-300 cursor-pointer transition-colors">
+                            {uploadingId === sig.id ? (
+                              <div className="flex items-center justify-center gap-2 text-blue-700 font-semibold">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Uploading PNG...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+                                <span className="text-[11px] font-semibold text-gray-700 block">
+                                  Click to Upload Transparent PNG
+                                </span>
+                                <span className="text-[10px] text-gray-400 block mt-0.5">
+                                  PNG format only · Max 2 MB
+                                </span>
+                              </>
+                            )}
                             <input
                               type="file"
                               accept="image/png"
@@ -488,41 +516,10 @@ export default function AdminCertificatesPage() {
                               }}
                             />
                           </label>
-                        </div>
-                      ) : (
-                        <label className="block border-2 border-dashed border-gray-300 rounded-xl p-4 text-center bg-gray-50 hover:bg-blue-50/40 hover:border-blue-300 cursor-pointer transition-colors">
-                          {uploadingId === sig.id ? (
-                            <div className="flex items-center justify-center gap-2 text-blue-700 font-semibold">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>Uploading PNG...</span>
-                            </div>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                              <span className="text-[11px] font-semibold text-gray-700 block">
-                                Click to Upload Transparent PNG
-                              </span>
-                              <span className="text-[10px] text-gray-400 block mt-0.5">
-                                PNG format only · Max 2 MB
-                              </span>
-                            </>
-                          )}
-                          <input
-                            type="file"
-                            accept="image/png"
-                            className="hidden"
-                            disabled={uploadingId === sig.id}
-                            onChange={(e) => {
-                              const f = e.target.files?.[0] || null
-                              e.target.value = ''
-                              void handleUploadPng(sig.id, f)
-                            }}
-                          />
-                        </label>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
                 )
               })}
             </div>
@@ -541,7 +538,7 @@ export default function AdminCertificatesPage() {
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <tr>
                   <th className="px-5 py-3">Certificate Number</th>
-                  <th className="px-5 py-3">Student Name</th>
+                  <th className="px-5 py-3">Participant Name</th>
                   <th className="px-5 py-3">Award Category</th>
                   <th className="px-5 py-3">Issued Date</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -561,7 +558,7 @@ export default function AdminCertificatesPage() {
                         {c.certificate_number}
                       </td>
                       <td className="px-5 py-3 font-semibold text-gray-900">
-                        {c.student?.full_name || 'Student'}
+                        {c.student?.full_name || 'Participant'}
                       </td>
                       <td className="px-5 py-3">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-800">

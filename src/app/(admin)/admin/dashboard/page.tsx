@@ -1,12 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Users, CheckCircle2, Clock, HelpCircle, Trophy, 
-  ArrowUpRight, AlertCircle, RefreshCw, Award, Send, Trash2
+import {
+  Users, CheckCircle2, Clock, HelpCircle, Trophy,
+  RefreshCw, Award, Trash2, Lock
 } from 'lucide-react'
+
+interface LiveParticipant {
+  id: string
+  full_name: string | null
+  email: string
+  college_name: string | null
+  course: string | null
+  mobile: string | null
+  created_at: string
+  attempt_status: 'registered' | 'in_progress' | 'submitted' | 'timed_out'
+  submitted_at: string | null
+  latest_score: number | null
+  latest_total: number | null
+  score_unlocked: boolean
+  score_locked_until: string | null
+}
 
 export default function AdminOverviewPage() {
   const supabase = createClient()
@@ -19,58 +35,63 @@ export default function AdminOverviewPage() {
     totalQuestions: 0,
   })
   const [competitions, setCompetitions] = useState<any[]>([])
-  const [recentAttempts, setRecentAttempts] = useState<any[]>([])
+  const [liveParticipants, setLiveParticipants] = useState<LiveParticipant[]>([])
   const [actionLoading, setActionLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<string>('')
 
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
-      // 1. Count registrations
-      const { count: regCount } = await supabase.from('registrations').select('*', { count: 'exact', head: true })
-      
-      // 2. Count submitted
-      const { count: subCount } = await supabase.from('quiz_attempts').select('*', { count: 'exact', head: true }).in('status', ['submitted', 'timed_out'])
+      const [partRes, { count: qCount }, { data: comps }] = await Promise.all([
+        fetch('/api/admin/participants', { cache: 'no-store' }),
+        supabase.from('question_bank').select('*', { count: 'exact', head: true }),
+        supabase.from('competitions').select('*').order('scheduled_start', { ascending: false }),
+      ])
 
-      // 3. Count in-progress
-      const { count: progCount } = await supabase.from('quiz_attempts').select('*', { count: 'exact', head: true }).eq('status', 'in_progress')
+      const partJson = partRes.ok ? await partRes.json() : { participants: [] }
+      const list: LiveParticipant[] = partJson.participants || []
 
-      // 4. Count questions
-      const { count: qCount } = await supabase.from('question_bank').select('*', { count: 'exact', head: true })
+      const submittedCount = list.filter(
+        (p) => p.attempt_status === 'submitted' || p.attempt_status === 'timed_out'
+      ).length
+      const inProgressCount = list.filter((p) => p.attempt_status === 'in_progress').length
 
       setStats({
-        totalRegistered: regCount || 0,
-        totalSubmitted: subCount || 0,
-        totalInProgress: progCount || 0,
+        totalRegistered: list.length,
+        totalSubmitted: submittedCount,
+        totalInProgress: inProgressCount,
         totalQuestions: qCount || 0,
       })
 
-      // Fetch competitions
-      const { data: comps } = await supabase.from('competitions').select('*').order('scheduled_start', { ascending: false })
+      setLiveParticipants(list)
       setCompetitions(comps || [])
-
-      // Fetch recent attempts
-      const { data: attempts } = await supabase
-        .from('quiz_attempts')
-        .select('*, student:profiles(*)')
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      setRecentAttempts(attempts || [])
+      setLastUpdated(
+        new Date().toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      )
     } catch (err) {
       console.error(err)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    void loadData(false)
+    // Live auto-refresh every 5 seconds so newly registered participants & timeout scores appear instantly
+    const interval = setInterval(() => {
+      void loadData(true)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [loadData])
 
   // Action: Finalize Competition Leaderboard & Generate Certificates
   const handleFinalize = async (compId: string) => {
-    if (!confirm('Are you sure you want to finalize the competition? This will lock rankings and generate certificates for all submitted students.')) {
+    if (!confirm('Are you sure you want to finalize the competition? This will lock rankings and generate certificates for all submitted participants.')) {
       return
     }
 
@@ -88,7 +109,7 @@ export default function AdminOverviewPage() {
       setStatusMessage(
         `Leaderboard finalized! ${data.total_finalized} certificates generated & queued cleanly (no duplicate emails).`
       )
-      await loadData()
+      await loadData(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Finalization failed'
       alert(`Error: ${msg}`)
@@ -101,7 +122,7 @@ export default function AdminOverviewPage() {
   const handleClearTestData = async (clearProfiles: boolean = false) => {
     const confirmPrompt = clearProfiles
       ? 'ARE YOU SURE? This will wipe all test participants, registrations, quiz attempts, results, certificates, and email logs. (Admin accounts will remain safe).'
-      : 'Clear all test submissions, quiz attempts, generated certificates, and email logs? (Registered student profiles will be retained).'
+      : 'Clear all test submissions, quiz attempts, generated certificates, and email logs? (Registered participant profiles will be retained).'
 
     if (!confirm(confirmPrompt)) return
 
@@ -117,11 +138,41 @@ export default function AdminOverviewPage() {
       if (!res.ok || json.error) throw new Error(json.error || 'Failed to clear data')
 
       setStatusMessage(json.message || 'Test data cleared successfully!')
-      await loadData()
+      await loadData(false)
     } catch (err: any) {
       alert(`Error: ${err.message}`)
     } finally {
       setClearing(false)
+    }
+  }
+
+  const getStatusBadge = (status: LiveParticipant['attempt_status']) => {
+    switch (status) {
+      case 'submitted':
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800">
+            Submitted
+          </span>
+        )
+      case 'timed_out':
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 text-slate-800">
+            Timed Out
+          </span>
+        )
+      case 'in_progress':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Taking Quiz
+          </span>
+        )
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+            Registered
+          </span>
+        )
     }
   }
 
@@ -130,15 +181,21 @@ export default function AdminOverviewPage() {
       <AdminNav />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        
+
         {/* Header & Refresh */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">
-              AMR Quiz Operations Dashboard
-            </h1>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+                AMR Quiz Operations Dashboard
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Live Auto-Sync
+              </span>
+            </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Live event monitoring, participant submissions, and evaluation controls.
+              Live participant monitoring, submissions, and evaluation controls.{lastUpdated ? ` Last synced: ${lastUpdated}` : ''}
             </p>
           </div>
 
@@ -154,7 +211,7 @@ export default function AdminOverviewPage() {
             </button>
 
             <button
-              onClick={loadData}
+              onClick={() => void loadData(false)}
               disabled={loading}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
             >
@@ -181,7 +238,7 @@ export default function AdminOverviewPage() {
             <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">
               {stats.totalRegistered}
             </div>
-            <div className="text-[11px] text-gray-400 mt-1">Health Sciences Students</div>
+            <div className="text-[11px] text-gray-400 mt-1">Total Participants</div>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
@@ -247,7 +304,7 @@ export default function AdminOverviewPage() {
                   <button
                     onClick={() => handleFinalize(comp.id)}
                     disabled={actionLoading}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Award className="w-3.5 h-3.5" />
                     <span>Finalize Rankings &amp; Issue Certificates</span>
@@ -258,57 +315,88 @@ export default function AdminOverviewPage() {
           </div>
         </div>
 
-        {/* Recent Submissions Table */}
+        {/* Live Participants Table (Shows every participant immediately as they register; scores unlock only after quiz timeout!) */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">Recent Student Submissions</h3>
-            <span className="text-xs text-gray-400">Latest 10 activities</span>
+          <div className="p-5 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">Live Registered Participants</h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                Participants appear immediately upon registration. Scores reveal automatically once the quiz timer finishes.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg">
+              {liveParticipants.length} Participant{liveParticipants.length === 1 ? '' : 's'}
+            </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <tr>
-                  <th className="px-5 py-3">Student Name</th>
-                  <th className="px-5 py-3">College / Course</th>
+                  <th className="px-5 py-3">#</th>
+                  <th className="px-5 py-3">Participant Name</th>
+                  <th className="px-5 py-3">Health Facility</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Score</th>
-                  <th className="px-5 py-3">Submitted At</th>
+                  <th className="px-5 py-3">Registered / Submitted</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">
-                {recentAttempts.length === 0 ? (
+                {liveParticipants.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-6 text-center text-gray-400">
-                      No attempts recorded yet.
+                    <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
+                      No participants registered yet. Participants will appear here automatically as they join.
                     </td>
                   </tr>
                 ) : (
-                  recentAttempts.map((att) => (
-                    <tr key={att.id} className="hover:bg-gray-50/50">
-                      <td className="px-5 py-3 font-semibold text-gray-900">
-                        {att.student?.full_name || 'Anonymous Student'}
-                      </td>
-                      <td className="px-5 py-3 text-gray-500">
-                        {att.student?.college_name || 'N/A'} ({att.student?.course || '-'})
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          att.status === 'submitted' ? 'bg-emerald-100 text-emerald-800' :
-                          att.status === 'in_progress' ? 'bg-amber-100 text-amber-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {att.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 font-mono font-bold text-blue-700">
-                        {att.score !== null ? `${att.score} / ${att.total_questions}` : '-'}
-                      </td>
-                      <td className="px-5 py-3 text-gray-400">
-                        {att.submitted_at ? new Date(att.submitted_at).toLocaleTimeString('en-IN') : 'In progress'}
-                      </td>
-                    </tr>
-                  ))
+                  liveParticipants.map((p, idx) => {
+                    const isDone = p.attempt_status === 'submitted' || p.attempt_status === 'timed_out'
+                    return (
+                      <tr key={p.id} className="hover:bg-gray-50/50">
+                        <td className="px-5 py-3 font-mono text-gray-400">
+                          {idx + 1}
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="font-semibold text-gray-900">
+                            {p.full_name || 'Participant'}
+                          </div>
+                          <div className="text-[11px] text-gray-400">
+                            {p.mobile ? `${p.mobile} · ` : ''}{p.email}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-gray-600 font-medium">
+                          {p.college_name || 'Profile Incomplete'}
+                        </td>
+                        <td className="px-5 py-3">
+                          {getStatusBadge(p.attempt_status)}
+                        </td>
+                        <td className="px-5 py-3">
+                          {!isDone ? (
+                            <span className="text-gray-400">—</span>
+                          ) : !p.score_unlocked ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold"
+                              title="Score stays hidden until the competition timer finishes"
+                            >
+                              <Lock className="w-3 h-3" />
+                              <span>After Timeout</span>
+                            </span>
+                          ) : p.latest_score !== null ? (
+                            <span className="font-mono font-bold text-blue-700">
+                              {p.latest_score} / {p.latest_total ?? 30}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-gray-400 font-mono text-[11px]">
+                          {p.submitted_at
+                            ? `Sub: ${new Date(p.submitted_at).toLocaleTimeString('en-IN')}`
+                            : `Reg: ${new Date(p.created_at).toLocaleTimeString('en-IN')}`}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

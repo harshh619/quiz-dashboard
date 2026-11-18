@@ -186,7 +186,7 @@ export default function AdminEmailsPage() {
               <span>Email Delivery Queue (msunagpur@gmail.com)</span>
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Automated delivery &amp; resend controls for student certificate emails (auto-deduplicated).
+              Automated delivery &amp; resend controls for participant certificate emails (auto-deduplicated).
             </p>
           </div>
 

@@ -146,7 +146,7 @@ export default function AdminResultsPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by student or college..."
+                placeholder="Search by participant or health facility..."
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -160,8 +160,8 @@ export default function AdminResultsPage() {
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <tr>
                   <th className="px-5 py-3">Rank</th>
-                  <th className="px-5 py-3">Student Name</th>
-                  <th className="px-5 py-3">College &amp; Course</th>
+                  <th className="px-5 py-3">Participant Name</th>
+                  <th className="px-5 py-3">Health Facility</th>
                   <th className="px-5 py-3">Score</th>
                   <th className="px-5 py-3">Submission Timestamp</th>
                   <th className="px-5 py-3">Award Type</th>

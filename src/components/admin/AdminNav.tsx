@@ -56,7 +56,7 @@ export default function AdminNav() {
               className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Student View</span>
+              <span className="hidden sm:inline">Participant View</span>
             </Link>
           </div>
 

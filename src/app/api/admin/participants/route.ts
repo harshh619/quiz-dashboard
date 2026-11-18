@@ -63,7 +63,7 @@ export async function GET() {
 
     const admin = createAdminClient()
 
-    const [{ data: profiles, error }, { data: regs }, { data: attempts }] = await Promise.all([
+    const [{ data: profiles, error }, { data: regs }, { data: attempts }, { data: competitions }] = await Promise.all([
       admin
         .from('profiles')
         .select('*')
@@ -71,11 +71,32 @@ export async function GET() {
         .neq('email', 'msunagpur@gmail.com')
         .order('created_at', { ascending: false }),
       admin.from('registrations').select('student_id'),
-      admin.from('quiz_attempts').select('student_id, status, score, total_questions'),
+      admin
+        .from('quiz_attempts')
+        .select('student_id, competition_id, status, score, total_questions, submitted_at, created_at')
+        .order('created_at', { ascending: false }),
+      admin.from('competitions').select('id, status, scheduled_end'),
     ])
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    const nowMs = Date.now()
+    const compMap = new Map<string, { status: string; scheduled_end: string | null }>()
+    for (const c of competitions || []) {
+      compMap.set(c.id, { status: c.status, scheduled_end: c.scheduled_end })
+    }
+
+    const isCompTimedOut = (compId: string): { unlocked: boolean; endIso: string | null } => {
+      const c = compMap.get(compId)
+      if (!c) return { unlocked: true, endIso: null }
+      const endMs = c.scheduled_end ? new Date(c.scheduled_end).getTime() : 0
+      const ended =
+        c.status === 'closed' ||
+        c.status === 'results_published' ||
+        (endMs > 0 && nowMs >= endMs)
+      return { unlocked: ended, endIso: c.scheduled_end }
     }
 
     const regCountMap: Record<string, number> = {}
@@ -83,31 +104,59 @@ export async function GET() {
       regCountMap[r.student_id] = (regCountMap[r.student_id] || 0) + 1
     }
 
-    const attemptMap: Record<string, { count: number; latestScore: number | null; latestTotal: number | null }> = {}
+    const attemptMap: Record<
+      string,
+      {
+        count: number
+        latestStatus: 'registered' | 'in_progress' | 'submitted' | 'timed_out'
+        latestScore: number | null
+        latestTotal: number | null
+        submittedAt: string | null
+        scoreUnlocked: boolean
+        scoreLockedUntil: string | null
+      }
+    > = {}
+
     for (const a of attempts || []) {
       if (!attemptMap[a.student_id]) {
-        attemptMap[a.student_id] = { count: 0, latestScore: null, latestTotal: null }
+        const { unlocked, endIso } = isCompTimedOut(a.competition_id)
+        const isDone = a.status === 'submitted' || a.status === 'timed_out'
+        attemptMap[a.student_id] = {
+          count: 0,
+          latestStatus: (a.status as 'in_progress' | 'submitted' | 'timed_out') || 'registered',
+          latestScore: isDone && unlocked && a.score !== null && a.score !== undefined ? a.score : null,
+          latestTotal: a.total_questions ?? 30,
+          submittedAt: a.submitted_at || null,
+          scoreUnlocked: unlocked,
+          scoreLockedUntil: isDone && !unlocked ? endIso : null,
+        }
       }
       attemptMap[a.student_id].count += 1
-      if (a.score !== null && a.score !== undefined) {
-        attemptMap[a.student_id].latestScore = a.score
-        attemptMap[a.student_id].latestTotal = a.total_questions ?? 30
-      }
     }
 
     const lockedCompIds = await getLockedCompetitionIds()
     const protectedStudentIds = await getProtectedStudentIds(admin, lockedCompIds)
 
-    const participants = (profiles || []).map((p) => ({
-      ...p,
-      registrations_count: regCountMap[p.id] || 0,
-      attempts_count: attemptMap[p.id]?.count || 0,
-      latest_score: attemptMap[p.id]?.latestScore ?? null,
-      latest_total: attemptMap[p.id]?.latestTotal ?? null,
-      is_protected: protectedStudentIds.has(p.id),
-    }))
+    const participants = (profiles || []).map((p) => {
+      const att = attemptMap[p.id]
+      return {
+        ...p,
+        registrations_count: regCountMap[p.id] || 0,
+        attempts_count: att?.count || 0,
+        attempt_status: att?.latestStatus || 'registered',
+        submitted_at: att?.submittedAt || null,
+        latest_score: att?.latestScore ?? null,
+        latest_total: att?.latestTotal ?? null,
+        score_unlocked: att ? att.scoreUnlocked : true,
+        score_locked_until: att?.scoreLockedUntil || null,
+        is_protected: protectedStudentIds.has(p.id),
+      }
+    })
 
-    return NextResponse.json({ participants })
+    return NextResponse.json({
+      participants,
+      serverTime: new Date().toISOString(),
+    })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Internal server error'
     return NextResponse.json({ error: msg }, { status: 500 })

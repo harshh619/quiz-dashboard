@@ -64,6 +64,7 @@ export default function StudentResultPage({
   const [authCode, setAuthCode] = useState<string | null>(null)
   const [rank, setRank] = useState<number | null>(null)
   const [responses, setResponses] = useState<any[]>([])
+  const [scoreUnlocked, setScoreUnlocked] = useState(false)
   const [answerKeyUnlocked, setAnswerKeyUnlocked] = useState(false)
   const [unlockAt, setUnlockAt] = useState<string | null>(null)
   const [serverOffsetMs, setServerOffsetMs] = useState(0)
@@ -94,6 +95,7 @@ export default function StudentResultPage({
       setAuthCode(data.authCode || null)
       setRank(data.rank ?? null)
       setResponses(data.responses || [])
+      setScoreUnlocked(Boolean(data.scoreUnlocked))
       setAnswerKeyUnlocked(Boolean(data.answerKeyUnlocked))
       setUnlockAt(data.unlockAt || null)
 
@@ -102,7 +104,7 @@ export default function StudentResultPage({
         : 0
       setServerOffsetMs(offset)
 
-      if (data.unlockAt && (!data.certificate || !data.answerKeyUnlocked)) {
+      if (data.unlockAt && (!data.certificate || !data.answerKeyUnlocked || !data.scoreUnlocked)) {
         const diff = Math.max(
           0,
           Math.ceil((new Date(data.unlockAt).getTime() - (Date.now() + offset)) / 1000)
@@ -136,9 +138,9 @@ export default function StudentResultPage({
     loadResult(false)
   }, [loadResult])
 
-  // Live countdown to auto-unlock official certificate & answer key once exam window closes!
+  // Live countdown to auto-unlock score, official certificate & answer key once exam window closes!
   useEffect(() => {
-    if ((certificate && answerKeyUnlocked) || !unlockAt) return
+    if ((certificate && answerKeyUnlocked && scoreUnlocked) || !unlockAt) return
 
     const unlockMs = new Date(unlockAt).getTime()
     let triggered = false
@@ -155,7 +157,7 @@ export default function StudentResultPage({
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [certificate, answerKeyUnlocked, unlockAt, serverOffsetMs, loadResult])
+  }, [certificate, answerKeyUnlocked, scoreUnlocked, unlockAt, serverOffsetMs, loadResult])
 
   // Direct Official PDF Certificate Download (NOT webpage print!)
   const handleDownloadCertificate = async () => {
@@ -275,20 +277,44 @@ export default function StudentResultPage({
             {competition?.title || 'World AMR Awareness Week National Quiz Competition 2026'}
           </p>
 
-          {/* Stats Badges */}
-          <div className={`grid ${rank ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 my-5 sm:my-6 max-w-md mx-auto`}>
+          {/* Stats Badges — Score & Accuracy stay locked until competition timer ends */}
+          <div className={`grid ${rank && scoreUnlocked ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 my-5 sm:my-6 max-w-md mx-auto`}>
             <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
-              <div className="text-base sm:text-2xl font-extrabold text-blue-700 whitespace-nowrap">
-                {score} / {total}
-              </div>
-              <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score</div>
+              {scoreUnlocked ? (
+                <>
+                  <div className="text-base sm:text-2xl font-extrabold text-blue-700 whitespace-nowrap">
+                    {score} / {total}
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm sm:text-base font-extrabold text-amber-700 flex items-center justify-center gap-1 py-0.5">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <span>Locked</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score (After Timeout)</div>
+                </>
+              )}
             </div>
 
             <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
-              <div className="text-base sm:text-2xl font-extrabold text-emerald-600">
-                {percentage}%
-              </div>
-              <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
+              {scoreUnlocked ? (
+                <>
+                  <div className="text-base sm:text-2xl font-extrabold text-emerald-600">
+                    {percentage}%
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm sm:text-base font-extrabold text-amber-700 flex items-center justify-center gap-1 py-0.5">
+                    <Lock className="w-3.5 h-3.5 shrink-0" />
+                    <span>Locked</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
+                </>
+              )}
             </div>
 
             <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
@@ -298,7 +324,7 @@ export default function StudentResultPage({
               <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Time Taken</div>
             </div>
 
-            {rank && (
+            {rank && scoreUnlocked && (
               <div className="bg-amber-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-amber-200">
                 <div className="text-base sm:text-2xl font-extrabold text-amber-700">
                   #{rank}
@@ -331,10 +357,10 @@ export default function StudentResultPage({
                 {finalizingNow ? 'Calculating Official Rankings...' : 'Final Rankings in Progress'}
               </span>
               <h3 className="text-base sm:text-lg font-extrabold text-gray-900">
-                Official Certificate Unlocks Automatically After Quiz Ends
+                Score, Answer Key &amp; Official Certificate Unlock After Quiz Ends
               </h3>
               <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
-                Other participants are still completing the exam{endTimeLabel ? ` (closes at ${endTimeLabel})` : ''}. Once the exam window finishes, <strong>1st, 2nd, 3rd Prize &amp; Participation Certificates</strong> will be generated automatically and unlocked right here.
+                Other participants are still completing the quiz{endTimeLabel ? ` (closes at ${endTimeLabel})` : ''}. Once the timer finishes, your <strong>Score, Final Rank, Answer Key &amp; Official Certificate</strong> will automatically unlock right here.
               </p>
             </div>
 
