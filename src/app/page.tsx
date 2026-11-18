@@ -173,10 +173,10 @@ export default function HomePage() {
       <footer className="bg-slate-900 text-gray-400 text-center py-6 text-xs border-t border-slate-800">
         <div className="max-w-4xl mx-auto px-4 space-y-1">
           <p className="font-semibold text-gray-300">
-            Metropolitan Surveillance Unit (MSU), Nagpur · Under Nagpur Municipal Corporation (NMC), Nagpur
+            Metropolitan Surveillance Unit (MSU), Nagpur, Nagpur Municipal Corporation (NMC), Nagpur
           </p>
           <p className="text-[11px] text-gray-500">
-            In technical collaboration with NCDC Delhi &amp; IDSP India · World AMR Awareness Week (WAAW) 2026
+            World AMR Awareness Week (WAAW) 2026
           </p>
           <div className="pt-2 flex items-center justify-center gap-4 text-[11px] text-gray-400">
             <Link href="/privacy" className="hover:text-white underline-offset-2 hover:underline">
