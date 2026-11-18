@@ -175,7 +175,7 @@ export default function AdminOverviewPage() {
             <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">
               {stats.totalRegistered}
             </div>
-            <div className="text-[11px] text-gray-400 mt-1">Pharmacy &amp; Microbiology</div>
+            <div className="text-[11px] text-gray-400 mt-1">Pharmacy Students</div>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
