@@ -49,7 +49,7 @@ export default function AdminCertificatesPage() {
 
   const handleFieldChange = (
     id: string,
-    field: 'name' | 'designation' | 'organization',
+    field: 'name' | 'designation' | 'organization' | 'organizationLine2',
     value: string
   ) => {
     setSignatories((prev) =>
@@ -69,7 +69,8 @@ export default function AdminCertificatesPage() {
         id: newId,
         name: `Signatory ${prev.length + 1}`,
         designation: 'Official Designation',
-        organization: 'Nagpur Municipal Corporation, Nagpur',
+        organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
+        organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
         signatureUrl: null,
       },
     ])
@@ -421,15 +422,31 @@ export default function AdminCertificatesPage() {
 
                     <div>
                       <label className="block text-gray-600 font-semibold mb-1">
-                        Department / Organization Line (Optional)
+                        Department / Organization Line 1 (Optional)
                       </label>
                       <input
                         type="text"
                         value={sig.organization || ''}
                         onChange={(e) => handleFieldChange(sig.id, 'organization', e.target.value)}
+                        placeholder="e.g. Metropolitan Surveillance Unit (MSU), Nagpur"
+                        className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-600 font-semibold mb-1">
+                        Organization / Institution Line 2 (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={sig.organizationLine2 || ''}
+                        onChange={(e) => handleFieldChange(sig.id, 'organizationLine2', e.target.value)}
                         placeholder="e.g. Nagpur Municipal Corporation, Nagpur"
                         className="w-full p-2.5 rounded-lg border border-gray-300 text-gray-700 focus:border-blue-600 focus:outline-none"
                       />
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Prints directly on a separate clean line below Line 1 on the PDF certificate.
+                      </p>
                     </div>
 
                     {/* Transparent PNG Signature Upload */}

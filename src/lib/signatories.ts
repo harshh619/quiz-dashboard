@@ -5,6 +5,7 @@ export interface CertificateSignatory {
   name: string
   designation: string
   organization: string
+  organizationLine2?: string
   signatureUrl?: string | null
 }
 
@@ -16,14 +17,16 @@ export const DEFAULT_SIGNATORIES: CertificateSignatory[] = [
     id: 'sig-1',
     name: 'Dr. Anuja Maitreya',
     designation: 'Epidemiologist, MSU Nagpur',
-    organization: 'Nagpur Municipal Corporation, Nagpur',
+    organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
+    organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
     signatureUrl: null,
   },
   {
     id: 'sig-2',
     name: 'Nodal Officer (Health)',
     designation: 'National AMR Program',
-    organization: 'Metropolitan Surveillance Unit, Nagpur',
+    organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
+    organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
     signatureUrl: null,
   },
 ]
@@ -58,6 +61,7 @@ export async function getCertificateSignatories(): Promise<CertificateSignatory[
         name: String(item.name || '').trim(),
         designation: String(item.designation || '').trim(),
         organization: String(item.organization || '').trim(),
+        organizationLine2: String(item.organizationLine2 || '').trim(),
         signatureUrl: item.signatureUrl || null,
       }))
     }
@@ -80,6 +84,7 @@ export async function saveCertificateSignatories(
       name: String(s.name || '').trim() || `Signatory ${idx + 1}`,
       designation: String(s.designation || '').trim(),
       organization: String(s.organization || '').trim(),
+      organizationLine2: String(s.organizationLine2 || '').trim(),
       signatureUrl: s.signatureUrl || null,
     }))
 

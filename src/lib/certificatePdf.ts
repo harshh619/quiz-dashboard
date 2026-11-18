@@ -213,7 +213,7 @@ export async function generateCertificatePdfBuffer({
     const lineHalfWidth = sigCount === 4 ? 22 : sigCount === 3 ? 27 : 31
     const maxSigImgW = sigCount === 4 ? 36 : 44
     const maxSigImgH = 15
-    const lineY = 165
+    const lineY = 163
 
     // Fetch all PNG signatures in parallel
     const sigImages = await Promise.all(
@@ -258,25 +258,26 @@ export async function generateCertificatePdfBuffer({
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(sigCount === 4 ? 8.5 : 9.5)
       doc.setTextColor(15, 23, 42)
-      const nameLines = doc.splitTextToSize(sig.name || '', slotWidth - 6)
-      doc.text(nameLines, centerX, lineY + 4.8, { align: 'center' })
+      const textMaxW = slotWidth - 4
+      const nameLines = doc.splitTextToSize(sig.name || '', textMaxW)
+      doc.text(nameLines, centerX, lineY + 4.5, { align: 'center' })
 
-      // Signatory Designation
+      // Signatory Designation + Organization Line 1 + Organization Line 2 (each cleanly on its own line)
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(sigCount === 4 ? 7.2 : 8)
+      const subFontSize = sigCount === 4 ? 7.0 : sigCount === 3 ? 7.5 : 8.0
+      doc.setFontSize(subFontSize)
       doc.setTextColor(100, 116, 139)
-      const desigOffset = lineY + 4.8 + nameLines.length * 3.8
-      if (sig.designation) {
-        const desigLines = doc.splitTextToSize(sig.designation, slotWidth - 6)
-        doc.text(desigLines, centerX, desigOffset, { align: 'center' })
 
-        if (sig.organization) {
-          const orgLines = doc.splitTextToSize(sig.organization, slotWidth - 6)
-          doc.text(orgLines, centerX, desigOffset + desigLines.length * 3.5, { align: 'center' })
-        }
-      } else if (sig.organization) {
-        const orgLines = doc.splitTextToSize(sig.organization, slotWidth - 6)
-        doc.text(orgLines, centerX, desigOffset, { align: 'center' })
+      const lineStep = sigCount === 4 ? 3.2 : 3.5
+      let cursorY = lineY + 4.5 + nameLines.length * 3.8
+      const subLines = [sig.designation, sig.organization, sig.organizationLine2]
+        .map((v) => (v || '').trim())
+        .filter(Boolean)
+
+      for (const lineText of subLines) {
+        const wrapped = doc.splitTextToSize(lineText, textMaxW)
+        doc.text(wrapped, centerX, cursorY, { align: 'center' })
+        cursorY += wrapped.length * lineStep
       }
     })
   }
