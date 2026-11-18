@@ -20,7 +20,7 @@ export default function AdminCompetitionsPage() {
     total_questions: 30,
     passing_score: 18,
     max_participants: 1000,
-    status: 'scheduled',
+    status: 'draft',
   })
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function AdminCompetitionsPage() {
         total_questions: newComp.total_questions,
         passing_score: newComp.passing_score,
         max_participants: newComp.max_participants,
-        status: newComp.status,
+        status: 'draft',
       }
 
       const { data, error } = await supabase.from('competitions').insert([payload]).select().single()
@@ -120,7 +120,7 @@ export default function AdminCompetitionsPage() {
       }
 
       setShowCreateModal(false)
-      setStatusMsg(`New competition created with ${durationMin} minutes duration and 30 questions linked!`)
+      setStatusMsg(`New competition saved as Draft (${durationMin} mins, 30 questions linked). Switch status to "Scheduled" when ready to publish!`)
       await loadCompetitions()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Creation failed'
