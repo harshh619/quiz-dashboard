@@ -139,7 +139,7 @@ export async function generateCertificatePdfBuffer({
   }
 
   const descText =
-    'for participating in the Online Quiz Competition for Pharmacy Students on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Global Antimicrobial Stewardship.'
+    'for participating in the Online Quiz Competition for Health Sciences Students on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Global Antimicrobial Stewardship.'
   const splitDesc = doc.splitTextToSize(descText, 215)
   doc.text(splitDesc, width / 2, 106, { align: 'center' })
 

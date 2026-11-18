@@ -389,7 +389,7 @@ export default function StudentResultPage({
               </div>
 
               <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-                For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacy Students.
+                For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Health Sciences Students.
               </p>
 
               {/* Verified Certificate ID & Scannable QR Code */}
