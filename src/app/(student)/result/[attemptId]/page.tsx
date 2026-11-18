@@ -391,11 +391,11 @@ export default function StudentResultPage({
                 </div>
 
                 <div className="min-w-0 flex-1 px-1">
-                  <div className="text-[9px] sm:text-[11px] font-extrabold tracking-widest text-blue-900 uppercase leading-tight">
-                    METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
+                  <div className="text-[10px] sm:text-xs font-extrabold tracking-wide text-blue-900 uppercase leading-tight">
+                    NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
                   </div>
-                  <div className="text-[8px] sm:text-[9px] font-semibold tracking-wider text-slate-500 uppercase mt-0.5">
-                    UNDER NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
+                  <div className="text-[8px] sm:text-[10px] font-bold tracking-wider text-slate-600 uppercase mt-0.5">
+                    METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
                   </div>
                 </div>
 
@@ -425,8 +425,14 @@ export default function StudentResultPage({
               </div>
 
               <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-                For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Health Sciences Students.
+                For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacists.
               </p>
+
+              <div className="mt-3 font-serif font-bold text-[#0b2566] leading-snug">
+                <div className="text-[11px] sm:text-xs tracking-wide uppercase">ONE HEALTH, ONE ACTION</div>
+                <div className="text-[11px] sm:text-xs tracking-wide uppercase">PREVENT AMR NOW!</div>
+                <div className="text-[10px] sm:text-[11px] mt-0.5">Protect • Humans • Animals • Environment</div>
+              </div>
 
               {/* Verified Certificate ID, Auth Code & Self-Contained Offline QR Code */}
               <div className="mt-5 pt-4 border-t border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3">

@@ -176,23 +176,27 @@ export async function generateCertificatePdfBuffer({
     }
   }
 
-  // 3. Top Header: Authority & Initiative
+  // 3. Top Header: NMC (Primary Authority - Larger Font) & MSU (Operating Unit - Smaller Font)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
+  doc.setFontSize(13)
   doc.setTextColor(30, 58, 138)
-  doc.text('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', width / 2, 27, { align: 'center' })
+  doc.text('NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR', width / 2, 26.5, { align: 'center' })
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9.5)
+  doc.setTextColor(51, 65, 85)
+  doc.text('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', width / 2, 32.5, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
+  doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139)
-  doc.text('UNDER NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR', width / 2, 32.5, { align: 'center' })
-  doc.text('World AMR Awareness Week (WAAW) 2026 · National Awareness Initiative', width / 2, 37.5, { align: 'center' })
+  doc.text('National Awareness Initiative · Antimicrobial Resistance (AMR) Containment', width / 2, 37.5, { align: 'center' })
 
   // 4. Main Event Ribbon
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
+  doc.setFontSize(12.5)
   doc.setTextColor(180, 83, 9)
-  doc.text('WORLD AMR AWARENESS WEEK (WAAW) 2026', width / 2, 47.5, { align: 'center' })
+  doc.text('WORLD AMR AWARENESS WEEK (WAAW) 2026', width / 2, 46.5, { align: 'center' })
 
   // 5. Certificate Title
   let titleText = 'CERTIFICATE OF PARTICIPATION'
@@ -200,48 +204,57 @@ export async function generateCertificatePdfBuffer({
   else if (certificateType === 'second_prize') titleText = 'CERTIFICATE OF MERIT - SECOND PRIZE'
   else if (certificateType === 'third_prize') titleText = 'CERTIFICATE OF MERIT - THIRD PRIZE'
 
-  doc.setFontSize(22)
+  doc.setFontSize(21.5)
   doc.setTextColor(15, 23, 42)
-  doc.text(titleText, width / 2, 59, { align: 'center' })
+  doc.text(titleText, width / 2, 57, { align: 'center' })
 
   // 6. Presentation Line
   doc.setFont('helvetica', 'italic')
-  doc.setFontSize(11)
+  doc.setFontSize(10.5)
   doc.setTextColor(100, 116, 139)
-  doc.text('This is proudly presented to', width / 2, 70, { align: 'center' })
+  doc.text('This is proudly presented to', width / 2, 66.5, { align: 'center' })
 
-  // 7. Student Name
+  // 7. Participant Name
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(25)
+  doc.setFontSize(24)
   doc.setTextColor(30, 58, 138)
-  doc.text(studentName.toUpperCase(), width / 2, 83, { align: 'center' })
+  doc.text(studentName.toUpperCase(), width / 2, 78, { align: 'center' })
 
   // Horizontal accent line under name
   doc.setDrawColor(217, 119, 6)
   doc.setLineWidth(0.8)
-  doc.line(width / 2 - 60, 87, width / 2 + 60, 87)
+  doc.line(width / 2 - 60, 81.5, width / 2 + 60, 81.5)
 
-  // 8. Academic details & Appreciation text
+  // 8. Academic / Institution details & Appreciation text
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
+  doc.setFontSize(10.5)
   doc.setTextColor(51, 65, 85)
   const collegeInfo = collegeName ? `of ${collegeName}${course ? ` (${course})` : ''}` : ''
   if (collegeInfo) {
-    doc.text(collegeInfo, width / 2, 95, { align: 'center' })
+    doc.text(collegeInfo, width / 2, 88.5, { align: 'center' })
   }
 
   const descText =
-    'for participating in the Online Quiz Competition for Health Sciences Students on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Global Antimicrobial Stewardship.'
+    'for participating in the Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Global Antimicrobial Stewardship.'
   const splitDesc = doc.splitTextToSize(descText, 215)
-  doc.text(splitDesc, width / 2, 106, { align: 'center' })
+  doc.text(splitDesc, width / 2, 97.5, { align: 'center' })
 
   // Score badge
   if (typeof score === 'number') {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(10)
     doc.setTextColor(30, 58, 138)
-    doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 121, { align: 'center' })
+    doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 110.5, { align: 'center' })
   }
+
+  // 8.5 Official One Health / AMR Slogan Block
+  doc.setFont('times', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(11, 37, 102)
+  doc.text('ONE HEALTH, ONE ACTION', width / 2, 120.5, { align: 'center' })
+  doc.text('PREVENT AMR NOW!', width / 2, 125.8, { align: 'center' })
+  doc.setFontSize(10)
+  doc.text('Protect \u2022 Humans \u2022 Animals \u2022 Environment', width / 2, 131.2, { align: 'center' })
 
   // 9. Cryptographically Signed (ECDSA P-256) Permanent GitHub Pages Verification QR
   let qrTarget = verificationUrl
