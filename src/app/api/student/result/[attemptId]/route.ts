@@ -6,6 +6,7 @@ import {
   autoSendPendingCertificateEmailForCert,
   FINALIZE_GRACE_SECONDS,
 } from '@/lib/autoFinalize'
+import { buildSelfContainedQrPayload } from '@/lib/certificateQr'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,11 +91,41 @@ export async function GET(
         ? new Date(new Date(scheduledEnd).getTime() + FINALIZE_GRACE_SECONDS * 1000).toISOString()
         : null)
 
+    let qrPayload: string | null = null
+    let authCode: string | null = null
+    if (cert) {
+      const issuedDateStr = cert.issued_at
+        ? new Date(cert.issued_at).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          })
+      const built = buildSelfContainedQrPayload({
+        studentName: attempt.student?.full_name || 'Participant',
+        collegeName: attempt.student?.college_name || '',
+        course: attempt.student?.course || '',
+        certificateNumber: cert.certificate_number,
+        certificateType: cert.certificate_type || 'participation',
+        score: attempt.score ?? 0,
+        totalQuestions: attempt.total_questions ?? 30,
+        dateStr: issuedDateStr,
+      })
+      qrPayload = built.qrPayload
+      authCode = built.authCode
+    }
+
     return NextResponse.json({
       attempt,
       profile: attempt.student,
       competition: attempt.competition,
       certificate: cert || null,
+      qrPayload,
+      authCode,
       rank: compResult?.rank ?? attempt.rank ?? null,
       isWinner: compResult?.is_winner ?? false,
       responses: responses || [],

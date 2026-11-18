@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { CertificateSignatory, getCertificateSignatories } from '@/lib/signatories'
+import { buildSelfContainedQrPayload } from '@/lib/certificateQr'
 
 async function fetchPngAsDataUrlWithDimensions(url: string): Promise<{
   dataUrl: string
@@ -151,24 +152,40 @@ export async function generateCertificatePdfBuffer({
     doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 121, { align: 'center' })
   }
 
-  // 9. QR Code generation & placement (Bottom-Left)
+  // 9. Self-Contained Tamper-Proof Offline QR Code (Works forever without Vercel/DB)
+  const { qrPayload, authCode } = buildSelfContainedQrPayload({
+    studentName,
+    collegeName,
+    course,
+    certificateNumber,
+    certificateType,
+    score,
+    totalQuestions,
+    dateStr,
+  })
+
   try {
-    const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
-      width: 140,
+    const qrDataUrl = await QRCode.toDataURL(qrPayload, {
+      width: 260,
       margin: 1,
+      errorCorrectionLevel: 'M',
       color: { dark: '#1e3a8a', light: '#ffffff' },
     })
-    doc.addImage(qrDataUrl, 'PNG', 26, 142, 27, 27)
+    doc.addImage(qrDataUrl, 'PNG', 24, 138, 31, 31)
   } catch (err) {
     console.error('Error generating QR for PDF:', err)
   }
 
-  // QR label
+  // QR label & Auth Code
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.2)
+  doc.setTextColor(30, 58, 138)
+  doc.text('Scan QR to Verify', 39.5, 173, { align: 'center' })
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7.5)
+  doc.setFontSize(6.8)
   doc.setTextColor(100, 116, 139)
-  doc.text('Scan to Verify Online', 39.5, 173, { align: 'center' })
-  doc.text(`ID: ${certificateNumber}`, 39.5, 177, { align: 'center' })
+  doc.text(`ID: ${certificateNumber}`, 39.5, 176.8, { align: 'center' })
+  doc.text(`Auth: ${authCode}`, 39.5, 180.4, { align: 'center' })
 
   // 10. Dynamic Official Signatories (Supports 1 to 4 Signatories with Transparent PNG Signatures!)
   const activeSignatories =

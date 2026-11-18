@@ -60,6 +60,7 @@ export default function StudentResultPage({
   const [profile, setProfile] = useState<any>(null)
   const [competition, setCompetition] = useState<any>(null)
   const [certificate, setCertificate] = useState<any>(null)
+  const [authCode, setAuthCode] = useState<string | null>(null)
   const [rank, setRank] = useState<number | null>(null)
   const [responses, setResponses] = useState<any[]>([])
   const [unlockAt, setUnlockAt] = useState<string | null>(null)
@@ -87,6 +88,7 @@ export default function StudentResultPage({
       setProfile(data.profile)
       setCompetition(data.competition)
       setCertificate(data.certificate || null)
+      setAuthCode(data.authCode || null)
       setRank(data.rank ?? null)
       setResponses(data.responses || [])
       setUnlockAt(data.unlockAt || null)
@@ -106,7 +108,14 @@ export default function StudentResultPage({
         setSecondsUntilUnlock(0)
       }
 
-      if (data.certificate?.certificate_number) {
+      if (data.qrPayload) {
+        const qr = await QRCode.toDataURL(data.qrPayload, {
+          width: 220,
+          margin: 1,
+          errorCorrectionLevel: 'M',
+        })
+        setQrCodeDataUrl(qr)
+      } else if (data.certificate?.certificate_number) {
         const verifyUrl = `${window.location.origin}/verify/${data.certificate.certificate_number}`
         const qr = await QRCode.toDataURL(verifyUrl, { width: 180, margin: 1 })
         setQrCodeDataUrl(qr)
@@ -392,20 +401,25 @@ export default function StudentResultPage({
                 For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Health Sciences Students.
               </p>
 
-              {/* Verified Certificate ID & Scannable QR Code */}
+              {/* Verified Certificate ID, Auth Code & Self-Contained Offline QR Code */}
               <div className="mt-5 pt-4 border-t border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-center sm:text-left">
+                <div className="text-center sm:text-left space-y-0.5">
                   <div className="text-[9px] text-gray-400 uppercase font-mono">Verified Certificate ID</div>
                   <div className="text-xs font-mono font-bold text-gray-900 break-all">
                     {certificate.certificate_number}
                   </div>
+                  {authCode && (
+                    <div className="text-[10px] font-mono font-semibold text-blue-700">
+                      Auth: {authCode}
+                    </div>
+                  )}
                 </div>
 
                 {qrCodeDataUrl && (
                   <img
                     src={qrCodeDataUrl}
-                    alt="Verification QR"
-                    className="w-16 h-16 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs shrink-0"
+                    alt="Offline Verification QR"
+                    className="w-20 h-20 border border-gray-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
                   />
                 )}
               </div>
