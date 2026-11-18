@@ -66,6 +66,14 @@ const KNOWN_INSTITUTION_ACRONYMS = new Set([
   'MS',
   'AMR',
   'WAAW',
+  'UPHC',
+  'AYUSH',
+  'IGR',
+  'HWC',
+  'PHC',
+  'CHC',
+  'SDH',
+  'DH',
 ])
 
 function toTitleAlpha(alpha: string): string {

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { COURSES, COURSE_GROUPS, ACADEMIC_YEARS, ACADEMIC_SEMESTERS } from '@/constants'
+import { HEALTH_FACILITIES } from '@/constants'
 import { formatPersonName, formatCollegeName } from '@/lib/textFormat'
-import { User, School, BookOpen, Calendar, Layers, Phone, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { User, Building2, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 export default function RegisterProfilePage() {
   const router = useRouter()
@@ -18,11 +18,8 @@ export default function RegisterProfilePage() {
 
   const [formData, setFormData] = useState({
     full_name: '',
-    college_name: '',
-    course: 'B.Pharm',
-    academic_year: '1st Year',
-    semester: '1st Semester',
-    mobile: '',
+    health_facility: '',
+    other_facility: '',
   })
 
   useEffect(() => {
@@ -47,17 +44,22 @@ export default function RegisterProfilePage() {
       }
 
       if (profile) {
-        const validCourse = COURSES.includes(profile.course as (typeof COURSES)[number])
-          ? profile.course
-          : 'B.Pharm'
+        const existingFacility = (profile.college_name || '').trim()
+        const isKnownFacility = HEALTH_FACILITIES.includes(
+          existingFacility as (typeof HEALTH_FACILITIES)[number]
+        )
 
-        setFormData(prev => ({
-          ...prev,
+        setFormData({
           full_name: formatPersonName(profile.full_name || user.user_metadata?.full_name || '', true),
-          college_name: formatCollegeName(profile.college_name || '', true),
-          course: validCourse,
-          mobile: profile.mobile || '',
-        }))
+          health_facility: isKnownFacility
+            ? existingFacility
+            : existingFacility
+            ? 'OTHER'
+            : '',
+          other_facility: !isKnownFacility && existingFacility
+            ? formatCollegeName(existingFacility, true)
+            : '',
+        })
       }
       setInitLoading(false)
     }
@@ -74,23 +76,29 @@ export default function RegisterProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      const regNum = `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
-      const formattedYearSemester =
-        formData.semester === 'Not Applicable (Annual)'
-          ? formData.academic_year
-          : `${formData.academic_year} / ${formData.semester}`
-
       const formattedFullName = formatPersonName(formData.full_name, true)
-      const formattedCollegeName = formatCollegeName(formData.college_name, true)
+      const selectedFacility =
+        formData.health_facility === 'OTHER'
+          ? formatCollegeName(formData.other_facility, true)
+          : formData.health_facility.trim()
+
+      if (!formattedFullName) {
+        throw new Error('Please enter the Name of Participant.')
+      }
+      if (!selectedFacility) {
+        throw new Error('Please select your Health Facility.')
+      }
+
+      const regNum = `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
 
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           full_name: formattedFullName,
-          college_name: formattedCollegeName,
-          course: formData.course,
-          year_semester: formattedYearSemester,
-          mobile: formData.mobile.trim(),
+          college_name: selectedFacility,
+          course: 'Pharmacist',
+          year_semester: 'NMC Nagpur',
+          mobile: '',
           registration_number: regNum,
           profile_completed: true,
           updated_at: new Date().toISOString(),
@@ -130,9 +138,9 @@ export default function RegisterProfilePage() {
               priority
             />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Participant Profile Registration</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Participant Registration</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1 px-2">
-            Complete your academic details to participate in the AMR Quiz Competition and receive your official certificate.
+            Enter your name and select your NMC Health Facility to participate in the Online Quiz Competition for Pharmacists and receive your official E-Certificate.
           </p>
         </div>
 
@@ -144,11 +152,11 @@ export default function RegisterProfilePage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-            {/* Full Name */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name of Participant */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Full Name *
+                Name of Participant *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -179,129 +187,75 @@ export default function RegisterProfilePage() {
               </div>
             </div>
 
-            {/* College Name */}
+            {/* Name of Health Facility */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                College / Institution Name *
+                Name of Health Facility *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <School className="w-4 h-4" />
+                  <Building2 className="w-4 h-4" />
                 </div>
-                <input
-                  type="text"
+                <select
                   required
-                  value={formData.college_name}
+                  value={formData.health_facility}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      college_name: formatCollegeName(e.target.value, false),
+                      health_facility: e.target.value,
+                      other_facility: e.target.value === 'OTHER' ? formData.other_facility : '',
                     })
                   }
-                  onBlur={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      college_name: formatCollegeName(prev.college_name, true),
-                    }))
-                  }
-                  placeholder="e.g. Government College of Pharmacy, Nagpur"
-                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
-                />
+                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
+                >
+                  <option value="" disabled>
+                    -- Select Your NMC Health Facility (UPHC) --
+                  </option>
+                  {HEALTH_FACILITIES.map((facility) => (
+                    <option key={facility} value={facility}>
+                      {facility}
+                    </option>
+                  ))}
+                  <option value="OTHER">Other (Specify Health Facility)</option>
+                </select>
               </div>
+
+              {formData.health_facility === 'OTHER' && (
+                <div className="mt-2.5">
+                  <input
+                    type="text"
+                    required
+                    value={formData.other_facility}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        other_facility: formatCollegeName(e.target.value, false),
+                      })
+                    }
+                    onBlur={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        other_facility: formatCollegeName(prev.other_facility, true),
+                      }))
+                    }
+                    placeholder="Enter Health Facility Name"
+                    className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
+                  />
+                </div>
+              )}
+
               <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 text-[11px] text-amber-800 leading-snug">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
                 <span>
-                  <strong>Important:</strong> This exact college name will appear on your E-Certificate &amp; official reports. Please enter the full, correct name.
+                  <strong>Important:</strong> Your selected Health Facility will appear on your official E-Certificate &amp; participation report.
                 </span>
-              </div>
-            </div>
-
-            {/* Course / Degree */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Course / Degree *</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <select
-                  value={formData.course}
-                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
-                >
-                  {COURSE_GROUPS.map((group) => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.options.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Separate Year & Semester Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Year *</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <select
-                    required
-                    value={formData.academic_year}
-                    onChange={(e) => setFormData({ ...formData, academic_year: e.target.value })}
-                    className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
-                  >
-                    {ACADEMIC_YEARS.map((yr) => (
-                      <option key={yr} value={yr}>{yr}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Semester *</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <select
-                    required
-                    value={formData.semester}
-                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
-                    className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
-                  >
-                    {ACADEMIC_SEMESTERS.map((sem) => (
-                      <option key={sem} value={sem}>{sem}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Number */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">WhatsApp / Contact Number *</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <input
-                  type="tel"
-                  required
-                  value={formData.mobile}
-                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                  placeholder="+91 98765 43210"
-                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
-                />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 focus:outline-none shadow-md shadow-blue-500/20 transition-colors disabled:opacity-50 mt-6"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 focus:outline-none shadow-md shadow-blue-500/20 transition-colors disabled:opacity-50 mt-6 cursor-pointer"
             >
               <CheckCircle className="w-4 h-4" />
               <span>{loading ? 'Submitting Details...' : 'Complete Registration & Continue'}</span>
