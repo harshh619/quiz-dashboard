@@ -35,9 +35,48 @@ export const CERTIFICATE_LABELS = {
   participation: 'Participation Certificate',
 } as const
 
+export const COURSE_GROUPS = [
+  {
+    label: 'Pharmacy Courses',
+    options: [
+      'B.Pharm',
+      'D.Pharm',
+      'M.Pharm',
+      'Pharm.D',
+      'Ph.D (Pharmacy)',
+    ],
+  },
+  {
+    label: 'Microbiology & Life Sciences',
+    options: [
+      'B.Sc (Microbiology)',
+      'M.Sc (Microbiology)',
+      'M.Sc (Medical Microbiology)',
+      'B.Sc (Biotechnology / Life Sciences)',
+      'M.Sc (Biotechnology / Life Sciences)',
+      'B.Sc MLT / DMLT',
+      'Ph.D (Microbiology)',
+    ],
+  },
+  {
+    label: 'Other Health Sciences',
+    options: ['Other'],
+  },
+] as const
+
 export const COURSES = [
   'B.Pharm',
   'D.Pharm',
+  'M.Pharm',
+  'Pharm.D',
+  'Ph.D (Pharmacy)',
+  'B.Sc (Microbiology)',
+  'M.Sc (Microbiology)',
+  'M.Sc (Medical Microbiology)',
+  'B.Sc (Biotechnology / Life Sciences)',
+  'M.Sc (Biotechnology / Life Sciences)',
+  'B.Sc MLT / DMLT',
+  'Ph.D (Microbiology)',
   'Other',
 ] as const
 

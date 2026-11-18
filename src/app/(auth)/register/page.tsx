@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { COURSES, ACADEMIC_YEARS, ACADEMIC_SEMESTERS } from '@/constants'
-import { User, School, BookOpen, Calendar, Layers, Phone, CheckCircle, AlertCircle } from 'lucide-react'
+import { COURSES, COURSE_GROUPS, ACADEMIC_YEARS, ACADEMIC_SEMESTERS } from '@/constants'
+import { formatPersonName, formatCollegeName } from '@/lib/textFormat'
+import { User, School, BookOpen, Calendar, Layers, Phone, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 export default function RegisterProfilePage() {
   const router = useRouter()
@@ -52,8 +53,8 @@ export default function RegisterProfilePage() {
 
         setFormData(prev => ({
           ...prev,
-          full_name: profile.full_name || user.user_metadata?.full_name || '',
-          college_name: profile.college_name || '',
+          full_name: formatPersonName(profile.full_name || user.user_metadata?.full_name || '', true),
+          college_name: formatCollegeName(profile.college_name || '', true),
           course: validCourse,
           mobile: profile.mobile || '',
         }))
@@ -79,11 +80,14 @@ export default function RegisterProfilePage() {
           ? formData.academic_year
           : `${formData.academic_year} / ${formData.semester}`
 
+      const formattedFullName = formatPersonName(formData.full_name, true)
+      const formattedCollegeName = formatCollegeName(formData.college_name, true)
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name.trim(),
-          college_name: formData.college_name.trim(),
+          full_name: formattedFullName,
+          college_name: formattedCollegeName,
           course: formData.course,
           year_semester: formattedYearSemester,
           mobile: formData.mobile.trim(),
@@ -144,7 +148,7 @@ export default function RegisterProfilePage() {
             {/* Full Name */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Full Name (as it will appear on Certificate) *
+                Full Name *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -154,10 +158,24 @@ export default function RegisterProfilePage() {
                   type="text"
                   required
                   value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  placeholder="e.g. Rahul Sharma"
+                  onChange={(e) =>
+                    setFormData({ ...formData, full_name: formatPersonName(e.target.value, false) })
+                  }
+                  onBlur={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      full_name: formatPersonName(prev.full_name, true),
+                    }))
+                  }
+                  placeholder="e.g. Harsh Wardhan Chandel"
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
                 />
+              </div>
+              <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 text-[11px] text-amber-800 leading-snug">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+                <span>
+                  <strong>Important:</strong> This exact name will be printed on your official E-Certificate. Please verify spelling carefully.
+                </span>
               </div>
             </div>
 
@@ -174,10 +192,27 @@ export default function RegisterProfilePage() {
                   type="text"
                   required
                   value={formData.college_name}
-                  onChange={(e) => setFormData({ ...formData, college_name: e.target.value })}
-                  placeholder="e.g. Department of Pharmaceutical Sciences, Nagpur"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      college_name: formatCollegeName(e.target.value, false),
+                    })
+                  }
+                  onBlur={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      college_name: formatCollegeName(prev.college_name, true),
+                    }))
+                  }
+                  placeholder="e.g. Government College of Pharmacy, Nagpur"
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
                 />
+              </div>
+              <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 text-[11px] text-amber-800 leading-snug">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
+                <span>
+                  <strong>Important:</strong> This exact college name will appear on your E-Certificate &amp; official reports. Please enter the full, correct name.
+                </span>
               </div>
             </div>
 
@@ -193,8 +228,12 @@ export default function RegisterProfilePage() {
                   onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
                 >
-                  {COURSES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {COURSE_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

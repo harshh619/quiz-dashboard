@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import ExcelJS from 'exceljs'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatCollegeName, formatPersonName } from '@/lib/textFormat'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,7 +164,7 @@ export async function GET() {
       if (hasAttempted) totalAttempted++
       if (isSubmitted) totalSubmitted++
 
-      const rawCollege = (s.college_name || '').trim()
+      const rawCollege = formatCollegeName(s.college_name || '', true)
       if (rawCollege) {
         const key = rawCollege.toLowerCase().replace(/\s+/g, ' ')
         if (!collegeMap.has(key)) {
@@ -376,10 +377,10 @@ export async function GET() {
       const row = listSheet.addRow({
         sr: idx + 1,
         reg_id: s.registration_number || '-',
-        full_name: s.full_name || '-',
+        full_name: formatPersonName(s.full_name || '', true) || '-',
         email: s.email || '-',
         mobile: s.mobile || '-',
-        college: s.college_name || 'Profile Incomplete',
+        college: formatCollegeName(s.college_name || '', true) || 'Profile Incomplete',
         course: s.course || '-',
         year_sem: s.year_semester || '-',
         status: quizStatus,

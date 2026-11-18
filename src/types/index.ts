@@ -3,7 +3,21 @@
 // ============================================
 
 export type UserRole = 'student' | 'admin'
-export type CourseType = 'B.Pharm' | 'D.Pharm' | 'Other'
+export type CourseType =
+  | 'B.Pharm'
+  | 'D.Pharm'
+  | 'M.Pharm'
+  | 'Pharm.D'
+  | 'Ph.D (Pharmacy)'
+  | 'B.Sc (Microbiology)'
+  | 'M.Sc (Microbiology)'
+  | 'M.Sc (Medical Microbiology)'
+  | 'B.Sc (Biotechnology / Life Sciences)'
+  | 'M.Sc (Biotechnology / Life Sciences)'
+  | 'B.Sc MLT / DMLT'
+  | 'Ph.D (Microbiology)'
+  | 'Other'
+  | string
 export type CompetitionStatus = 'draft' | 'scheduled' | 'waiting_room' | 'active' | 'closed' | 'results_published'
 export type AttemptStatus = 'in_progress' | 'submitted' | 'timed_out'
 export type CertificateType = 'first_prize' | 'second_prize' | 'third_prize' | 'participation'
