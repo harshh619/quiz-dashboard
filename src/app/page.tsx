@@ -113,7 +113,7 @@ export default function HomePage() {
 
         <h2 className="text-[26px] sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mt-5 sm:mt-6 mb-3 sm:mb-4 tracking-tight">
           Online Quiz Competition<br />
-          <span className="text-blue-700">for Health Sciences Students</span>
+          <span className="text-blue-700">for NMC Hospital Pharmacists</span>
         </h2>
 
         <div className="mb-7 sm:mb-8 max-w-2xl mx-auto space-y-1.5 px-1">
@@ -121,7 +121,7 @@ export default function HomePage() {
             World AMR Awareness Week (WAAW) 2026
           </p>
           <p className="text-xs sm:text-base text-slate-600 leading-relaxed font-normal text-balance">
-            Sensitizing Future Healthcare Professionals on Antimicrobial Stewardship &amp; Rational Drug Use.
+            Strengthening Antimicrobial Stewardship &amp; Rational Drug Dispensing across NMC Health Facilities.
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export default function HomePage() {
           </div>
           <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">About the Competition</h3>
           <p className="text-xs sm:text-sm text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC), Nagpur</b>. Health sciences students compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR).
+            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC), Nagpur</b>. Pharmacists posted across NMC hospitals and urban health facilities compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR) and Rational Drug Use.
           </p>
         </div>
       </section>
