@@ -3,7 +3,7 @@
 // ============================================
 
 export type UserRole = 'student' | 'admin'
-export type CourseType = 'B.Pharm' | 'D.Pharm' | 'Pharm.D' | 'Other'
+export type CourseType = 'B.Pharm' | 'D.Pharm' | 'Other'
 export type CompetitionStatus = 'draft' | 'scheduled' | 'waiting_room' | 'active' | 'closed' | 'results_published'
 export type AttemptStatus = 'in_progress' | 'submitted' | 'timed_out'
 export type CertificateType = 'first_prize' | 'second_prize' | 'third_prize' | 'participation'

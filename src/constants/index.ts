@@ -38,7 +38,6 @@ export const CERTIFICATE_LABELS = {
 export const COURSES = [
   'B.Pharm',
   'D.Pharm',
-  'Pharm.D',
   'Other',
 ] as const
 
