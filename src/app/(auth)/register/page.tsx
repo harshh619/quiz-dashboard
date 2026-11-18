@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { HEALTH_FACILITIES } from '@/constants'
 import { formatPersonName, formatCollegeName } from '@/lib/textFormat'
-import { User, Building2, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { User, Building2, Phone, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 export default function RegisterProfilePage() {
   const router = useRouter()
@@ -20,6 +20,7 @@ export default function RegisterProfilePage() {
     full_name: '',
     health_facility: '',
     other_facility: '',
+    mobile: '',
   })
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function RegisterProfilePage() {
           other_facility: !isKnownFacility && existingFacility
             ? formatCollegeName(existingFacility, true)
             : '',
+          mobile: (profile.mobile || '').replace(/\D/g, '').slice(-10),
         })
       }
       setInitLoading(false)
@@ -82,11 +84,16 @@ export default function RegisterProfilePage() {
           ? formatCollegeName(formData.other_facility, true)
           : formData.health_facility.trim()
 
+      const cleanMobile = formData.mobile.replace(/\D/g, '')
+
       if (!formattedFullName) {
         throw new Error('Please enter the Name of Participant.')
       }
       if (!selectedFacility) {
         throw new Error('Please select your Health Facility.')
+      }
+      if (!/^\d{10}$/.test(cleanMobile)) {
+        throw new Error('Please enter a valid 10-digit mobile number.')
       }
 
       const regNum = `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
@@ -98,7 +105,7 @@ export default function RegisterProfilePage() {
           college_name: selectedFacility,
           course: 'Pharmacist',
           year_semester: 'NMC Nagpur',
-          mobile: '',
+          mobile: cleanMobile,
           registration_number: regNum,
           profile_completed: true,
           updated_at: new Date().toISOString(),
@@ -249,6 +256,43 @@ export default function RegisterProfilePage() {
                 <span>
                   <strong>Important:</strong> Your selected Health Facility will appear on your official E-Certificate &amp; participation report.
                 </span>
+              </div>
+            </div>
+
+            {/* 10-Digit Mobile Number */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-gray-700">
+                  Mobile Number (10 Digits) *
+                </label>
+                <span
+                  className={`text-[11px] font-mono font-semibold ${
+                    formData.mobile.length === 10 ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                >
+                  {formData.mobile.length}/10
+                </span>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  minLength={10}
+                  pattern="[0-9]{10}"
+                  required
+                  value={formData.mobile}
+                  onChange={(e) => {
+                    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10)
+                    setFormData({ ...formData, mobile: digitsOnly })
+                  }}
+                  placeholder="Enter 10-digit mobile number"
+                  title="Please enter a valid 10-digit mobile number"
+                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 tracking-wide"
+                />
               </div>
             </div>
 
