@@ -6,7 +6,7 @@ import {
   autoSendPendingCertificateEmailForCert,
   FINALIZE_GRACE_SECONDS,
 } from '@/lib/autoFinalize'
-import { buildSelfContainedQrPayload } from '@/lib/certificateQr'
+import { buildSignedQrVerificationUrl } from '@/lib/certificateQr'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,7 +105,7 @@ export async function GET(
             month: 'long',
             year: 'numeric',
           })
-      const built = buildSelfContainedQrPayload({
+      const built = await buildSignedQrVerificationUrl({
         studentName: attempt.student?.full_name || 'Participant',
         collegeName: attempt.student?.college_name || '',
         course: attempt.student?.course || '',
@@ -114,8 +114,9 @@ export async function GET(
         score: attempt.score ?? 0,
         totalQuestions: attempt.total_questions ?? 30,
         dateStr: issuedDateStr,
+        eventName: attempt.competition?.title || 'World AMR Awareness Week (WAAW) 2026',
       })
-      qrPayload = built.qrPayload
+      qrPayload = built.qrUrl
       authCode = built.authCode
     }
 

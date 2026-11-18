@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { CertificateSignatory, getCertificateSignatories } from '@/lib/signatories'
-import { buildSelfContainedQrPayload } from '@/lib/certificateQr'
+import { buildSignedQrVerificationUrl } from '@/lib/certificateQr'
 
 async function fetchPngAsDataUrlWithDimensions(url: string): Promise<{
   dataUrl: string
@@ -152,21 +152,30 @@ export async function generateCertificatePdfBuffer({
     doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 121, { align: 'center' })
   }
 
-  // 9. Self-Contained Tamper-Proof Offline QR Code (Works forever without Vercel/DB)
-  const { qrPayload, authCode } = buildSelfContainedQrPayload({
-    studentName,
-    collegeName,
-    course,
-    certificateNumber,
-    certificateType,
-    score,
-    totalQuestions,
-    dateStr,
-  })
+  // 9. Cryptographically Signed (ECDSA P-256) Permanent GitHub Pages Verification QR
+  let qrTarget = verificationUrl
+  let authCode = ''
+  try {
+    const signed = await buildSignedQrVerificationUrl({
+      studentName,
+      collegeName,
+      course,
+      certificateNumber,
+      certificateType,
+      score,
+      totalQuestions,
+      dateStr,
+      eventName: 'World AMR Awareness Week (WAAW) 2026',
+    })
+    qrTarget = signed.qrUrl
+    authCode = signed.authCode
+  } catch (err) {
+    console.error('Error signing QR URL, falling back to verificationUrl:', err)
+  }
 
   try {
-    const qrDataUrl = await QRCode.toDataURL(qrPayload, {
-      width: 260,
+    const qrDataUrl = await QRCode.toDataURL(qrTarget, {
+      width: 280,
       margin: 1,
       errorCorrectionLevel: 'M',
       color: { dark: '#1e3a8a', light: '#ffffff' },
@@ -176,7 +185,7 @@ export async function generateCertificatePdfBuffer({
     console.error('Error generating QR for PDF:', err)
   }
 
-  // QR label & Auth Code
+  // QR label & Digital Seal Code
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.2)
   doc.setTextColor(30, 58, 138)
@@ -185,7 +194,9 @@ export async function generateCertificatePdfBuffer({
   doc.setFontSize(6.8)
   doc.setTextColor(100, 116, 139)
   doc.text(`ID: ${certificateNumber}`, 39.5, 176.8, { align: 'center' })
-  doc.text(`Auth: ${authCode}`, 39.5, 180.4, { align: 'center' })
+  if (authCode) {
+    doc.text(`Seal: ${authCode}`, 39.5, 180.4, { align: 'center' })
+  }
 
   // 10. Dynamic Official Signatories (Supports 1 to 4 Signatories with Transparent PNG Signatures!)
   const activeSignatories =

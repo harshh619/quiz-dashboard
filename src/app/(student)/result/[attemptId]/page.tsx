@@ -60,6 +60,7 @@ export default function StudentResultPage({
   const [profile, setProfile] = useState<any>(null)
   const [competition, setCompetition] = useState<any>(null)
   const [certificate, setCertificate] = useState<any>(null)
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null)
   const [authCode, setAuthCode] = useState<string | null>(null)
   const [rank, setRank] = useState<number | null>(null)
   const [responses, setResponses] = useState<any[]>([])
@@ -88,6 +89,7 @@ export default function StudentResultPage({
       setProfile(data.profile)
       setCompetition(data.competition)
       setCertificate(data.certificate || null)
+      setVerifyUrl(data.qrPayload || null)
       setAuthCode(data.authCode || null)
       setRank(data.rank ?? null)
       setResponses(data.responses || [])
@@ -446,13 +448,25 @@ export default function StudentResultPage({
                 <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
               </button>
 
-              <Link
-                href={`/verify/${certificate.certificate_number}`}
-                className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                <QrCode className="w-4 h-4" />
-                <span>Verify Online</span>
-              </Link>
+              {verifyUrl ? (
+                <a
+                  href={verifyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Verify Online</span>
+                </a>
+              ) : (
+                <Link
+                  href={`/verify/${certificate.certificate_number}`}
+                  className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Verify Online</span>
+                </Link>
+              )}
             </div>
           </div>
         )}

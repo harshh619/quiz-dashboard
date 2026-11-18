@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Official Certificate Verification | MSU Nagpur (NMC)</title>
+  <link rel="icon" href="./logo.png" type="image/png" />
+  <style>
+    :root {
+      --navy: #1e3a8a;
+      --blue: #1d4ed8;
+      --emerald: #059669;
+      --emerald-bg: #ecfdf5;
+      --emerald-border: #a7f3d0;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --red-border: #fecaca;
+      --amber: #b45309;
+      --slate-900: #0f172a;
+      --slate-600: #475569;
+      --slate-400: #94a3b8;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 50%, #eef2ff 100%);
+      color: var(--slate-900);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 14px;
+    }
+
+    .container {
+      max-width: 560px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .org-pill {
+      display: inline-block;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--navy);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+    }
+
+    .logos-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px 8px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      margin: 0 auto 14px;
+      max-width: 420px;
+    }
+
+    .logo-slot {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 6px;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .logo-slot:last-child { border-right: none; }
+
+    .logo-slot img {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+    }
+
+    .banner {
+      padding: 22px 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .banner.valid {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border-bottom: none;
+    }
+
+    .banner.invalid {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: #ffffff;
+      border-bottom: none;
+    }
+
+    .banner.neutral {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+      color: #ffffff;
+      border-bottom: none;
+    }
+
+    .icon-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .banner h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .banner p {
+      font-size: 12px;
+      opacity: 0.92;
+      line-height: 1.45;
+    }
+
+    .card-body {
+      padding: 22px 20px;
+    }
+
+    .award-box {
+      text-align: center;
+      padding: 14px;
+      border-radius: 16px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      margin-bottom: 18px;
+    }
+
+    .award-eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--amber);
+    }
+
+    .award-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--slate-900);
+      margin-top: 4px;
+    }
+
+    .recipient-name {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--navy);
+      text-align: center;
+      margin: 6px 0 4px;
+      word-break: break-word;
+    }
+
+    .recipient-sub {
+      font-size: 13px;
+      color: var(--slate-600);
+      text-align: center;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .detail-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 11px 12px;
+    }
+
+    .detail-box.full {
+      grid-column: 1 / -1;
+    }
+
+    .detail-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--slate-400);
+      margin-bottom: 3px;
+    }
+
+    .detail-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-900);
+      word-break: break-word;
+    }
+
+    .detail-val.mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--navy);
+    }
+
+    .crypto-badge {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--emerald-bg);
+      border: 1px solid var(--emerald-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 11px;
+      color: #065f46;
+      line-height: 1.5;
+    }
+
+    .error-box {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 12px;
+      color: #991b1b;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 11px;
+      color: var(--slate-600);
+      line-height: 1.6;
+    }
+
+    .footer a {
+      color: var(--blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    @media (max-width: 420px) {
+      .details-grid { grid-template-columns: 1fr; }
+      .logo-slot img { width: 38px; height: 38px; }
+      .recipient-name { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="org-pill">
+        Metropolitan Surveillance Unit (MSU), Nagpur | NMC, Nagpur
+      </div>
+      <div class="logos-bar">
+        <div class="logo-slot"><img src="./nmc.png" alt="NMC Nagpur" /></div>
+        <div class="logo-slot"><img src="./ncdc.png" alt="NCDC Delhi" /></div>
+        <div class="logo-slot"><img src="./idsp.png" alt="IDSP India" /></div>
+        <div class="logo-slot"><img src="./onehealth.png" alt="National One Health Mission" /></div>
+      </div>
+    </header>
+
+    <main id="app" class="card">
+      <div class="banner neutral">
+        <div class="icon-circle">⏳</div>
+        <h1>Verifying Digital Signature...</h1>
+        <p>Checking cryptographic ECDSA P-256 signature against official MSU Nagpur public key.</p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div><strong>Metropolitan Surveillance Unit (MSU), Nagpur | Nagpur Municipal Corporation (NMC), Nagpur</strong></div>
+      <div>World AMR Awareness Week (WAAW) 2026 · Official Verification Portal</div>
+      <div>Support: <a href="mailto:msunagpur@gmail.com">msunagpur@gmail.com</a></div>
+    </footer>
+  </div>
+
+  <script>
+    // Official MSU Nagpur ECDSA P-256 Public Key (Mathematically verifies authenticity without any server or database)
+    const MSU_PUBLIC_KEY_JWK = {
+      kty: "EC",
+      x: "W8qF8lLQomVSWg57ZQMIcOJwQdaWL8k79vUhVLWXmbs",
+      y: "P4IeM1Bxal36vxCDoqGP4vGD8p8tiDK860XapT4IpqU",
+      crv: "P-256"
+    };
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function base64UrlToUint8Array(b64url) {
+      let b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4 !== 0) b64 += "=";
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) {
+        bytes[i] = bin.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function formatAward(code) {
+      switch (code) {
+        case "first_prize": return "Certificate of Merit – First Prize";
+        case "second_prize": return "Certificate of Merit – Second Prize";
+        case "third_prize": return "Certificate of Merit – Third Prize";
+        default: return "Certificate of Participation";
+      }
+    }
+
+    function renderInvalid(reason) {
+      document.getElementById("app").innerHTML = `
+        <div class="banner invalid">
+          <div class="icon-circle">✕</div>
+          <h1>Invalid or Tampered Certificate</h1>
+          <p>Cryptographic digital signature verification failed.</p>
+        </div>
+        <div class="card-body">
+          <div class="error-box">
+            <strong>Security Alert:</strong> ${escapeHtml(reason)}<br/><br/>
+            This QR link has either been altered or was not issued by the official
+            <strong>Metropolitan Surveillance Unit (MSU), Nagpur</strong> portal.
+          </div>
+        </div>
+      `;
+    }
+
+    function renderNeutral() {
+      document.getElementById("app").innerHTML = `
+        <div class="banner neutral">
+          <div class="icon-circle">🛡️</div>
+          <h1>Official Certificate Verifier</h1>
+          <p>Metropolitan Surveillance Unit (MSU), Nagpur · Nagpur Municipal Corporation</p>
+        </div>
+        <div class="card-body" style="text-align:center; font-size:13px; color:#475569; line-height:1.6;">
+          Scan the QR code printed on any official <strong>World AMR Awareness Week (WAAW)</strong> certificate issued by MSU Nagpur to cryptographically verify its authenticity instantly.
+        </div>
+      `;
+    }
+
+    function renderVerified(cert, sigPreview) {
+      const awardTitle = formatAward(cert.a);
+      const institution = cert.c
+        ? `${cert.c}${cert.cr ? ` (${cert.cr})` : ""}`
+        : (cert.cr || "Health Sciences Institution");
+
+      const scoreText = (typeof cert.s === "number")
+        ? `${cert.s} / ${cert.t || 30}`
+        : "Verified";
+
+      document.getElementById("app").innerHTML = `
+        <div class="banner valid">
+          <div class="icon-circle">✓</div>
+          <h1>Certificate Verified Genuine</h1>
+          <p>Cryptographically authenticated against the official MSU Nagpur public key.</p>
+        </div>
+        <div class="card-body">
+          <div class="award-box">
+            <div class="award-eyebrow">${escapeHtml(cert.e || "World AMR Awareness Week (WAAW) 2026")}</div>
+            <div class="award-title">${escapeHtml(awardTitle)}</div>
+          </div>
+
+          <div class="recipient-name">${escapeHtml(cert.n)}</div>
+          <div class="recipient-sub">${escapeHtml(institution)}</div>
+
+          <div class="details-grid">
+            <div class="detail-box">
+              <div class="detail-label">Certificate ID</div>
+              <div class="detail-val mono">${escapeHtml(cert.id)}</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">Score Obtained</div>
+              <div class="detail-val">${escapeHtml(scoreText)}</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">Date of Issue</div>
+              <div class="detail-val">${escapeHtml(cert.d)}</div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-label">Digital Seal</div>
+              <div class="detail-val mono">${escapeHtml(sigPreview)}</div>
+            </div>
+            <div class="detail-box full">
+              <div class="detail-label">Issuing Authority</div>
+              <div class="detail-val">Metropolitan Surveillance Unit (MSU), Nagpur · Under Nagpur Municipal Corporation (NMC), Nagpur</div>
+            </div>
+          </div>
+
+          <div class="crypto-badge">
+            <span style="font-size:16px;">🔒</span>
+            <div>
+              <strong>Tamper-Proof Digital Signature (ECDSA P-256 / SHA-256):</strong>
+              Any modification to the recipient name, institution, score, or award invalidates this cryptographic signature immediately.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function verify() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get("p");
+        const s = params.get("s");
+
+        if (!p && !s) {
+          renderNeutral();
+          return;
+        }
+
+        if (!p || !s) {
+          renderInvalid("Missing certificate payload or digital signature.");
+          return;
+        }
+
+        if (!window.crypto || !window.crypto.subtle) {
+          renderInvalid("Your browser does not support Web Crypto verification (HTTPS required).");
+          return;
+        }
+
+        const publicKey = await window.crypto.subtle.importKey(
+          "jwk",
+          MSU_PUBLIC_KEY_JWK,
+          { name: "ECDSA", namedCurve: "P-256" },
+          false,
+          ["verify"]
+        );
+
+        const sigBytes = base64UrlToUint8Array(s);
+        const dataBytes = new TextEncoder().encode(p);
+
+        const isValid = await window.crypto.subtle.verify(
+          { name: "ECDSA", hash: "SHA-256" },
+          publicKey,
+          sigBytes,
+          dataBytes
+        );
+
+        if (!isValid) {
+          renderInvalid("Digital signature mismatch — the certificate data has been tampered with or forged.");
+          return;
+        }
+
+        const payloadJson = new TextDecoder().decode(base64UrlToUint8Array(p));
+        const cert = JSON.parse(payloadJson);
+
+        if (!cert || !cert.id || !cert.n) {
+          renderInvalid("Malformed certificate data.");
+          return;
+        }
+
+        const sigPreview = "MSU-" + s.replace(/[^A-Za-z0-9]/g, "").slice(0, 10).toUpperCase();
+        renderVerified(cert, sigPreview);
+      } catch (err) {
+        renderInvalid("Unable to verify signature (" + (err && err.message ? err.message : "corrupted link") + ").");
+      }
+    }
+
+    verify();
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { generateCertificatePdfBuffer } from '@/lib/certificatePdf'
+import { buildSignedQrVerificationUrl } from '@/lib/certificateQr'
 
 export function getEmailTransporter() {
   const user = process.env.SMTP_USER || 'msunagpur@gmail.com'
@@ -47,6 +48,29 @@ export async function sendCertificateEmail({
     return { success: false, reason: 'SMTP not configured' }
   }
 
+  const issuedDateStr = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  let permanentVerifyUrl = verificationUrl
+  try {
+    const signed = await buildSignedQrVerificationUrl({
+      studentName,
+      collegeName,
+      course,
+      certificateNumber,
+      certificateType,
+      score,
+      totalQuestions,
+      dateStr: issuedDateStr,
+    })
+    permanentVerifyUrl = signed.qrUrl
+  } catch (e) {
+    console.error('Could not sign permanent verify URL for email:', e)
+  }
+
   // Generate official PDF attachment
   let pdfBuffer: Buffer | null = null
   try {
@@ -56,9 +80,10 @@ export async function sendCertificateEmail({
       course,
       certificateNumber,
       certificateType,
-      verificationUrl,
+      verificationUrl: permanentVerifyUrl,
       score,
       totalQuestions,
+      dateStr: issuedDateStr,
     })
   } catch (pdfErr) {
     console.error('Error generating PDF attachment:', pdfErr)
@@ -86,14 +111,14 @@ export async function sendCertificateEmail({
         </p>
 
         <div style="text-align: center; margin: 25px 0;">
-          <a href="${verificationUrl}" style="background-color: #1e3a8a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+          <a href="${permanentVerifyUrl}" style="background-color: #1e3a8a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
             Verify Certificate Online
           </a>
         </div>
 
-        <p style="font-size: 13px; color: #64748b;">
-          Online verification link:<br/>
-          <a href="${verificationUrl}" style="color: #2563eb;">${verificationUrl}</a>
+        <p style="font-size: 12px; color: #64748b; word-break: break-all;">
+          Permanent Cryptographic Verification Link:<br/>
+          <a href="${permanentVerifyUrl}" style="color: #2563eb;">Verify Official Certificate</a>
         </p>
       </div>
 
