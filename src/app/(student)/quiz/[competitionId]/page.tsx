@@ -47,6 +47,8 @@ export default function LiveQuizPage({
   const [autosaveStatus, setAutosaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
   const [warningCount, setWarningCount] = useState(0)
   const [showTabWarning, setShowTabWarning] = useState(false)
+  const [screenBlurred, setScreenBlurred] = useState(false)
+  const [blurReason, setBlurReason] = useState<'focus' | 'shortcut'>('focus')
 
   // 1. Initialize Quiz
   useEffect(() => {
@@ -152,18 +154,105 @@ export default function LiveQuizPage({
     return () => clearInterval(timer)
   }, [loading, isSubmitting, timeRemaining, handleSubmitQuiz])
 
-  // 4. Tab Switch / Window Blur Anti-Cheating Monitor
+  // 4. Copy / Google Lens / Print Block + Instant Blur Shield on Focus Loss or Screenshot Shortcuts
   useEffect(() => {
+    const preventEvent = (e: Event) => {
+      e.preventDefault()
+    }
+
     const handleVisibilityChange = () => {
       if (document.hidden && !isSubmitting) {
+        setBlurReason('focus')
+        setScreenBlurred(true)
         setWarningCount(prev => prev + 1)
         setShowTabWarning(true)
       }
     }
 
+    const handleWindowBlur = () => {
+      if (!isSubmitting) {
+        setBlurReason('focus')
+        setScreenBlurred(true)
+      }
+    }
+
+    const handleWindowFocus = () => {
+      setScreenBlurred(prev => (blurReason === 'focus' ? false : prev))
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey
+
+      // Block PrintScreen & OS screenshot chords (Win+Shift+S, Cmd+Shift+3/4/5)
+      const isScreenshotKey =
+        e.key === 'PrintScreen' ||
+        (e.metaKey && e.shiftKey && ['s', '3', '4', '5'].includes(key)) ||
+        (e.ctrlKey && e.shiftKey && key === 's')
+
+      if (isScreenshotKey) {
+        e.preventDefault()
+        setBlurReason('shortcut')
+        setScreenBlurred(true)
+        try {
+          if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText('')
+          }
+        } catch {}
+        return
+      }
+
+      // Block Copy, Cut, Select All, Print, Save, View Source, DevTools
+      const isBlockedShortcut =
+        e.key === 'F12' ||
+        (isCtrlOrMeta && ['c', 'x', 'a', 'p', 's', 'u'].includes(key)) ||
+        (isCtrlOrMeta && e.shiftKey && ['i', 'j', 'c'].includes(key))
+
+      if (isBlockedShortcut) {
+        e.preventDefault()
+        if (isCtrlOrMeta && key === 'p') {
+          setBlurReason('shortcut')
+          setScreenBlurred(true)
+        }
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'PrintScreen') {
+        setBlurReason('shortcut')
+        setScreenBlurred(true)
+        try {
+          if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText('')
+          }
+        } catch {}
+      }
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [isSubmitting])
+    window.addEventListener('blur', handleWindowBlur)
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('contextmenu', preventEvent)
+    document.addEventListener('copy', preventEvent)
+    document.addEventListener('cut', preventEvent)
+    document.addEventListener('dragstart', preventEvent)
+    document.addEventListener('selectstart', preventEvent)
+    window.addEventListener('keydown', handleKeyDown, true)
+    window.addEventListener('keyup', handleKeyUp, true)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleWindowBlur)
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('contextmenu', preventEvent)
+      document.removeEventListener('copy', preventEvent)
+      document.removeEventListener('cut', preventEvent)
+      document.removeEventListener('dragstart', preventEvent)
+      document.removeEventListener('selectstart', preventEvent)
+      window.removeEventListener('keydown', handleKeyDown, true)
+      window.removeEventListener('keyup', handleKeyUp, true)
+    }
+  }, [isSubmitting, blurReason])
 
   // 5. Select Option & Autosave
   const handleSelectOption = async (option: 'A' | 'B' | 'C' | 'D') => {
@@ -238,7 +327,37 @@ export default function LiveQuizPage({
   ] as const
 
   return (
-    <div className="min-h-screen bg-slate-100 text-gray-900 flex flex-col select-none">
+    <div
+      className="min-h-screen bg-slate-100 text-gray-900 flex flex-col select-none quiz-protected relative"
+      onContextMenu={(e) => e.preventDefault()}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+    >
+      {/* Instant Privacy / Anti-Capture Blur Shield Overlay */}
+      {screenBlurred && !isSubmitting && (
+        <div className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-3 shadow-2xl border-t-4 border-blue-700">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-extrabold text-gray-900">
+              Quiz Content Protected
+            </h3>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              {blurReason === 'shortcut'
+                ? 'Screen capture, printing, and copying questions are disabled during the live quiz.'
+                : 'Questions are automatically hidden whenever the quiz window loses focus or another app/tab is opened.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setScreenBlurred(false)}
+              className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-colors"
+            >
+              Return to Quiz
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Top Fixed Header with Synchronized Timer */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
@@ -296,8 +415,8 @@ export default function LiveQuizPage({
         </div>
       </header>
 
-      {/* Main Examination Body */}
-      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+      {/* Main Quiz Body (blurs instantly when screenBlurred is active) */}
+      <div className={`max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 transition-all duration-100 ${screenBlurred ? 'blur-xl opacity-10 pointer-events-none' : ''}`}>
         
         {/* Left Column: Active Question & Options (8 cols) */}
         <div className="lg:col-span-8 space-y-4 min-w-0">
