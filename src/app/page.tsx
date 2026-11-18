@@ -44,11 +44,11 @@ export default function HomePage() {
             <span>Organised by:</span>
           </div>
           <span className="font-bold text-blue-900">
-            Metropolitan Surveillance Unit, Nagpur
+            Metropolitan Surveillance Unit (MSU), Nagpur
           </span>
           <span className="text-gray-500 hidden sm:inline">|</span>
           <span className="text-gray-700 font-medium text-xs">
-            Under Nagpur Municipal Corporation (NMC)
+            Under Nagpur Municipal Corporation (NMC), Nagpur
           </span>
         </div>
 
@@ -164,7 +164,7 @@ export default function HomePage() {
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">About the Competition</h3>
           <p className="text-xs sm:text-sm text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC)</b> in collaboration with national disease surveillance bodies (<b>NCDC &amp; IDSP</b>). Pharmacy and Microbiology students compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR).
+            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC), Nagpur</b> in collaboration with national disease surveillance bodies (<b>NCDC &amp; IDSP</b>). Pharmacy and Microbiology students compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR).
           </p>
         </div>
       </section>
@@ -173,7 +173,7 @@ export default function HomePage() {
       <footer className="bg-slate-900 text-gray-400 text-center py-6 text-xs border-t border-slate-800">
         <div className="max-w-4xl mx-auto px-4 space-y-1">
           <p className="font-semibold text-gray-300">
-            Metropolitan Surveillance Unit, Nagpur · Nagpur Municipal Corporation (NMC)
+            Metropolitan Surveillance Unit (MSU), Nagpur · Under Nagpur Municipal Corporation (NMC), Nagpur
           </p>
           <p className="text-[11px] text-gray-500">
             In technical collaboration with NCDC Delhi &amp; IDSP India · World AMR Awareness Week (WAAW) 2026
