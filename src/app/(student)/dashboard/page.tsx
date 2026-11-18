@@ -145,33 +145,33 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen bg-slate-50 text-gray-900 pb-16">
       {/* Top Navbar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Image
               src="/logo.png"
               alt="AMR 2026 Logo"
               width={38}
               height={38}
-              className="object-contain"
+              className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
             />
-            <div>
-              <h1 className="font-bold text-gray-900 text-sm leading-tight">{APP_NAME}</h1>
-              <p className="text-[11px] text-gray-500">Student Portal</p>
+            <div className="min-w-0">
+              <h1 className="font-bold text-gray-900 text-xs sm:text-sm leading-tight truncate">{APP_NAME}</h1>
+              <p className="text-[10px] sm:text-[11px] text-gray-500 truncate">Student Portal</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
             {profile?.role === 'admin' && (
               <Link 
                 href="/admin/dashboard" 
-                className="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg text-xs font-semibold border border-purple-200"
+                className="px-2.5 sm:px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg text-[11px] sm:text-xs font-semibold border border-purple-200 whitespace-nowrap"
               >
                 Admin Panel
               </Link>
             )}
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-red-600 font-medium transition-colors"
+              className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-red-600 font-medium transition-colors whitespace-nowrap"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -181,25 +181,25 @@ export default function StudentDashboardPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-5 sm:space-y-6">
         
         {/* Profile Card */}
-        <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 rounded-2xl p-6 text-white shadow-xl shadow-blue-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+        <div className="bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 rounded-2xl p-4 sm:p-6 text-white shadow-xl shadow-blue-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-1.5 bg-blue-600/50 border border-blue-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-medium tracking-wide mb-2 text-blue-100">
               <ShieldCheck className="w-3 h-3 text-emerald-300" />
               <span>Verified Participant</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold">{profile?.full_name}</h2>
-            <p className="text-blue-100 text-xs sm:text-sm mt-0.5 opacity-90">
+            <h2 className="text-lg sm:text-2xl font-bold break-words">{profile?.full_name}</h2>
+            <p className="text-blue-100 text-xs sm:text-sm mt-0.5 opacity-90 break-words">
               {profile?.course} · {profile?.year_semester} · {profile?.college_name}
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl px-4 py-3 flex items-center gap-3 shrink-0">
-            <div>
+          <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 flex items-center gap-3 shrink-0">
+            <div className="min-w-0">
               <div className="text-[10px] text-blue-200 uppercase tracking-wider font-semibold">Registration ID</div>
-              <div className="text-sm sm:text-base font-mono font-bold tracking-tight text-white">
+              <div className="text-xs sm:text-base font-mono font-bold tracking-tight text-white break-all">
                 {profile?.registration_number || 'N/A'}
               </div>
             </div>
@@ -208,12 +208,12 @@ export default function StudentDashboardPage() {
 
         {/* Competitions Section */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+          <div className="flex items-center justify-between gap-2 mb-3.5 sm:mb-4">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
               <span>Quiz Competitions</span>
             </h3>
-            <span className="text-xs text-gray-500 font-medium">World AMR Awareness Week</span>
+            <span className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">World AMR Awareness Week</span>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -237,13 +237,13 @@ export default function StudentDashboardPage() {
                 return (
                   <div
                     key={comp.id}
-                    className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
+                    className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div className="space-y-2">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+                      <div className="space-y-2 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-                            30 Questions · 10 Minutes
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                            {comp.total_questions || 30} Questions · {Math.round((comp.duration_seconds || 600) / 60)} Minutes
                           </span>
                           {isAttempted && (
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200 flex items-center gap-1">
@@ -257,23 +257,25 @@ export default function StudentDashboardPage() {
                           )}
                         </div>
 
-                        <h4 className="text-lg font-bold text-gray-900 leading-snug">
+                        <h4 className="text-base sm:text-lg font-bold text-gray-900 leading-snug break-words">
                           {comp.title}
                         </h4>
-                        <p className="text-xs sm:text-sm text-gray-600 max-w-2xl leading-relaxed">
+                        <p className="text-xs sm:text-sm text-gray-600 max-w-2xl leading-relaxed break-words">
                           {comp.description}
                         </p>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-blue-600" />
-                            {startDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ({startDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})
+                        <div className="flex items-center gap-4 text-[11px] sm:text-xs text-gray-500 pt-1">
+                          <span className="flex items-center gap-1.5 flex-wrap">
+                            <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>
+                              {startDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ({startDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})
+                            </span>
                           </span>
                         </div>
                       </div>
 
                       {/* Action Button Area */}
-                      <div className="shrink-0 flex items-center">
+                      <div className="shrink-0 flex items-center w-full lg:w-auto">
                         {!isRegistered ? (
                           <button
                             onClick={() => handleRegister(comp.id)}

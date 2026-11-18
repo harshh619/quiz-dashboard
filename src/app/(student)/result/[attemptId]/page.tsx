@@ -128,11 +128,11 @@ export default function StudentResultPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-900 py-10 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 text-gray-900 py-6 sm:py-10 px-3 sm:px-6">
+      <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
         
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-700 transition-colors"
@@ -140,14 +140,14 @@ export default function StudentResultPage({
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Dashboard</span>
           </Link>
-          <span className="text-xs text-gray-400 font-mono">
+          <span className="text-[11px] sm:text-xs text-gray-400 font-mono">
             Attempt ID: {attemptId.slice(0, 8)}...
           </span>
         </div>
 
         {/* Email Certificate Dispatch Notice Banner */}
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-3">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
               <Mail className="w-5 h-5" />
             </div>
@@ -155,7 +155,7 @@ export default function StudentResultPage({
               <h4 className="text-sm font-bold text-gray-900">
                 Examination Finished &amp; Recorded!
               </h4>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                 Thank you for participating. <span className="font-semibold text-blue-900">Your official digital certificate (PDF) will be sent to your registered email address shortly</span> after final result synchronization.
               </p>
             </div>
@@ -167,12 +167,12 @@ export default function StudentResultPage({
         </div>
 
         {/* Hero Scorecard */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-sm text-center relative overflow-hidden">
-          <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 mb-4">
-            <Trophy className="w-8 h-8" />
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-8 shadow-sm text-center relative overflow-hidden">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 mb-4">
+            <Trophy className="w-7 h-7 sm:w-8 sm:h-8" />
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">
             Quiz Successfully Submitted!
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-md mx-auto">
@@ -180,23 +180,23 @@ export default function StudentResultPage({
           </p>
 
           {/* Stats Badges */}
-          <div className="grid grid-cols-3 gap-3 my-6 max-w-sm mx-auto">
-            <div className="bg-slate-50 rounded-2xl p-3 border border-gray-100">
-              <div className="text-xl sm:text-2xl font-extrabold text-blue-700">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 my-5 sm:my-6 max-w-sm mx-auto">
+            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+              <div className="text-base sm:text-2xl font-extrabold text-blue-700 whitespace-nowrap">
                 {score} / {total}
               </div>
               <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score</div>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-3 border border-gray-100">
-              <div className="text-xl sm:text-2xl font-extrabold text-emerald-600">
+            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+              <div className="text-base sm:text-2xl font-extrabold text-emerald-600">
                 {percentage}%
               </div>
               <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-3 border border-gray-100">
-              <div className="text-xl sm:text-2xl font-extrabold text-indigo-700">
+            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+              <div className="text-base sm:text-2xl font-extrabold text-indigo-700">
                 {formatTime(timeSpentSeconds)}
               </div>
               <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Time Taken</div>
@@ -204,17 +204,17 @@ export default function StudentResultPage({
           </div>
 
           {/* Candidate Info Summary */}
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-900 border border-blue-100 px-4 py-1.5 rounded-full text-xs font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-700" />
-            <span>{profile?.full_name} · {profile?.college_name}</span>
+          <div className="inline-flex flex-wrap items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-2 rounded-2xl text-xs font-medium max-w-full leading-snug">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+            <span className="break-words">{profile?.full_name} · {profile?.college_name}</span>
           </div>
         </div>
 
         {/* Certificate Section */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-sm space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <Award className="w-5 h-5 text-amber-500" />
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-8 shadow-sm space-y-5">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-500 shrink-0" />
               <h3 className="font-bold text-sm text-gray-900">Your Digital Certificate</h3>
             </div>
             {certificate && (
@@ -225,16 +225,16 @@ export default function StudentResultPage({
           </div>
 
           {/* Certificate Visual Card Preview */}
-          <div className="border-4 border-amber-100 rounded-2xl p-6 bg-gradient-to-b from-amber-50/30 via-white to-amber-50/20 text-center relative shadow-inner">
-            <div className="text-[11px] font-extrabold tracking-widest text-amber-800 uppercase">
+          <div className="border-4 border-amber-100 rounded-2xl p-4 sm:p-6 bg-gradient-to-b from-amber-50/30 via-white to-amber-50/20 text-center relative shadow-inner">
+            <div className="text-[10px] sm:text-[11px] font-extrabold tracking-widest text-amber-800 uppercase">
               WORLD AMR AWARENESS WEEK 2026
             </div>
             <div className="text-xs text-gray-500 mt-0.5">Certificate of Completion / Participation</div>
             
             <div className="my-4">
               <span className="text-xs text-gray-400">Awarded to</span>
-              <div className="text-lg font-bold text-gray-900 mt-0.5">{profile?.full_name}</div>
-              <div className="text-xs text-gray-600">{profile?.college_name} ({profile?.course})</div>
+              <div className="text-base sm:text-lg font-bold text-gray-900 mt-0.5 break-words">{profile?.full_name}</div>
+              <div className="text-xs text-gray-600 break-words">{profile?.college_name} ({profile?.course})</div>
             </div>
 
             <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
@@ -242,10 +242,10 @@ export default function StudentResultPage({
             </p>
 
             {/* QR Code & Certificate Number */}
-            <div className="mt-5 pt-4 border-t border-amber-100 flex items-center justify-between">
-              <div className="text-left">
+            <div className="mt-5 pt-4 border-t border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-center sm:text-left">
                 <div className="text-[9px] text-gray-400 uppercase font-mono">Certificate ID</div>
-                <div className="text-xs font-mono font-bold text-gray-800">
+                <div className="text-xs font-mono font-bold text-gray-800 break-all">
                   {certificate?.certificate_number || 'AMR-WAAW-2026-PENDING'}
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function StudentResultPage({
                 <img 
                   src={qrCodeDataUrl} 
                   alt="Verification QR" 
-                  className="w-14 h-14 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs" 
+                  className="w-14 h-14 border border-gray-200 rounded-lg p-0.5 bg-white shadow-xs shrink-0" 
                 />
               )}
             </div>
@@ -285,13 +285,13 @@ export default function StudentResultPage({
 
         {/* Question by Question Review Accordion */}
         {responses.length > 0 && (
-          <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
             <button
               onClick={() => setShowReview(!showReview)}
-              className="w-full p-5 flex items-center justify-between hover:bg-gray-50/80 transition-colors text-left"
+              className="w-full p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 transition-colors text-left"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 text-blue-700 rounded-xl">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2 bg-blue-50 text-blue-700 rounded-xl shrink-0">
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
@@ -303,7 +303,7 @@ export default function StudentResultPage({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-blue-700">
+              <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 shrink-0 self-end sm:self-center">
                 <span>{showReview ? 'Hide Answers' : 'View Answers'}</span>
                 {showReview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </div>

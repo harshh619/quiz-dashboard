@@ -79,8 +79,8 @@ export default function WaitingRoomPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-10 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-6 sm:py-10 px-3 sm:px-6">
+      <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
         
         {/* Navigation */}
         <Link 
@@ -96,7 +96,7 @@ export default function WaitingRoomPage({
           <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-semibold border border-blue-400/30">
             Waiting Room · Exam Lobby
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {competition?.title || 'World AMR Awareness Week Quiz'}
           </h1>
           <p className="text-xs sm:text-sm text-blue-200/80">
@@ -105,33 +105,33 @@ export default function WaitingRoomPage({
         </div>
 
         {/* Countdown Box */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-6 sm:p-8 text-center shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-8 text-center shadow-2xl">
           {!isUnlocked && (
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <SandGlassAnimation isRunning={true} />
             </div>
           )}
 
-          <div className="text-xs uppercase tracking-widest text-blue-300 font-semibold mb-4">
+          <div className="text-[11px] sm:text-xs uppercase tracking-widest text-blue-300 font-semibold mb-3.5 sm:mb-4">
             {isUnlocked ? 'Exam is Live!' : 'Time Until Exam Unlocks'}
           </div>
 
           {!isUnlocked ? (
-            <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
-              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
-                <div className="text-3xl sm:text-4xl font-mono font-bold text-amber-400">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xs mx-auto">
+              <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/10">
+                <div className="text-2xl sm:text-4xl font-mono font-bold text-amber-400">
                   {String(timeLeft.hours).padStart(2, '0')}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase mt-1">Hours</div>
               </div>
-              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
-                <div className="text-3xl sm:text-4xl font-mono font-bold text-amber-400">
+              <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/10">
+                <div className="text-2xl sm:text-4xl font-mono font-bold text-amber-400">
                   {String(timeLeft.minutes).padStart(2, '0')}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase mt-1">Minutes</div>
               </div>
-              <div className="bg-black/30 rounded-xl p-3 border border-white/10">
-                <div className="text-3xl sm:text-4xl font-mono font-bold text-amber-400">
+              <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/10">
+                <div className="text-2xl sm:text-4xl font-mono font-bold text-amber-400">
                   {String(timeLeft.seconds).padStart(2, '0')}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase mt-1">Seconds</div>
@@ -139,14 +139,14 @@ export default function WaitingRoomPage({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-lg animate-bounce">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-base sm:text-lg animate-bounce">
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
                 <span>The quiz is now open!</span>
               </div>
               <div>
                 <Link
                   href={`/quiz/${competitionId}`}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105"
                 >
                   <span>Enter Examination Now</span>
                   <ArrowRight className="w-4 h-4" />
@@ -157,14 +157,14 @@ export default function WaitingRoomPage({
         </div>
 
         {/* Rules & Instructions */}
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-6 space-y-4 text-xs">
+        <div className="bg-white/5 rounded-2xl border border-white/10 p-4 sm:p-6 space-y-3.5 sm:space-y-4 text-xs">
           <h4 className="font-bold text-sm text-blue-200 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400" />
+            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
             <span>Important Competition Rules</span>
           </h4>
 
           <ul className="space-y-2.5 text-gray-300 leading-relaxed list-disc list-inside">
-            <li><strong className="text-white">Total 30 MCQs</strong> to be completed within <strong className="text-white">10 minutes (600 seconds)</strong>.</li>
+            <li><strong className="text-white">Total {competition?.total_questions || 30} MCQs</strong> to be completed within <strong className="text-white">{Math.round((competition?.duration_seconds || 600) / 60)} minutes ({competition?.duration_seconds || 600} seconds)</strong>.</li>
             <li><strong className="text-white">Single Attempt Only:</strong> Once submitted or if time expires, you cannot retake the quiz.</li>
             <li><strong className="text-white">Server-Synchronized Timer:</strong> Timer is controlled by the server; refreshing your page will not add time.</li>
             <li><strong className="text-white">Autosave:</strong> Every option you click is immediately saved in the database.</li>

@@ -141,8 +141,8 @@ function LoginContent() {
         },
       })
 
-      const containerWidth = googleBtnRef.current.offsetWidth || 340
-      const btnWidth = Math.min(Math.max(containerWidth, 240), 380)
+      const containerWidth = googleBtnRef.current.offsetWidth || 300
+      const btnWidth = Math.min(Math.max(containerWidth, 210), 360)
 
       googleBtnRef.current.innerHTML = ''
       window.google.accounts.id.renderButton(googleBtnRef.current, {
