@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { COURSES, APP_NAME } from '@/constants'
-import { User, School, BookOpen, Calendar, Phone, CheckCircle, AlertCircle } from 'lucide-react'
+import { COURSES, ACADEMIC_YEARS, ACADEMIC_SEMESTERS } from '@/constants'
+import { User, School, BookOpen, Calendar, Layers, Phone, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function RegisterProfilePage() {
   const router = useRouter()
@@ -19,7 +19,8 @@ export default function RegisterProfilePage() {
     full_name: '',
     college_name: '',
     course: 'B.Pharm',
-    year_semester: '3rd Year / 5th Sem',
+    academic_year: '1st Year',
+    semester: '1st Semester',
     mobile: '',
   })
 
@@ -45,12 +46,15 @@ export default function RegisterProfilePage() {
       }
 
       if (profile) {
+        const validCourse = COURSES.includes(profile.course as (typeof COURSES)[number])
+          ? profile.course
+          : 'B.Pharm'
+
         setFormData(prev => ({
           ...prev,
           full_name: profile.full_name || user.user_metadata?.full_name || '',
           college_name: profile.college_name || '',
-          course: profile.course || 'B.Pharm',
-          year_semester: profile.year_semester || '',
+          course: validCourse,
           mobile: profile.mobile || '',
         }))
       }
@@ -70,6 +74,10 @@ export default function RegisterProfilePage() {
       if (!user) throw new Error('Not authenticated')
 
       const regNum = `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
+      const formattedYearSemester =
+        formData.semester === 'Not Applicable (Annual)'
+          ? formData.academic_year
+          : `${formData.academic_year} / ${formData.semester}`
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -77,7 +85,7 @@ export default function RegisterProfilePage() {
           full_name: formData.full_name.trim(),
           college_name: formData.college_name.trim(),
           course: formData.course,
-          year_semester: formData.year_semester.trim(),
+          year_semester: formattedYearSemester,
           mobile: formData.mobile.trim(),
           registration_number: regNum,
           profile_completed: true,
@@ -105,9 +113,9 @@ export default function RegisterProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-3">
             <Image
               src="/logo.png"
@@ -118,21 +126,21 @@ export default function RegisterProfilePage() {
               priority
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Participant Profile Registration</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Participant Profile Registration</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 px-2">
             Complete your academic details to participate in the AMR Quiz Competition and receive your official certificate.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-gray-100 p-6 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-gray-100 p-5 sm:p-8">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+            <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Full Name */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -147,7 +155,7 @@ export default function RegisterProfilePage() {
                   required
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  placeholder="e.g. Dr. / Mr. / Ms. Rahul Sharma"
+                  placeholder="e.g. Rahul Sharma"
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
                 />
               </div>
@@ -167,47 +175,68 @@ export default function RegisterProfilePage() {
                   required
                   value={formData.college_name}
                   onChange={(e) => setFormData({ ...formData, college_name: e.target.value })}
-                  placeholder="e.g. Government College of Pharmacy, New Delhi"
+                  placeholder="e.g. Department of Pharmaceutical Sciences, Nagpur"
                   className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
                 />
               </div>
             </div>
 
+            {/* Course / Degree */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Course / Degree *</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <select
+                  value={formData.course}
+                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
+                >
+                  {COURSES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Separate Year & Semester Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Course */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Course / Degree *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Year *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <BookOpen className="w-4 h-4" />
+                    <Calendar className="w-4 h-4" />
                   </div>
                   <select
-                    value={formData.course}
-                    onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                    required
+                    value={formData.academic_year}
+                    onChange={(e) => setFormData({ ...formData, academic_year: e.target.value })}
                     className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
                   >
-                    {COURSES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    {ACADEMIC_YEARS.map((yr) => (
+                      <option key={yr} value={yr}>{yr}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Year / Semester */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Year / Semester *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Semester *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <Calendar className="w-4 h-4" />
+                    <Layers className="w-4 h-4" />
                   </div>
-                  <input
-                    type="text"
+                  <select
                     required
-                    value={formData.year_semester}
-                    onChange={(e) => setFormData({ ...formData, year_semester: e.target.value })}
-                    placeholder="e.g. 3rd Year / 6th Sem"
-                    className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
-                  />
+                    value={formData.semester}
+                    onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                    className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
+                  >
+                    {ACADEMIC_SEMESTERS.map((sem) => (
+                      <option key={sem} value={sem}>{sem}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

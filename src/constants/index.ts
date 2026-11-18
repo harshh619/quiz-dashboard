@@ -39,9 +39,28 @@ export const COURSES = [
   'B.Pharm',
   'D.Pharm',
   'Pharm.D',
-  'B.Sc Microbiology',
-  'M.Sc Microbiology',
   'Other',
+] as const
+
+export const ACADEMIC_YEARS = [
+  '1st Year',
+  '2nd Year',
+  '3rd Year',
+  '4th Year',
+  '5th Year',
+  '6th Year / Internship',
+] as const
+
+export const ACADEMIC_SEMESTERS = [
+  '1st Semester',
+  '2nd Semester',
+  '3rd Semester',
+  '4th Semester',
+  '5th Semester',
+  '6th Semester',
+  '7th Semester',
+  '8th Semester',
+  'Not Applicable (Annual)',
 ] as const
 
 export const ROUTES = {
