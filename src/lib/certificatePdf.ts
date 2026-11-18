@@ -48,13 +48,13 @@ export async function generateCertificatePdfBuffer({
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(30, 58, 138)
-  doc.text('METROPOLITAN SURVEILLANCE UNIT, NAGPUR', width / 2, 28, { align: 'center' })
+  doc.text('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', width / 2, 28, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(100, 116, 139)
-  doc.text('UNDER NAGPUR MUNICIPAL CORPORATION (NMC)', width / 2, 33, { align: 'center' })
-  doc.text('In Technical Collaboration with NCDC Delhi, IDSP & National One Health Mission', width / 2, 38, { align: 'center' })
+  doc.text('UNDER NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR', width / 2, 33, { align: 'center' })
+  doc.text('World AMR Awareness Week (WAAW) 2026 · National Awareness Initiative', width / 2, 38, { align: 'center' })
 
   // 4. Main Event Ribbon
   doc.setFont('helvetica', 'bold')
