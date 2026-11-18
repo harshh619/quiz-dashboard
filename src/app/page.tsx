@@ -84,13 +84,13 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center px-1.5 sm:px-3" title="Integrated Disease Surveillance Programme (IDSP)">
+          <div className="flex items-center justify-center px-1.5 sm:px-3" title="National Health Mission (NHM)">
             <div className="w-12 h-12 sm:w-20 sm:h-20 relative flex items-center justify-center hover:scale-105 transition-transform">
               <Image
-                src="/idsp.png"
-                alt="Integrated Disease Surveillance Programme (IDSP)"
-                width={80}
-                height={80}
+                src="/nhm.png"
+                alt="National Health Mission (NHM)"
+                width={84}
+                height={70}
                 className="object-contain max-h-full max-w-full drop-shadow-xs"
                 priority
               />

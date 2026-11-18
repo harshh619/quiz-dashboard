@@ -136,18 +136,18 @@ export async function generateCertificatePdfBuffer({
   doc.setLineWidth(1)
   doc.rect(14, 14, width - 28, height - 28)
 
-  // 2.5 Top Official Partner Logos (Full-Resolution PNGs: 2 Left [NMC, NCDC] · 2 Right [IDSP, One Health])
+  // 2.5 Top Official Partner Logos (Full-Resolution PNGs: 2 Left [NMC, NCDC] · 2 Right [NHM, One Health])
   const headerLogos = await Promise.all([
     loadPublicLogoPng('nmc.png'),
     loadPublicLogoPng('ncdc.png'),
-    loadPublicLogoPng('idsp.png'),
+    loadPublicLogoPng('nhm.png'),
     loadPublicLogoPng('onehealth.png'),
   ])
 
   const logoSlots = [
     { img: headerLogos[0], centerX: 33, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_nmc' },
     { img: headerLogos[1], centerX: 62, centerY: 31, maxW: 20, maxH: 21, alias: 'logo_ncdc' },
-    { img: headerLogos[2], centerX: 235, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_idsp' },
+    { img: headerLogos[2], centerX: 235, centerY: 31, maxW: 24, maxH: 21, alias: 'logo_nhm' },
     { img: headerLogos[3], centerX: 264, centerY: 31, maxW: 22, maxH: 21, alias: 'logo_onehealth' },
   ]
 

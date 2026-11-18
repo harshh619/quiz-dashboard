@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     "/api/**": [
       "./public/nmc.png",
       "./public/ncdc.png",
-      "./public/idsp.png",
+      "./public/nhm.png",
       "./public/onehealth.png",
     ],
   },

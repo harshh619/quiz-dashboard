@@ -381,7 +381,7 @@ export default function StudentResultPage({
 
             {/* Official Certificate Preview Card */}
             <div className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
-              {/* Top 4 Official Partner Logos: 2 Left (NMC, NCDC) · Center Title · 2 Right (IDSP, One Health) */}
+              {/* Top 4 Official Partner Logos: 2 Left (NMC, NCDC) · Center Title · 2 Right (NHM, One Health) */}
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -401,7 +401,7 @@ export default function StudentResultPage({
 
                 <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/idsp.png" alt="IDSP" className="h-9 sm:h-11 w-auto object-contain" />
+                  <img src="/nhm.png" alt="National Health Mission (NHM)" className="h-9 sm:h-11 w-auto object-contain" />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/onehealth.png" alt="National One Health Mission" className="h-9 sm:h-11 w-auto object-contain" />
                 </div>
