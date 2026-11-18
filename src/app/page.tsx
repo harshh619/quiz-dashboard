@@ -164,7 +164,7 @@ export default function HomePage() {
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-3">About the Competition</h3>
           <p className="text-xs sm:text-sm text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC), Nagpur</b> in collaboration with national disease surveillance bodies (<b>NCDC &amp; IDSP</b>). Pharmacy students compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR).
+            Organised by the <b>Metropolitan Surveillance Unit (MSU), Nagpur</b> under the <b>Nagpur Municipal Corporation (NMC), Nagpur</b>. Pharmacy students compete in a timed, fair, and fully digital quiz on Antimicrobial Resistance (AMR).
           </p>
         </div>
       </section>
