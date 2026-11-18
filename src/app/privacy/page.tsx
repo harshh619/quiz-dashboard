@@ -29,19 +29,19 @@ export default function PrivacyPolicyPage() {
           <p>
             The <strong>{APP_NAME}</strong> is an official educational quiz portal organized by the{' '}
             <strong>Metropolitan Surveillance Unit (MSU), Nagpur</strong> under the{' '}
-            <strong>Nagpur Municipal Corporation (NMC)</strong> in alignment with NCDC, IDSP, and the National One Health Mission.
+            <strong>Nagpur Municipal Corporation (NMC)</strong> in alignment with NCDC, NHM, and the National One Health Mission.
           </p>
 
           <h2 className="text-base font-bold text-gray-900 pt-2">1. Information We Collect</h2>
           <ul className="list-disc list-inside space-y-1.5 text-gray-600">
             <li><strong>Google Account Information:</strong> Name and email address provided via Google Sign-In solely to authenticate participants and prevent duplicate quiz attempts.</li>
-            <li><strong>Academic &amp; Registration Details:</strong> College/institution name, course, year/semester, and contact number submitted during participant registration.</li>
+            <li><strong>Participant Registration Details:</strong> Name of Participant, Name of Health Facility, and 10-digit mobile number submitted during participant registration.</li>
             <li><strong>Quiz Participation Records:</strong> Selected answers, scores, timestamps, and issued official certificate records.</li>
           </ul>
 
           <h2 className="text-base font-bold text-gray-900 pt-2">2. How We Use Your Information</h2>
           <ul className="list-disc list-inside space-y-1.5 text-gray-600">
-            <li>To verify participant identity and maintain fair single-attempt online examination integrity.</li>
+            <li>To verify participant identity and maintain fair single-attempt online quiz integrity.</li>
             <li>To evaluate quiz responses, compute official merit rankings, and issue verifiable digital certificates.</li>
             <li>To email official PDF certificates from <strong>msunagpur@gmail.com</strong>.</li>
           </ul>

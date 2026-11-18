@@ -335,7 +335,7 @@ export default function AdminOverviewPage() {
                 <tr>
                   <th className="px-5 py-3">#</th>
                   <th className="px-5 py-3">Participant Name</th>
-                  <th className="px-5 py-3">Health Facility</th>
+                  <th className="px-5 py-3">Name of Health Facility</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Score</th>
                   <th className="px-5 py-3">Registered / Submitted</th>

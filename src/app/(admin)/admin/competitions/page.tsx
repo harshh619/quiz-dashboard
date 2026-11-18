@@ -198,10 +198,10 @@ export default function AdminCompetitionsPage() {
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
               <Calendar className="w-6 h-6 text-blue-600" />
-              <span>Competitions &amp; Exam Schedule</span>
+              <span>Competitions &amp; Quiz Schedule</span>
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Control live exam start times, durations, and participant registration status.
+              Control live quiz start times, durations, and participant registration status.
             </p>
           </div>
 

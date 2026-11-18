@@ -218,7 +218,7 @@ export default function StudentDashboardPage() {
             </div>
             <h2 className="text-lg sm:text-2xl font-bold break-words">{profile?.full_name}</h2>
             <p className="text-blue-100 text-xs sm:text-sm mt-0.5 opacity-90 break-words">
-              {profile?.course} · {profile?.year_semester} · {profile?.college_name}
+              {profile?.college_name || 'NMC Health Facility'}{profile?.course ? ` · ${profile.course}` : ''}
             </p>
           </div>
 

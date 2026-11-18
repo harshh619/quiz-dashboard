@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, GraduationCap, FileSpreadsheet, Building2, Lock } from 'lucide-react'
+import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, FileSpreadsheet, Building2, Lock } from 'lucide-react'
 
 interface ParticipantRow {
   id: string
@@ -282,7 +282,7 @@ export default function AdminParticipantsPage() {
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase font-semibold">
                 <tr>
                   <th className="px-4 py-3">Participant</th>
-                  <th className="px-4 py-3">Health Facility / Role</th>
+                  <th className="px-4 py-3">Name of Health Facility</th>
                   <th className="px-4 py-3">Mobile &amp; Reg ID</th>
                   <th className="px-4 py-3">Status &amp; Score</th>
                   <th className="px-4 py-3 text-right">Action</th>
@@ -309,12 +309,12 @@ export default function AdminParticipantsPage() {
                         <div className="text-[11px] text-gray-500">{p.email}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-800">{p.college_name || 'Profile Incomplete'}</div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                          <GraduationCap className="w-3 h-3 text-blue-600 shrink-0" />
-                          <span>
-                            {p.course || 'Participant'} {p.year_semester ? `· ${p.year_semester}` : ''}
-                          </span>
+                        <div className="font-semibold text-gray-800 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span>{p.college_name || 'Profile Incomplete'}</span>
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5 pl-5">
+                          {p.course || 'Pharmacist'}
                         </div>
                       </td>
                       <td className="px-4 py-3">

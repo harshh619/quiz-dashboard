@@ -200,7 +200,7 @@ export default function LiveQuizPage({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white gap-3">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-        <p className="text-xs text-blue-300">Synchronizing with examination server...</p>
+        <p className="text-xs text-blue-300">Synchronizing with quiz server...</p>
       </div>
     )
   }
@@ -212,7 +212,7 @@ export default function LiveQuizPage({
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
             <AlertTriangle className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-bold text-gray-900">Unable to Start Exam</h2>
+          <h2 className="text-lg font-bold text-gray-900">Unable to Start Quiz</h2>
           <p className="text-xs text-gray-600">{error}</p>
           <button
             onClick={() => router.push('/dashboard')}
@@ -466,7 +466,7 @@ export default function LiveQuizPage({
                 onClick={() => setShowSubmitModal(false)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
               >
-                Back to Exam
+                Back to Quiz
               </button>
               <button
                 type="button"
@@ -488,13 +488,13 @@ export default function LiveQuizPage({
             <ShieldAlert className="w-10 h-10 text-amber-500 mx-auto" />
             <h4 className="font-bold text-gray-900 text-sm">Security Notice: Tab Switch Detected</h4>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Leaving the examination window or switching tabs is logged by the Proctoring Engine (Warning #{warningCount}). Please stay on this tab until completion.
+              Leaving the quiz window or switching tabs is logged by the Proctoring Engine (Warning #{warningCount}). Please stay on this tab until completion.
             </p>
             <button
               onClick={() => setShowTabWarning(false)}
               className="w-full mt-2 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl"
             >
-              I Understand, Continue Exam
+              I Understand, Continue Quiz
             </button>
           </div>
         </div>

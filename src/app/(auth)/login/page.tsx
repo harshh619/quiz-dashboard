@@ -240,9 +240,8 @@ function LoginContent() {
           </div>
 
           {message && (
-            <div className={`mb-5 p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${
-              message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
-            }`}>
+            <div className={`mb-5 p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
               {message.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle className="w-4 h-4 shrink-0" />}
               <span>{message.text}</span>
             </div>
@@ -289,7 +288,7 @@ function LoginContent() {
           <div className="mt-6 pt-5 border-t border-gray-100 flex items-start gap-2.5 text-gray-500">
             <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-[11px] leading-relaxed">
-              <span className="font-semibold text-gray-700">Fair Examination Policy:</span> Only one attempt per participant is allowed. Browser activity and server timestamps are strictly monitored.
+              <span className="font-semibold text-gray-700">Fair Quiz Policy:</span> Only one attempt per participant is allowed. Browser activity and server timestamps are strictly monitored.
             </div>
           </div>
 

@@ -243,7 +243,7 @@ export default function StudentResultPage({
             </div>
             <div>
               <h4 className="text-sm font-bold text-gray-900">
-                Examination Finished &amp; Recorded!
+                Quiz Finished &amp; Recorded!
               </h4>
               <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                 {certificate ? (
@@ -252,7 +252,7 @@ export default function StudentResultPage({
                   </>
                 ) : (
                   <>
-                    Thank you for participating. <span className="font-semibold text-blue-900">Your official certificate (Merit 1st/2nd/3rd or Participation PDF) will unlock automatically once the exam window closes</span> and will also be sent to your email.
+                    Thank you for participating. <span className="font-semibold text-blue-900">Your score, answer key &amp; official certificate (Merit 1st/2nd/3rd or Participation PDF) will unlock automatically once the quiz timer finishes</span> and will also be sent to your email.
                   </>
                 )}
               </p>

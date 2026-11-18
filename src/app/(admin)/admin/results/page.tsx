@@ -30,13 +30,12 @@ export default function AdminResultsPage() {
   const handleExportCSV = () => {
     if (results.length === 0) return
 
-    const headers = ['Rank', 'Name', 'Email', 'College', 'Course', 'Score', 'Time Submitted', 'Award']
+    const headers = ['Rank', 'Participant Name', 'Email', 'Name of Health Facility', 'Score', 'Time Submitted', 'Award']
     const rows = results.map(r => [
       r.rank,
       `"${r.student?.full_name || ''}"`,
       r.student?.email || '',
       `"${r.student?.college_name || ''}"`,
-      r.student?.course || '',
       r.score,
       new Date(r.submitted_at).toLocaleString('en-IN'),
       r.certificate_type,
@@ -161,7 +160,7 @@ export default function AdminResultsPage() {
                 <tr>
                   <th className="px-5 py-3">Rank</th>
                   <th className="px-5 py-3">Participant Name</th>
-                  <th className="px-5 py-3">Health Facility</th>
+                  <th className="px-5 py-3">Name of Health Facility</th>
                   <th className="px-5 py-3">Score</th>
                   <th className="px-5 py-3">Submission Timestamp</th>
                   <th className="px-5 py-3">Award Type</th>
@@ -183,8 +182,8 @@ export default function AdminResultsPage() {
                       <td className="px-5 py-3 font-semibold text-gray-900">
                         {r.student?.full_name}
                       </td>
-                      <td className="px-5 py-3 text-gray-500">
-                        {r.student?.college_name} ({r.student?.course})
+                      <td className="px-5 py-3 text-gray-600 font-medium">
+                        {r.student?.college_name || '-'}
                       </td>
                       <td className="px-5 py-3 font-mono font-bold text-blue-700">
                         {r.score} / 30

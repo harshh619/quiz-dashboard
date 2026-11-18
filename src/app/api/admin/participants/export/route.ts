@@ -276,7 +276,7 @@ export async function GET() {
     })
     collegeSheet.columns = [
       { header: 'Sr. No.', key: 'sr', width: 10 },
-      { header: 'Health Facility / Institution', key: 'college', width: 46 },
+      { header: 'Name of Health Facility', key: 'college', width: 46 },
       { header: 'Registered Participants', key: 'registered', width: 22 },
       { header: 'Quiz Attempted', key: 'attempted', width: 18 },
       { header: 'Highest Score', key: 'highest', width: 16 },
@@ -339,7 +339,7 @@ export async function GET() {
       { header: 'Full Name', key: 'full_name', width: 26 },
       { header: 'Email Address', key: 'email', width: 30 },
       { header: 'Mobile Number', key: 'mobile', width: 18 },
-      { header: 'Health Facility / Institution', key: 'college', width: 38 },
+      { header: 'Name of Health Facility', key: 'college', width: 38 },
       { header: 'Role / Category', key: 'course', width: 16 },
       { header: 'Location / Details', key: 'year_sem', width: 24 },
       { header: 'Quiz Status', key: 'status', width: 16 },

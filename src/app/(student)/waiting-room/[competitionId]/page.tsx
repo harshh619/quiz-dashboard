@@ -164,7 +164,7 @@ export default function WaitingRoomPage({
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-semibold border border-emerald-400/30">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Registration Confirmed · Exam Waiting Room</span>
+            <span>Registration Confirmed · Quiz Waiting Room</span>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {competition?.title || 'World AMR Awareness Week Quiz'}
@@ -191,7 +191,7 @@ export default function WaitingRoomPage({
           )}
 
           <div className="text-[11px] sm:text-xs uppercase tracking-widest text-blue-300 font-semibold mb-3.5 sm:mb-4">
-            {isUnlocked ? 'Exam is Live! Opening Quiz...' : 'Time Until Exam Starts'}
+            {isUnlocked ? 'Quiz is Live! Opening Quiz...' : 'Time Until Quiz Starts'}
           </div>
 
           {!isUnlocked ? (
