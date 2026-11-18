@@ -23,6 +23,16 @@ export default function StudentDashboardPage() {
   const [attempts, setAttempts] = useState<Record<string, QuizAttempt>>({})
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [serverOffsetMs, setServerOffsetMs] = useState(0)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  // Keep a live 1-second clock synchronized with server time so quiz auto-unlocks without page refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowMs(Date.now() + serverOffsetMs)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [serverOffsetMs])
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -51,14 +61,25 @@ export default function StudentDashboardPage() {
         }
         setProfile(prof)
 
-        // Fetch active/scheduled competitions (Exclude drafts)
-        const { data: comps } = await supabase
-          .from('competitions')
-          .select('*')
-          .neq('status', 'draft')
-          .order('scheduled_start', { ascending: true })
-
-        setCompetitions(comps || [])
+        // Fetch all non-draft competitions (including 'scheduled' for advance registration 1-2 days early)
+        const compRes = await fetch('/api/student/competitions', { cache: 'no-store' })
+        if (compRes.ok) {
+          const compData = await compRes.json()
+          setCompetitions(compData.competitions || [])
+          if (compData.serverTime) {
+            const offset = new Date(compData.serverTime).getTime() - Date.now()
+            setServerOffsetMs(offset)
+            setNowMs(Date.now() + offset)
+          }
+        } else {
+          // Fallback direct query
+          const { data: comps } = await supabase
+            .from('competitions')
+            .select('*')
+            .neq('status', 'draft')
+            .order('scheduled_start', { ascending: true })
+          setCompetitions(comps || [])
+        }
 
         // Fetch user registrations
         const { data: regs } = await supabase
@@ -110,13 +131,18 @@ export default function StudentDashboardPage() {
       if (error) throw error
       setUserRegistrations(prev => [...prev, compId])
 
-      // Check if competition has not started yet; if so, redirect immediately to waiting room
+      // Check competition timing using server-synced clock
       const comp = competitions.find(c => c.id === compId)
       if (comp) {
         const startTime = new Date(comp.scheduled_start).getTime()
-        const now = Date.now()
-        if (now < startTime) {
+        const endTime = new Date(comp.scheduled_end).getTime()
+        const currentNow = Date.now() + serverOffsetMs
+        if (currentNow < startTime) {
           router.push(`/waiting-room/${compId}`)
+          return
+        }
+        if (currentNow >= startTime && currentNow < endTime) {
+          router.push(`/quiz/${compId}`)
           return
         }
       }
@@ -230,9 +256,19 @@ export default function StudentDashboardPage() {
 
                 const startDate = new Date(comp.scheduled_start)
                 const endDate = new Date(comp.scheduled_end)
-                const now = new Date()
-                const isStarted = now >= startDate
-                const isEnded = now >= endDate
+                const isStarted = nowMs >= startDate.getTime()
+                const isEnded = nowMs >= endDate.getTime()
+
+                // Format live countdown for upcoming scheduled quiz
+                const secsUntilStart = Math.max(0, Math.floor((startDate.getTime() - nowMs) / 1000))
+                const cdDays = Math.floor(secsUntilStart / 86400)
+                const cdHours = Math.floor((secsUntilStart % 86400) / 3600)
+                const cdMins = Math.floor((secsUntilStart % 3600) / 60)
+                const cdSecs = secsUntilStart % 60
+                const countdownLabel =
+                  cdDays > 0
+                    ? `${cdDays}d ${String(cdHours).padStart(2, '0')}h ${String(cdMins).padStart(2, '0')}m`
+                    : `${String(cdHours).padStart(2, '0')}:${String(cdMins).padStart(2, '0')}:${String(cdSecs).padStart(2, '0')}`
 
                 return (
                   <div
@@ -245,6 +281,21 @@ export default function StudentDashboardPage() {
                           <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                             {comp.total_questions || 30} Questions · {Math.round((comp.duration_seconds || 600) / 60)} Minutes
                           </span>
+                          {!isStarted && !isAttempted && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">
+                              Starts in {countdownLabel}
+                            </span>
+                          )}
+                          {isStarted && !isEnded && !isAttempted && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Live Now
+                            </span>
+                          )}
+                          {isRegistered && !isAttempted && !isEnded && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Registered
+                            </span>
+                          )}
                           {isAttempted && (
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200 flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Submitted

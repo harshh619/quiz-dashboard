@@ -5,8 +5,28 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Competition } from '@/types'
-import { Clock, ShieldAlert, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import { ShieldAlert, CheckCircle2, ArrowRight, ArrowLeft, CalendarClock } from 'lucide-react'
 import SandGlassAnimation from '@/components/quiz/SandGlassAnimation'
+
+interface TimeLeftState {
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+  totalSeconds: number
+}
+
+function computeTimeLeft(targetMs: number, currentMs: number): TimeLeftState {
+  const diff = Math.floor((targetMs - currentMs) / 1000)
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 }
+  }
+  const days = Math.floor(diff / 86400)
+  const hours = Math.floor((diff % 86400) / 3600)
+  const minutes = Math.floor((diff % 3600) / 60)
+  const seconds = diff % 60
+  return { days, hours, minutes, seconds, totalSeconds: diff }
+}
 
 export default function WaitingRoomPage({
   params,
@@ -19,64 +39,113 @@ export default function WaitingRoomPage({
   const supabase = createClient()
 
   const [competition, setCompetition] = useState<Competition | null>(null)
+  const [serverOffsetMs, setServerOffsetMs] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [timeLeft, setTimeLeft] = useState<{
-    hours: number
-    minutes: number
-    seconds: number
-    totalSeconds: number
-  }>({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 })
+  const [timeLeft, setTimeLeft] = useState<TimeLeftState>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    totalSeconds: 0,
+  })
   const [isUnlocked, setIsUnlocked] = useState(false)
 
   useEffect(() => {
     async function loadComp() {
-      const { data: comp } = await supabase
-        .from('competitions')
-        .select('*')
-        .eq('id', competitionId)
-        .single()
+      try {
+        // Fetch via server API so 'scheduled' competitions are always accessible even before start
+        const res = await fetch(`/api/student/competitions?id=${competitionId}`, { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.competition) {
+            const comp: Competition = data.competition
+            const offset = data.serverTime
+              ? new Date(data.serverTime).getTime() - Date.now()
+              : 0
+            setServerOffsetMs(offset)
+            setCompetition(comp)
 
-      if (comp) {
-        setCompetition(comp)
+            const initial = computeTimeLeft(
+              new Date(comp.scheduled_start).getTime(),
+              Date.now() + offset
+            )
+            setTimeLeft(initial)
+            if (initial.totalSeconds <= 0) {
+              setIsUnlocked(true)
+            }
+          }
+        } else {
+          // Fallback direct query
+          const { data: comp } = await supabase
+            .from('competitions')
+            .select('*')
+            .eq('id', competitionId)
+            .single()
+
+          if (comp) {
+            setCompetition(comp)
+            const initial = computeTimeLeft(new Date(comp.scheduled_start).getTime(), Date.now())
+            setTimeLeft(initial)
+            if (initial.totalSeconds <= 0) {
+              setIsUnlocked(true)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load waiting room competition:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     loadComp()
   }, [competitionId, supabase])
 
-  // Countdown timer
+  // Server-synchronized 1-second countdown timer
   useEffect(() => {
     if (!competition) return
 
     const targetTime = new Date(competition.scheduled_start).getTime()
 
-    const interval = setInterval(() => {
-      const now = Date.now()
-      const diff = Math.floor((targetTime - now) / 1000)
-
-      if (diff <= 0) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 })
+    const tick = () => {
+      const next = computeTimeLeft(targetTime, Date.now() + serverOffsetMs)
+      setTimeLeft(next)
+      if (next.totalSeconds <= 0) {
         setIsUnlocked(true)
+        return true
+      }
+      return false
+    }
+
+    if (tick()) return
+
+    const interval = setInterval(() => {
+      if (tick()) {
         clearInterval(interval)
-      } else {
-        const hours = Math.floor(diff / 3600)
-        const minutes = Math.floor((diff % 3600) / 60)
-        const seconds = diff % 60
-        setTimeLeft({ hours, minutes, seconds, totalSeconds: diff })
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [competition])
+  }, [competition, serverOffsetMs])
+
+  // Automatically open quiz the moment countdown reaches zero!
+  useEffect(() => {
+    if (!isUnlocked || !competition) return
+    const timer = setTimeout(() => {
+      router.push(`/quiz/${competitionId}`)
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [isUnlocked, competition, competitionId, router])
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
       </div>
     )
   }
+
+  const startDate = competition ? new Date(competition.scheduled_start) : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-6 sm:py-10 px-3 sm:px-6">
@@ -93,14 +162,23 @@ export default function WaitingRoomPage({
 
         {/* Header */}
         <div className="text-center space-y-2">
-          <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-semibold border border-blue-400/30">
-            Waiting Room · Exam Lobby
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-semibold border border-emerald-400/30">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Registration Confirmed · Exam Waiting Room</span>
+          </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {competition?.title || 'World AMR Awareness Week Quiz'}
           </h1>
-          <p className="text-xs sm:text-sm text-blue-200/80">
-            The quiz questions will unlock automatically once the countdown reaches zero.
+          {startDate && (
+            <div className="inline-flex items-center gap-1.5 text-xs text-blue-200 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+              <CalendarClock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>
+                Starts: {startDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at {startDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          )}
+          <p className="text-xs sm:text-sm text-blue-200/80 max-w-md mx-auto">
+            Stay on this screen — your quiz will open automatically the moment the countdown reaches zero.
           </p>
         </div>
 
@@ -113,11 +191,19 @@ export default function WaitingRoomPage({
           )}
 
           <div className="text-[11px] sm:text-xs uppercase tracking-widest text-blue-300 font-semibold mb-3.5 sm:mb-4">
-            {isUnlocked ? 'Exam is Live!' : 'Time Until Exam Unlocks'}
+            {isUnlocked ? 'Exam is Live! Opening Quiz...' : 'Time Until Exam Starts'}
           </div>
 
           {!isUnlocked ? (
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xs mx-auto">
+            <div className={`grid ${timeLeft.days > 0 ? 'grid-cols-4 max-w-sm' : 'grid-cols-3 max-w-xs'} gap-2 sm:gap-3 mx-auto`}>
+              {timeLeft.days > 0 && (
+                <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/10">
+                  <div className="text-2xl sm:text-4xl font-mono font-bold text-amber-400">
+                    {String(timeLeft.days).padStart(2, '0')}
+                  </div>
+                  <div className="text-[10px] text-gray-400 uppercase mt-1">Days</div>
+                </div>
+              )}
               <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/10">
                 <div className="text-2xl sm:text-4xl font-mono font-bold text-amber-400">
                   {String(timeLeft.hours).padStart(2, '0')}
@@ -141,7 +227,7 @@ export default function WaitingRoomPage({
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-base sm:text-lg animate-bounce">
                 <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span>The quiz is now open!</span>
+                <span>The quiz is now open! Launching...</span>
               </div>
               <div>
                 <Link
