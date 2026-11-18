@@ -82,7 +82,7 @@ export default function AdminResultsPage() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span>Download NCDC Excel (.xlsx)</span>
+              <span>Download Summary (.xlsx)</span>
             </a>
             <button
               onClick={handleExportCSV}

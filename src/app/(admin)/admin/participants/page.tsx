@@ -52,14 +52,14 @@ export default function AdminParticipantsPage() {
       const a = document.createElement('a')
       a.href = url
       const dateStamp = new Date().toISOString().slice(0, 10)
-      a.download = `MSU_Nagpur_NCDC_Participants_Report_${dateStamp}.xlsx`
+      a.download = `MSU_Nagpur_Quiz_Summary_Report_${dateStamp}.xlsx`
       document.body.appendChild(a)
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
       setStatusMsg({
         type: 'success',
-        text: `NCDC Excel Report downloaded (${participants.length} students across ${uniqueCollegesCount} colleges)!`,
+        text: `Summary Excel Report downloaded (${participants.length} students across ${uniqueCollegesCount} colleges)!`,
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Excel export failed'
@@ -175,7 +175,7 @@ export default function AdminParticipantsPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>{exporting ? 'Generating Excel...' : 'Download Excel Report (.xlsx)'}</span>
+              <span>{exporting ? 'Generating Summary...' : 'Download Summary (.xlsx)'}</span>
             </button>
             <button
               onClick={handleDeleteAll}

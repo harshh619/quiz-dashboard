@@ -209,9 +209,9 @@ export async function GET() {
     })
 
     // ========================================================
-    // SHEET 1: NCDC Summary
+    // SHEET 1: Participation Summary
     // ========================================================
-    const summarySheet = workbook.addWorksheet('NCDC Summary')
+    const summarySheet = workbook.addWorksheet('Participation Summary')
     summarySheet.columns = [
       { width: 42 },
       { width: 24 },
@@ -228,7 +228,7 @@ export async function GET() {
 
     summarySheet.mergeCells('A2:C2')
     const subCell = summarySheet.getCell('A2')
-    subCell.value = `World AMR Awareness Week (WAAW) 2026 — Official NCDC Participation Report (Generated: ${generatedAtIst} IST)`
+    subCell.value = `World AMR Awareness Week (WAAW) 2026 — Official Participation Summary Report (Generated: ${generatedAtIst} IST)`
     subCell.font = { italic: true, size: 10, color: { argb: 'FF1E3A8A' } }
     subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } }
     subCell.alignment = { vertical: 'middle', horizontal: 'center' }
@@ -399,7 +399,7 @@ export async function GET() {
 
     const buffer = await workbook.xlsx.writeBuffer()
     const dateStamp = new Date().toISOString().slice(0, 10)
-    const fileName = `MSU_Nagpur_NCDC_Participants_Report_${dateStamp}.xlsx`
+    const fileName = `MSU_Nagpur_Quiz_Summary_Report_${dateStamp}.xlsx`
 
     return new NextResponse(new Uint8Array(buffer as ArrayBuffer), {
       status: 200,
