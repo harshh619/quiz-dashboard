@@ -35,3 +35,98 @@ html, body {
 .option-btn:hover {
   transform: translateX(2px);
 }
+
+/* Smooth 60fps Seamless Hourglass Animation (5s cycle) */
+@keyframes hg-flip {
+  0%, 74% {
+    transform: rotate(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  85% {
+    transform: rotate(90deg) scale(1.04);
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  96%, 100% {
+    transform: rotate(180deg) scale(1);
+  }
+}
+
+@keyframes hg-top-sand {
+  0% {
+    transform: translateY(0px);
+  }
+  70%, 100% {
+    transform: translateY(54px);
+  }
+}
+
+@keyframes hg-bottom-sand {
+  0% {
+    transform: translateY(58px);
+  }
+  4% {
+    transform: translateY(53px);
+  }
+  72% {
+    transform: translateY(0px);
+  }
+  76% {
+    transform: translateY(0px);
+    animation-timing-function: ease-in-out;
+  }
+  96%, 100% {
+    transform: translateY(-22px);
+  }
+}
+
+@keyframes hg-stream-opacity {
+  0% {
+    opacity: 0;
+  }
+  3%, 68% {
+    opacity: 1;
+  }
+  72%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hg-grain-fall {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -48;
+  }
+}
+
+.hg-flip {
+  transform-origin: center center;
+  animation: hg-flip 5s linear infinite;
+  will-change: transform;
+}
+
+.hg-top-sand {
+  animation: hg-top-sand 5s linear infinite;
+  will-change: transform;
+}
+
+.hg-bottom-sand {
+  animation: hg-bottom-sand 5s linear infinite;
+  will-change: transform;
+}
+
+.hg-stream {
+  animation: hg-stream-opacity 5s linear infinite;
+}
+
+.hg-grains {
+  animation:
+    hg-stream-opacity 5s linear infinite,
+    hg-grain-fall 0.45s linear infinite;
+}
+
+.hg-paused,
+.hg-paused * {
+  animation-play-state: paused !important;
+}
