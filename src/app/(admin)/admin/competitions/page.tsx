@@ -4,11 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
 import { extractAllCategories, parseCategoryTopic } from '@/lib/questionCategories'
-import { Calendar, Plus, CheckCircle2, Trash2 } from 'lucide-react'
+import { Calendar, Plus, CheckCircle2, Trash2, Lock, Unlock, ShieldCheck } from 'lucide-react'
 
 export default function AdminCompetitionsPage() {
   const supabase = createClient()
   const [competitions, setCompetitions] = useState<any[]>([])
+  const [lockedIds, setLockedIds] = useState<string[]>([])
+  const [togglingLockId, setTogglingLockId] = useState<string | null>(null)
   const [bankQuestions, setBankQuestions] = useState<Array<{ id: string; topic: string }>>([])
   const [selectedQuestionCategory, setSelectedQuestionCategory] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -41,14 +43,45 @@ export default function AdminCompetitionsPage() {
 
   const loadCompetitions = async () => {
     setLoading(true)
-    const [{ data }, { data: qData }] = await Promise.all([
+    const [{ data }, { data: qData }, lockRes] = await Promise.all([
       supabase.from('competitions').select('*').order('created_at', { ascending: false }),
       supabase.from('question_bank').select('id, topic'),
+      fetch('/api/admin/competitions/lock', { cache: 'no-store' }).catch(() => null),
     ])
 
     setCompetitions(data || [])
     setBankQuestions((qData as Array<{ id: string; topic: string }>) || [])
+    if (lockRes && lockRes.ok) {
+      const lockData = await lockRes.json()
+      setLockedIds(lockData.lockedIds || [])
+    }
     setLoading(false)
+  }
+
+  const handleToggleLock = async (compId: string, currentlyLocked: boolean) => {
+    if (currentlyLocked) {
+      const ok = confirm(
+        'Unlock this official competition? Once unlocked, it can be deleted or cleared by Clear Test Data.'
+      )
+      if (!ok) return
+    }
+
+    setTogglingLockId(compId)
+    try {
+      const res = await fetch('/api/admin/competitions/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ competitionId: compId, locked: !currentlyLocked }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to update lock')
+      setLockedIds(data.lockedIds || [])
+      setStatusMsg(data.message)
+    } catch (err: any) {
+      alert(err.message || 'Failed to update protection status')
+    } finally {
+      setTogglingLockId(null)
+    }
   }
 
   const questionCategories = useMemo(
@@ -83,6 +116,10 @@ export default function AdminCompetitionsPage() {
   }
 
   const handleDeleteCompetition = async (compId: string, title: string) => {
+    if (lockedIds.includes(compId)) {
+      alert('🔒 This competition is LOCKED & PROTECTED. Unlock it first if you really want to delete it.')
+      return
+    }
     if (!confirm(`Are you sure you want to permanently delete "${title}"? This cannot be undone.`)) {
       return
     }
@@ -185,28 +222,69 @@ export default function AdminCompetitionsPage() {
         )}
 
         <div className="space-y-4">
-          {competitions.map((comp) => (
-            <div key={comp.id} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-gray-900">{comp.title}</h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                      {comp.status}
-                    </span>
+          {competitions.map((comp) => {
+            const isLocked = lockedIds.includes(comp.id)
+            return (
+              <div
+                key={comp.id}
+                className={`bg-white rounded-2xl border p-5 sm:p-6 shadow-xs space-y-4 transition-all ${
+                  isLocked ? 'border-emerald-300 ring-1 ring-emerald-200/80' : 'border-gray-200'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-gray-900">{comp.title}</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                        {comp.status}
+                      </span>
+                      {isLocked && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <ShieldCheck className="w-3 h-3" />
+                          Protected Official Quiz
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
-                </div>
 
-                <button
-                  onClick={() => handleDeleteCompetition(comp.id, comp.title)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer self-start sm:self-auto"
-                  title="Delete Competition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Quiz</span>
-                </button>
-              </div>
+                  <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                    <button
+                      onClick={() => handleToggleLock(comp.id, isLocked)}
+                      disabled={togglingLockId === comp.id}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
+                        isLocked
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                          : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                      }`}
+                      title={
+                        isLocked
+                          ? 'Protected from Clear Test Data & deletion. Click to unlock.'
+                          : 'Lock to protect all student certificates & data from Clear Test Data'
+                      }
+                    >
+                      {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                      <span>
+                        {togglingLockId === comp.id
+                          ? 'Updating...'
+                          : isLocked
+                          ? 'Locked (Protected)'
+                          : 'Lock Official Quiz'}
+                      </span>
+                    </button>
+
+                    {!isLocked && (
+                      <button
+                        onClick={() => handleDeleteCompetition(comp.id, comp.title)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                        title="Delete Competition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Quiz</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
                 <div>
@@ -249,7 +327,8 @@ export default function AdminCompetitionsPage() {
                 ))}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
       </main>

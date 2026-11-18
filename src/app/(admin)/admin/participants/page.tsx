@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, GraduationCap, FileSpreadsheet, Building2 } from 'lucide-react'
+import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, GraduationCap, FileSpreadsheet, Building2, Lock } from 'lucide-react'
 
 interface ParticipantRow {
   id: string
@@ -18,6 +18,7 @@ interface ParticipantRow {
   attempts_count: number
   latest_score: number | null
   latest_total: number | null
+  is_protected?: boolean
 }
 
 export default function AdminParticipantsPage() {
@@ -127,8 +128,8 @@ export default function AdminParticipantsPage() {
       const data = await res.json()
       if (!res.ok || data.error) throw new Error(data.error || 'Failed to delete all')
 
-      setStatusMsg({ type: 'success', text: data.message || 'All participants cleared.' })
-      setParticipants([])
+      setStatusMsg({ type: 'success', text: data.message || 'All unprotected participants cleared.' })
+      await loadParticipants()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Delete all failed'
       setStatusMsg({ type: 'error', text: msg })
@@ -325,15 +326,25 @@ export default function AdminParticipantsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleDeleteParticipant(p)}
-                          disabled={deletingId === p.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                          title="Delete participant so they can re-register fresh"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>{deletingId === p.id ? 'Deleting...' : 'Delete'}</span>
-                        </button>
+                        {p.is_protected ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold"
+                            title="Protected because this student belongs to a Locked Official Competition"
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>Protected</span>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleDeleteParticipant(p)}
+                            disabled={deletingId === p.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                            title="Delete participant so they can re-register fresh"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>{deletingId === p.id ? 'Deleting...' : 'Delete'}</span>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

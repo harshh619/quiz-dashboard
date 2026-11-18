@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getLockedCompetitionIds, getProtectedStudentIds } from '@/lib/protectedCompetitions'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,12 +95,16 @@ export async function GET() {
       }
     }
 
+    const lockedCompIds = await getLockedCompetitionIds()
+    const protectedStudentIds = await getProtectedStudentIds(admin, lockedCompIds)
+
     const participants = (profiles || []).map((p) => ({
       ...p,
       registrations_count: regCountMap[p.id] || 0,
       attempts_count: attemptMap[p.id]?.count || 0,
       latest_score: attemptMap[p.id]?.latestScore ?? null,
       latest_total: attemptMap[p.id]?.latestTotal ?? null,
+      is_protected: protectedStudentIds.has(p.id),
     }))
 
     return NextResponse.json({ participants })
@@ -122,6 +127,9 @@ export async function DELETE(request: Request) {
     const deleteAll = searchParams.get('all') === 'true'
     const admin = createAdminClient()
 
+    const lockedCompIds = await getLockedCompetitionIds()
+    const protectedStudentIds = await getProtectedStudentIds(admin, lockedCompIds)
+
     if (deleteAll) {
       const { data: students } = await admin
         .from('profiles')
@@ -130,20 +138,38 @@ export async function DELETE(request: Request) {
         .neq('email', 'msunagpur@gmail.com')
 
       let deletedCount = 0
+      let skippedProtected = 0
       for (const s of students || []) {
+        if (protectedStudentIds.has(s.id)) {
+          skippedProtected++
+          continue
+        }
         await deleteStudentCompletely(admin, s.id, s.email)
         deletedCount++
       }
 
+      const protectNote =
+        skippedProtected > 0
+          ? ` (${skippedProtected} official participant(s) from 🔒 Locked Competition(s) were kept 100% safe!)`
+          : ''
+
       return NextResponse.json({
         success: true,
         deletedCount,
-        message: `${deletedCount} registered participants deleted. They can now register fresh with updated academic details.`,
+        skippedProtected,
+        message: `${deletedCount} test participant(s) deleted.${protectNote}`,
       })
     }
 
     if (!id) {
       return NextResponse.json({ error: 'Participant id is required' }, { status: 400 })
+    }
+
+    if (protectedStudentIds.has(id)) {
+      return NextResponse.json(
+        { error: '🔒 This participant belongs to a Locked Official Competition and cannot be deleted. Unlock that competition first if you really want to remove them.' },
+        { status: 400 }
+      )
     }
 
     // Protect admin accounts
