@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { APP_NAME, APP_TAGLINE, ROUTES } from '@/constants'
-import { ShieldCheck, Award, Building2 } from 'lucide-react'
+import { APP_NAME, ROUTES } from '@/constants'
+import { Award, Building2, FileText, Clock, Trophy, BadgeCheck } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -110,10 +110,14 @@ export default function HomePage() {
           <span className="text-blue-700">for Pharmacy Students</span>
         </h2>
 
-        <p className="text-sm sm:text-base text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-          {APP_TAGLINE} — Sensitization of Future Healthcare Practitioners on Antimicrobial Stewardship.
-          30 questions · 10 minutes · Instant verified certificates.
-        </p>
+        <div className="mb-8 max-w-2xl mx-auto space-y-1.5">
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-blue-700/90">
+            World AMR Awareness Week (WAAW) 2026
+          </p>
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal text-balance">
+            Sensitizing Future Pharmacists on Antimicrobial Stewardship &amp; Rational Drug Use.
+          </p>
+        </div>
 
         <div className="flex gap-3 justify-center flex-wrap">
           <Link
@@ -131,27 +135,58 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Cards */}
-      <section className="max-w-4xl mx-auto px-4 pb-12 w-full">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
+      {/* Key Highlights */}
+      <section className="max-w-4xl mx-auto px-4 pb-14 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
           {[
-            { label: 'Questions', value: '30 MCQs' },
-            { label: 'Duration', value: '10 Minutes' },
-            { label: 'Top Prizes', value: '1st, 2nd, 3rd' },
-            { label: 'Verified Certificate', value: 'All Participants' },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 text-center shadow-xs flex flex-col justify-center items-center min-h-[110px]"
-            >
-              <div className="text-xl sm:text-2xl font-black text-blue-700 leading-tight">
-                {stat.value}
+            {
+              icon: FileText,
+              value: '30 MCQs',
+              label: 'Objective Format',
+              iconBg: 'bg-blue-50 text-blue-700 ring-blue-100',
+              accent: 'from-blue-600 to-blue-400',
+            },
+            {
+              icon: Clock,
+              value: '10 Mins',
+              label: 'Timed Assessment',
+              iconBg: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
+              accent: 'from-indigo-600 to-indigo-400',
+            },
+            {
+              icon: Trophy,
+              value: 'Top 3',
+              label: 'Merit Awards',
+              iconBg: 'bg-amber-50 text-amber-600 ring-amber-100',
+              accent: 'from-amber-500 to-amber-400',
+            },
+            {
+              icon: BadgeCheck,
+              value: 'E-Certificate',
+              label: 'Verified for All',
+              iconBg: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+              accent: 'from-emerald-600 to-emerald-400',
+            },
+          ].map((stat) => {
+            const Icon = stat.icon
+            return (
+              <div
+                key={stat.label}
+                className="group relative bg-white rounded-2xl border border-slate-200/90 p-5 text-center shadow-[0_2px_10px_rgba(15,23,42,0.03)] hover:shadow-[0_10px_24px_rgba(30,64,175,0.08)] hover:border-blue-200 transition-all duration-200 flex flex-col justify-center items-center overflow-hidden"
+              >
+                <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${stat.accent} opacity-80`} />
+                <div className={`w-10 h-10 rounded-xl ${stat.iconBg} ring-1 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-tight whitespace-nowrap">
+                  {stat.value}
+                </div>
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 mt-1.5 font-semibold leading-tight">
+                  {stat.label}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 mt-1 font-medium leading-tight">
-                {stat.label}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
