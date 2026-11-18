@@ -22,6 +22,68 @@ interface QuestionItem {
   selected_option: 'A' | 'B' | 'C' | 'D' | null
 }
 
+function hashSeed(str: string): number {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+function seededShuffle<T>(arr: T[], seedStr: string): T[] {
+  const result = [...arr]
+  let seed = hashSeed(seedStr) || 1
+  const nextRand = () => {
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRand() * (i + 1))
+    const tmp = result[i]
+    result[i] = result[j]
+    result[j] = tmp
+  }
+  return result
+}
+
+const DISPLAY_LETTERS = ['A', 'B', 'C', 'D'] as const
+
+function getShuffledOptions(q: QuestionItem | undefined, seedPrefix: string) {
+  if (!q) return []
+  const base: Array<{ key: 'A' | 'B' | 'C' | 'D'; text: string }> = [
+    { key: 'A', text: q.option_a },
+    { key: 'B', text: q.option_b },
+    { key: 'C', text: q.option_c },
+    { key: 'D', text: q.option_d },
+  ]
+
+  // Keep order intact if any option explicitly references option letters like "Both A and B"
+  const hasLetterRef = base.some((o) =>
+    /\b(both\s*\(?[a-d]\)?\s*(and|&)\s*\(?[a-d]\)?|\(?a\)?\s*(and|&)\s*\(?b\)?|\(?b\)?\s*(and|&)\s*\(?c\)?)\b/i.test(
+      o.text || ''
+    )
+  )
+  if (hasLetterRef) {
+    return base.map((o, idx) => ({ ...o, displayLabel: DISPLAY_LETTERS[idx] }))
+  }
+
+  // Keep "All of the above" / "None of the above" pinned at the bottom while shuffling the other options
+  const isPinnedBottom = (text: string) =>
+    /\b(all|none)\s+of\s+the\s+(above|these)\b/i.test(text || '')
+
+  const pinned = base.filter((o) => isPinnedBottom(o.text))
+  const movable = base.filter((o) => !isPinnedBottom(o.text))
+  const ordered = [...seededShuffle(movable, `${seedPrefix}:${q.id}`), ...pinned]
+
+  return ordered.map((o, idx) => ({
+    ...o,
+    displayLabel: DISPLAY_LETTERS[idx],
+  }))
+}
+
 export default function LiveQuizPage({
   params,
 }: {
@@ -48,7 +110,7 @@ export default function LiveQuizPage({
   const [warningCount, setWarningCount] = useState(0)
   const [showTabWarning, setShowTabWarning] = useState(false)
   const [screenBlurred, setScreenBlurred] = useState(false)
-  const [blurReason, setBlurReason] = useState<'focus' | 'shortcut'>('focus')
+  const [blurReason, setBlurReason] = useState<'focus' | 'shortcut' | 'gesture'>('focus')
 
   // 1. Initialize Quiz
   useEffect(() => {
@@ -229,6 +291,14 @@ export default function LiveQuizPage({
       }
     }
 
+    // Mobile 3-Finger Swipe Screenshot Trap (fires at 0ms when 3+ fingers touch screen)
+    const handleMultiTouch = (e: TouchEvent) => {
+      if (e.touches && e.touches.length >= 3 && !isSubmitting) {
+        setBlurReason('gesture')
+        setScreenBlurred(true)
+      }
+    }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('blur', handleWindowBlur)
     window.addEventListener('focus', handleWindowFocus)
@@ -239,6 +309,8 @@ export default function LiveQuizPage({
     document.addEventListener('selectstart', preventEvent)
     window.addEventListener('keydown', handleKeyDown, true)
     window.addEventListener('keyup', handleKeyUp, true)
+    window.addEventListener('touchstart', handleMultiTouch, { capture: true, passive: true })
+    window.addEventListener('touchmove', handleMultiTouch, { capture: true, passive: true })
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
@@ -251,6 +323,8 @@ export default function LiveQuizPage({
       document.removeEventListener('selectstart', preventEvent)
       window.removeEventListener('keydown', handleKeyDown, true)
       window.removeEventListener('keyup', handleKeyUp, true)
+      window.removeEventListener('touchstart', handleMultiTouch, { capture: true })
+      window.removeEventListener('touchmove', handleMultiTouch, { capture: true })
     }
   }, [isSubmitting, blurReason])
 
@@ -319,12 +393,8 @@ export default function LiveQuizPage({
   const totalQuestions = questions.length || 30
   const isUrgentTime = timeRemaining <= 120 // Less than 2 minutes
 
-  const options = [
-    { key: 'A', text: currentQ?.option_a },
-    { key: 'B', text: currentQ?.option_b },
-    { key: 'C', text: currentQ?.option_c },
-    { key: 'D', text: currentQ?.option_d },
-  ] as const
+  // Deterministically shuffled MCQ options per participant & question (preserving true key for grading)
+  const options = getShuffledOptions(currentQ, attemptId || studentId || competitionId)
 
   return (
     <div
@@ -344,7 +414,9 @@ export default function LiveQuizPage({
               Quiz Content Protected
             </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              {blurReason === 'shortcut'
+              {blurReason === 'gesture'
+                ? 'Multi-finger screenshot gesture detected. Screen content has been hidden to protect quiz integrity.'
+                : blurReason === 'shortcut'
                 ? 'Screen capture, printing, and copying questions are disabled during the live quiz.'
                 : 'Questions are automatically hidden whenever the quiz window loses focus or another app/tab is opened.'}
             </p>
@@ -464,7 +536,7 @@ export default function LiveQuizPage({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-600'
                     }`}>
-                      {opt.key}
+                      {opt.displayLabel}
                     </span>
                     <span className="pt-0.5 leading-snug break-words min-w-0 flex-1">{opt.text}</span>
                   </button>
