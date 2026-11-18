@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, GraduationCap } from 'lucide-react'
+import { Users, Search, Trash2, RefreshCw, CheckCircle2, AlertCircle, GraduationCap, FileSpreadsheet, Building2 } from 'lucide-react'
 
 interface ParticipantRow {
   id: string
@@ -26,7 +26,48 @@ export default function AdminParticipantsPage() {
   const [search, setSearch] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingAll, setDeletingAll] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const uniqueCollegesCount = useMemo(() => {
+    const set = new Set<string>()
+    for (const p of participants) {
+      const c = (p.college_name || '').trim().toLowerCase().replace(/\s+/g, ' ')
+      if (c) set.add(c)
+    }
+    return set.size
+  }, [participants])
+
+  const handleExportExcel = async () => {
+    setExporting(true)
+    setStatusMsg(null)
+    try {
+      const res = await fetch('/api/admin/participants/export')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to export Excel sheet')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const dateStamp = new Date().toISOString().slice(0, 10)
+      a.download = `MSU_Nagpur_NCDC_Participants_Report_${dateStamp}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      setStatusMsg({
+        type: 'success',
+        text: `NCDC Excel Report downloaded (${participants.length} students across ${uniqueCollegesCount} colleges)!`,
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Excel export failed'
+      setStatusMsg({ type: 'error', text: msg })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const loadParticipants = async () => {
     setLoading(true)
@@ -129,6 +170,14 @@ export default function AdminParticipantsPage() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
+              onClick={handleExportExcel}
+              disabled={exporting || participants.length === 0}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>{exporting ? 'Generating Excel...' : 'Download Excel Report (.xlsx)'}</span>
+            </button>
+            <button
               onClick={handleDeleteAll}
               disabled={deletingAll || participants.length === 0}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
@@ -164,7 +213,14 @@ export default function AdminParticipantsPage() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
+            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-purple-600" />
+              Colleges
+            </span>
+            <div className="text-2xl font-bold text-purple-700 mt-1">{uniqueCollegesCount}</div>
+          </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
               Total Registered
@@ -179,7 +235,7 @@ export default function AdminParticipantsPage() {
               {participants.filter((p) => Boolean(p.college_name)).length}
             </div>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs col-span-2 sm:col-span-1">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
               Quiz Attempted
             </span>

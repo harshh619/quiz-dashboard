@@ -76,18 +76,25 @@ export default function AdminResultsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <a
+              href="/api/admin/participants/export"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download NCDC Excel (.xlsx)</span>
+            </a>
             <button
               onClick={handleExportCSV}
               disabled={results.length === 0}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-xl text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
-              <span>Export CSV / Excel</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
             </button>
             <button
               onClick={loadResults}
-              className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50"
+              className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
