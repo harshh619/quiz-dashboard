@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const PERMANENT_VERIFIER_BASE_URL =
   process.env.NEXT_PUBLIC_PERMANENT_VERIFIER_URL ||
-  'https://harshh619.github.io/quiz-dashboard/'
+  'https://metropolitan-surveillance-unit.github.io/verify/'
 
 const SECRETS_BUCKET = 'certificate-secrets'
 const PRIVATE_KEY_PATH = 'ecdsa-p256-private.pem'
