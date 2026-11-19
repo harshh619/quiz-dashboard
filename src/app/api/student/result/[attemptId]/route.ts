@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -87,18 +87,25 @@ export async function GET(
       responses = respRows || []
     }
 
-    // If finalized & certificate exists, automatically dispatch this student's pending email once (atomic lock prevents duplicates)
+    // If finalized & certificate exists, automatically dispatch this student's pending email once
+    // Uses Next.js after() to keep the serverless container alive until SMTP email completes
     if (cert && attempt.student?.email) {
-      void autoSendPendingCertificateEmailForCert({
-        studentEmail: attempt.student.email,
-        studentName: attempt.student.full_name || 'Participant',
-        collegeName: attempt.student.college_name || '',
-        course: attempt.student.course || '',
-        certificateNumber: cert.certificate_number,
-        certificateType: cert.certificate_type || 'participation',
-        score: attempt.score ?? 0,
-        totalQuestions: attempt.total_questions ?? 30,
-      }).catch((e) => console.error('Background auto-email error:', e))
+      after(async () => {
+        try {
+          await autoSendPendingCertificateEmailForCert({
+            studentEmail: attempt.student.email,
+            studentName: attempt.student.full_name || 'Participant',
+            collegeName: attempt.student.college_name || '',
+            course: attempt.student.course || '',
+            certificateNumber: cert.certificate_number,
+            certificateType: cert.certificate_type || 'participation',
+            score: attempt.score ?? 0,
+            totalQuestions: attempt.total_questions ?? 30,
+          })
+        } catch (e) {
+          console.error('Background auto-email error:', e)
+        }
+      })
     }
 
     const computedUnlockAt =

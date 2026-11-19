@@ -131,13 +131,13 @@ export default function AdminEmailsPage() {
       const { data: freshJobs } = await supabase
         .from('email_jobs')
         .select('*')
-        .eq('status', 'pending')
+        .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: true })
         .limit(25)
 
       const pendingJobs = freshJobs || []
       if (pendingJobs.length === 0) {
-        setStatusMsg({ type: 'success', text: 'No pending emails in the queue.' })
+        setStatusMsg({ type: 'success', text: 'All emails have already been dispatched!' })
         await loadJobs()
         setProcessing(false)
         return
@@ -172,7 +172,9 @@ export default function AdminEmailsPage() {
 
   const sentCount = jobs.filter((j) => j.status === 'sent').length
   const pendingCount = jobs.filter((j) => j.status === 'pending').length
+  const processingCount = jobs.filter((j) => j.status === 'processing').length
   const failedCount = jobs.filter((j) => j.status === 'failed').length
+  const unsentCount = pendingCount + processingCount
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 pb-16">
@@ -203,11 +205,11 @@ export default function AdminEmailsPage() {
             )}
             <button
               onClick={handleProcessQueue}
-              disabled={processing || pendingCount === 0}
+              disabled={processing || unsentCount === 0}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>{processing ? 'Processing Batch...' : 'Process Next Batch (25)'}</span>
+              <span>{processing ? 'Processing Batch...' : `Dispatch Unsent Emails (${unsentCount})`}</span>
             </button>
             <button
               onClick={loadJobs}
@@ -239,8 +241,13 @@ export default function AdminEmailsPage() {
         {/* 3 Metric Cards */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Pending Queue</span>
-            <div className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</div>
+            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Queue / Pending</span>
+            <div className="text-2xl font-bold text-amber-600 mt-1 flex items-baseline gap-2">
+              <span>{unsentCount}</span>
+              {processingCount > 0 && (
+                <span className="text-[10px] font-normal text-blue-600">({processingCount} in progress)</span>
+              )}
+            </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Delivered</span>
@@ -297,6 +304,8 @@ export default function AdminEmailsPage() {
                               ? 'bg-emerald-100 text-emerald-800'
                               : j.status === 'pending'
                               ? 'bg-amber-100 text-amber-800'
+                              : j.status === 'processing'
+                              ? 'bg-blue-100 text-blue-800 animate-pulse'
                               : 'bg-red-100 text-red-800'
                           }`}
                         >

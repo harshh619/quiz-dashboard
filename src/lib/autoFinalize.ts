@@ -217,27 +217,33 @@ export async function autoSendPendingCertificateEmailForCert({
   if (!studentEmail) return
   const admin = createAdminClient()
 
-  // Find a pending job matching this student & certificate number
-  const { data: pendingJobs } = await admin
+  // Find a pending or stale processing job matching this student & certificate number
+  const { data: candidateJobs } = await admin
     .from('email_jobs')
-    .select('id, payload')
+    .select('id, payload, status, last_attempted_at')
     .eq('to_email', studentEmail)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'processing'])
     .order('created_at', { ascending: true })
 
-  const matchingJob = (pendingJobs || []).find(
-    (j) =>
-      (j.payload?.certificate_number || j.payload?.certificateNumber) === certificateNumber
-  )
+  const matchingJob = (candidateJobs || []).find((j) => {
+    const certNum = j.payload?.certificate_number || j.payload?.certificateNumber
+    if (certNum !== certificateNumber) return false
+    if (j.status === 'pending') return true
+    if (j.status === 'processing') {
+      const lastAttempt = j.last_attempted_at ? new Date(j.last_attempted_at).getTime() : 0
+      return Date.now() - lastAttempt > 120_000 // 2 minutes stale recovery
+    }
+    return false
+  })
 
   if (!matchingJob) return
 
-  // Atomic claim: ONLY ONE request flips pending -> processing
+  // Atomic claim: ONLY ONE request flips pending/stale-processing -> processing
   const { data: claimed } = await admin
     .from('email_jobs')
     .update({ status: 'processing', last_attempted_at: new Date().toISOString() })
     .eq('id', matchingJob.id)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'processing'])
     .select('id')
 
   if (!claimed || claimed.length === 0) return
