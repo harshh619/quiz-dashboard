@@ -212,9 +212,9 @@ export default function StudentResultPage({
   const awardInfo = getAwardDisplay(certificate?.certificate_type)
   const endTimeLabel = competition?.scheduled_end
     ? new Date(competition.scheduled_end).toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      hour: '2-digit',
+      minute: '2-digit',
+    })
     : null
 
   return (
@@ -238,7 +238,7 @@ export default function StudentResultPage({
         {/* STATE A: Pre-Finalization / Timer Running — Single-Screen Unified Card (Zero Scroll & Zero Repetition) */}
         {!certificate ? (
           <div className="bg-white rounded-3xl border border-gray-200 p-5 sm:p-7 shadow-sm text-center space-y-4">
-            
+
             <div className="w-13 h-13 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
               <CheckCircle className="w-7 h-7" />
             </div>
@@ -559,116 +559,114 @@ export default function StudentResultPage({
                   </div>
                 </button>
 
-            {showReview && (
-              <div className="p-4 sm:p-5 border-t border-gray-100 space-y-5 bg-slate-50/40">
-                {responses.map((item, index) => {
-                  const q = item.question
-                  if (!q) return null
-                  const isCorrect = item.selected_option === q.correct_option
-                  const options = [
-                    { key: 'A', text: q.option_a },
-                    { key: 'B', text: q.option_b },
-                    { key: 'C', text: q.option_c },
-                    { key: 'D', text: q.option_d },
-                  ]
+                {showReview && (
+                  <div className="p-4 sm:p-5 border-t border-gray-100 space-y-5 bg-slate-50/40">
+                    {responses.map((item, index) => {
+                      const q = item.question
+                      if (!q) return null
+                      const isCorrect = item.selected_option === q.correct_option
+                      const options = [
+                        { key: 'A', text: q.option_a },
+                        { key: 'B', text: q.option_b },
+                        { key: 'C', text: q.option_c },
+                        { key: 'D', text: q.option_d },
+                      ]
 
-                  return (
-                    <div
-                      key={q.id || index}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        isCorrect
-                          ? 'bg-white border-emerald-200 shadow-xs'
-                          : 'bg-white border-red-200 shadow-xs'
-                      }`}
-                    >
-                      {/* Question Header */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
-                            {index + 1}
-                          </span>
-                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                            {parseCategoryTopic(q.topic).displayLabel}
-                          </span>
-                        </div>
-
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase shrink-0 ${
-                            isCorrect
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
+                      return (
+                        <div
+                          key={q.id || index}
+                          className={`p-4 rounded-2xl border transition-all ${isCorrect
+                              ? 'bg-white border-emerald-200 shadow-xs'
+                              : 'bg-white border-red-200 shadow-xs'
+                            }`}
                         >
-                          {isCorrect ? (
-                            <>
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Correct
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="w-3.5 h-3.5" />
-                              Incorrect
-                            </>
-                          )}
-                        </span>
-                      </div>
-
-                      {/* Question Text */}
-                      <p className="text-sm font-semibold text-gray-900 mb-3">
-                        {q.question_text}
-                      </p>
-
-                      {/* Options Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                        {options.map((opt) => {
-                          const isSelected = item.selected_option === opt.key
-                          const isThisCorrect = q.correct_option === opt.key
-
-                          let optClass = 'bg-gray-50 border-gray-200 text-gray-700'
-                          if (isThisCorrect) {
-                            optClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold'
-                          } else if (isSelected && !isCorrect) {
-                            optClass = 'bg-red-50 border-red-400 text-red-900 font-semibold'
-                          }
-
-                          return (
-                            <div
-                              key={opt.key}
-                              className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 ${optClass}`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="font-bold">{opt.key}.</span>
-                                <span className="break-words">{opt.text}</span>
-                              </div>
-                              {isThisCorrect && (
-                                <span className="text-[10px] text-emerald-700 font-bold uppercase shrink-0">
-                                  ✓ Correct
-                                </span>
-                              )}
-                              {isSelected && !isThisCorrect && (
-                                <span className="text-[10px] text-red-700 font-bold uppercase shrink-0">
-                                  ✗ Yours
-                                </span>
-                              )}
+                          {/* Question Header */}
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
+                                {index + 1}
+                              </span>
+                              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                                {parseCategoryTopic(q.topic).displayLabel}
+                              </span>
                             </div>
-                          )
-                        })}
-                      </div>
 
-                      {/* Explanation */}
-                      {q.explanation && (
-                        <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-950">
-                          <span className="font-bold text-blue-900">Explanation: </span>
-                          <span>{q.explanation}</span>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase shrink-0 ${isCorrect
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-red-100 text-red-800'
+                                }`}
+                            >
+                              {isCorrect ? (
+                                <>
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  Correct
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  Incorrect
+                                </>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Question Text */}
+                          <p className="text-sm font-semibold text-gray-900 mb-3">
+                            {q.question_text}
+                          </p>
+
+                          {/* Options Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                            {options.map((opt) => {
+                              const isSelected = item.selected_option === opt.key
+                              const isThisCorrect = q.correct_option === opt.key
+
+                              let optClass = 'bg-gray-50 border-gray-200 text-gray-700'
+                              if (isThisCorrect) {
+                                optClass = 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold'
+                              } else if (isSelected && !isCorrect) {
+                                optClass = 'bg-red-50 border-red-400 text-red-900 font-semibold'
+                              }
+
+                              return (
+                                <div
+                                  key={opt.key}
+                                  className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 ${optClass}`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-bold">{opt.key}.</span>
+                                    <span className="break-words">{opt.text}</span>
+                                  </div>
+                                  {isThisCorrect && (
+                                    <span className="text-[10px] text-emerald-700 font-bold uppercase shrink-0">
+                                      ✓ Correct
+                                    </span>
+                                  )}
+                                  {isSelected && !isThisCorrect && (
+                                    <span className="text-[10px] text-red-700 font-bold uppercase shrink-0">
+                                      ✗ Yours
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          {/* Explanation */}
+                          {q.explanation && (
+                            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-950">
+                              <span className="font-bold text-blue-900">Explanation: </span>
+                              <span>{q.explanation}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
           </>
         )}
 
