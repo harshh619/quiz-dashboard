@@ -23,34 +23,54 @@ async function verifyAdmin() {
 }
 
 async function deleteStudentCompletely(admin: ReturnType<typeof createAdminClient>, studentId: string, studentEmail?: string) {
-  // 1. Find attempts for this student to delete responses & attempt_questions cleanly
-  const { data: attempts } = await admin
-    .from('quiz_attempts')
-    .select('id')
-    .eq('student_id', studentId)
+  try {
+    // 1. Find attempts for this student to delete responses & attempt_questions cleanly
+    const { data: attempts } = await admin
+      .from('quiz_attempts')
+      .select('id')
+      .eq('student_id', studentId)
 
-  const attemptIds = (attempts || []).map((a) => a.id)
-  if (attemptIds.length > 0) {
-    await admin.from('quiz_responses').delete().in('attempt_id', attemptIds)
-    await admin.from('attempt_questions').delete().in('attempt_id', attemptIds)
+    const attemptIds = (attempts || []).map((a) => a.id)
+    if (attemptIds.length > 0) {
+      await admin.from('quiz_responses').delete().in('attempt_id', attemptIds)
+      await admin.from('attempt_questions').delete().in('attempt_id', attemptIds)
+    }
+  } catch (err) {
+    console.error(`Error deleting attempts for student ${studentId}:`, err)
   }
 
-  // 2. Delete certificates, results, attempts, registrations
-  await admin.from('certificates').delete().eq('student_id', studentId)
-  await admin.from('competition_results').delete().eq('student_id', studentId)
-  await admin.from('quiz_attempts').delete().eq('student_id', studentId)
-  await admin.from('registrations').delete().eq('student_id', studentId)
-
-  // 3. Delete email jobs associated with this student email
-  if (studentEmail) {
-    await admin.from('email_jobs').delete().eq('to_email', studentEmail)
+  try {
+    // 2. Delete certificates, results, attempts, registrations
+    await admin.from('certificates').delete().eq('student_id', studentId)
+    await admin.from('competition_results').delete().eq('student_id', studentId)
+    await admin.from('quiz_attempts').delete().eq('student_id', studentId)
+    await admin.from('registrations').delete().eq('student_id', studentId)
+  } catch (err) {
+    console.error(`Error deleting results/certificates for student ${studentId}:`, err)
   }
 
-  // 4. Delete profile row
-  await admin.from('profiles').delete().eq('id', studentId)
+  try {
+    // 3. Delete email jobs associated with this student email
+    if (studentEmail) {
+      await admin.from('email_jobs').delete().eq('to_email', studentEmail)
+    }
+  } catch (err) {
+    console.error(`Error deleting email jobs for student ${studentId}:`, err)
+  }
 
-  // 5. Delete Supabase Auth user so next year they can log in fresh and re-register with updated Year/Semester
-  await admin.auth.admin.deleteUser(studentId)
+  try {
+    // 4. Delete profile row
+    await admin.from('profiles').delete().eq('id', studentId)
+  } catch (err) {
+    console.error(`Error deleting profile for student ${studentId}:`, err)
+  }
+
+  try {
+    // 5. Delete Supabase Auth user so they can log in fresh and re-register anytime with same email
+    await admin.auth.admin.deleteUser(studentId)
+  } catch (err) {
+    console.error(`Error deleting auth user ${studentId}:`, err)
+  }
 }
 
 // GET: List all registered student participants
@@ -195,6 +215,20 @@ export async function DELETE(request: Request) {
         }
         await deleteStudentCompletely(admin, s.id, s.email)
         deletedCount++
+      }
+
+      // Sweep any remaining non-admin auth.users that are not protected
+      try {
+        const { data: authData } = await admin.auth.admin.listUsers({ perPage: 1000 })
+        for (const u of authData?.users || []) {
+          if (u.email === 'msunagpur@gmail.com') continue
+          if (protectedStudentIds.has(u.id)) continue
+          try {
+            await admin.auth.admin.deleteUser(u.id)
+          } catch {}
+        }
+      } catch (authSweepErr) {
+        console.error('Error sweeping auth.users:', authSweepErr)
       }
 
       const protectNote =
