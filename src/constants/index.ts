@@ -47,7 +47,7 @@ export const HEALTH_FACILITIES = [
   'Chinchbhavan UPHC',
   'Cotton Market UPHC',
   'Dabha UPHC',
-  'Dick Disp. UPHC',
+  'Dick UPHC',
   'Dighori UPHC',
   'Dipti Signal UPHC',
   'Futala UPHC',
