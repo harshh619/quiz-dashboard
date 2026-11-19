@@ -37,6 +37,24 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
+    // 0. Auto-submit any lingering in_progress OR un-scored attempts (e.g. lost connection / timed out)
+    const { data: openAttempts } = await admin
+      .from('quiz_attempts')
+      .select('id, student_id')
+      .eq('competition_id', competitionId)
+      .or('status.eq.in_progress,score.is.null')
+
+    if (openAttempts && openAttempts.length > 0) {
+      await Promise.all(
+        openAttempts.map((att) =>
+          admin.rpc('submit_quiz_attempt', {
+            p_attempt_id: att.id,
+            p_student_id: att.student_id,
+          })
+        )
+      )
+    }
+
     // 1. Run finalize_competition RPC
     const { data: rpcResult, error: rpcError } = await admin.rpc('finalize_competition', {
       p_competition_id: competitionId,

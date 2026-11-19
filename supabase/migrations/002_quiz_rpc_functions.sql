@@ -226,6 +226,7 @@ DECLARE
   v_attempt RECORD;
   v_comp RECORD;
   v_now TIMESTAMPTZ := NOW();
+  v_total_score INT := 0;
 BEGIN
   -- Validate attempt ownership and status
   SELECT a.*, c.scheduled_end INTO v_attempt
@@ -242,12 +243,20 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Attempt already completed');
   END IF;
 
-  -- If server deadline passed, mark timed out
+  -- If server deadline passed, mark timed out and immediately calculate score
   IF v_now > v_attempt.scheduled_end THEN
+    SELECT 
+      COALESCE(COUNT(*) FILTER (WHERE qr.selected_option = q.correct_option), 0)
+    INTO v_total_score
+    FROM attempt_questions aq
+    JOIN question_bank q ON q.id = aq.question_id
+    LEFT JOIN quiz_responses qr ON qr.attempt_id = aq.attempt_id AND qr.question_id = aq.question_id
+    WHERE aq.attempt_id = p_attempt_id;
+
     UPDATE quiz_attempts 
-    SET status = 'timed_out', submitted_at = v_now 
+    SET status = 'timed_out', submitted_at = v_now, score = v_total_score
     WHERE id = p_attempt_id;
-    RETURN jsonb_build_object('success', false, 'error', 'Time has expired');
+    RETURN jsonb_build_object('success', false, 'error', 'Time has expired', 'score', v_total_score);
   END IF;
 
   -- Upsert answer
@@ -292,6 +301,20 @@ BEGIN
   END IF;
 
   IF v_attempt.status IN ('submitted', 'timed_out') THEN
+    -- If score is null for any reason, calculate it now!
+    IF v_attempt.score IS NULL THEN
+      SELECT 
+        COALESCE(COUNT(*) FILTER (WHERE qr.selected_option = q.correct_option), 0)
+      INTO v_total_score
+      FROM attempt_questions aq
+      JOIN question_bank q ON q.id = aq.question_id
+      LEFT JOIN quiz_responses qr ON qr.attempt_id = aq.attempt_id AND qr.question_id = aq.question_id
+      WHERE aq.attempt_id = p_attempt_id;
+
+      UPDATE quiz_attempts SET score = v_total_score WHERE id = p_attempt_id;
+      v_attempt.score := v_total_score;
+    END IF;
+
     RETURN jsonb_build_object(
       'success', true, 
       'message', 'Already submitted', 
@@ -351,6 +374,18 @@ BEGIN
 
   -- Clean previous results if re-finalized
   DELETE FROM competition_results WHERE competition_id = p_competition_id;
+
+  -- Ensure any attempt with score IS NULL gets computed before ranking!
+  UPDATE quiz_attempts a
+  SET score = sub.calc_score
+  FROM (
+    SELECT aq.attempt_id, COALESCE(COUNT(*) FILTER (WHERE qr.selected_option = q.correct_option), 0) AS calc_score
+    FROM attempt_questions aq
+    JOIN question_bank q ON q.id = aq.question_id
+    LEFT JOIN quiz_responses qr ON qr.attempt_id = aq.attempt_id AND qr.question_id = aq.question_id
+    GROUP BY aq.attempt_id
+  ) sub
+  WHERE a.id = sub.attempt_id AND a.score IS NULL AND a.competition_id = p_competition_id;
 
   -- Loop through completed attempts ordered by score DESC, submitted_at ASC
   FOR v_r IN (

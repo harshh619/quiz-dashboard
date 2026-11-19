@@ -130,12 +130,12 @@ export async function ensureCompetitionAutoFinalized(competitionId: string): Pro
   }
 
   try {
-    // 1. Auto-submit any lingering in_progress attempts (e.g., students who lost connection / closed browser)
+    // 1. Auto-submit any lingering in_progress OR un-scored attempts (e.g., students who lost connection / closed browser / timed out)
     const { data: openAttempts } = await admin
       .from('quiz_attempts')
       .select('id, student_id')
       .eq('competition_id', competitionId)
-      .eq('status', 'in_progress')
+      .or('status.eq.in_progress,score.is.null')
 
     if (openAttempts && openAttempts.length > 0) {
       await Promise.all(
