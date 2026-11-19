@@ -7,6 +7,7 @@ import {
   FINALIZE_GRACE_SECONDS,
 } from '@/lib/autoFinalize'
 import { buildSignedQrVerificationUrl } from '@/lib/certificateQr'
+import { getCertificateSignatories } from '@/lib/signatories'
 
 export const dynamic = 'force-dynamic'
 
@@ -160,6 +161,7 @@ export async function GET(
       scoreUnlocked,
       answerKeyUnlocked,
       isFinalized: finalized || Boolean(cert),
+      signatories: cert ? await getCertificateSignatories() : [],
       unlockAt: computedUnlockAt,
       serverTime: new Date().toISOString(),
     })

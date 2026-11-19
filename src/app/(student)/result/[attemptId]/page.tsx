@@ -71,6 +71,7 @@ export default function StudentResultPage({
   const [secondsUntilUnlock, setSecondsUntilUnlock] = useState<number | null>(null)
   const [showReview, setShowReview] = useState(false)
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
+  const [signatories, setSignatories] = useState<any[]>([])
   const [downloading, setDownloading] = useState(false)
   const [downloadingImage, setDownloadingImage] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
@@ -92,6 +93,7 @@ export default function StudentResultPage({
       setProfile(data.profile)
       setCompetition(data.competition)
       setCertificate(data.certificate || null)
+      setSignatories(data.signatories || [])
       setVerifyUrl(data.qrPayload || null)
       setAuthCode(data.authCode || null)
       setRank(data.rank ?? null)
@@ -259,9 +261,56 @@ export default function StudentResultPage({
     })
     : null
 
+  let certificateTitle = 'CERTIFICATE OF PARTICIPATION'
+  let achievementPhrase = 'for actively participating in'
+  if (certificate?.certificate_type === 'first_prize') {
+    certificateTitle = 'CERTIFICATE OF MERIT - FIRST PRIZE'
+    achievementPhrase = 'for securing First Prize in'
+  } else if (certificate?.certificate_type === 'second_prize') {
+    certificateTitle = 'CERTIFICATE OF MERIT - SECOND PRIZE'
+    achievementPhrase = 'for securing Second Prize in'
+  } else if (certificate?.certificate_type === 'third_prize') {
+    certificateTitle = 'CERTIFICATE OF MERIT - THIRD PRIZE'
+    achievementPhrase = 'for securing Third Prize in'
+  }
+
+  const issuedDateStr = certificate?.issued_at
+    ? new Date(certificate.issued_at).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+
+  const activeSignatories =
+    signatories && signatories.length > 0
+      ? signatories
+      : [
+          {
+            id: 'sig-1',
+            name: 'Dr. Sandeep Bhoyar',
+            designation: 'Microbiologist',
+            organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
+            organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
+            signatureUrl: '/signatures/dr_sandeep_bhoyar_signature.png',
+          },
+          {
+            id: 'sig-2',
+            name: 'Dr. Deepak Selokar',
+            designation: 'Medical Officer Health (MOH)',
+            organization: 'Nagpur Municipal Corporation, Nagpur',
+            organizationLine2: '',
+            signatureUrl: null,
+          },
+        ]
+
   return (
     <div className={`min-h-screen min-h-[100dvh] bg-slate-50 text-gray-900 py-3 sm:py-6 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
-      <div className={`mx-auto w-full space-y-3 sm:space-y-4 ${!certificate ? 'max-w-md' : 'max-w-2xl'}`}>
+      <div className={`mx-auto w-full space-y-3 sm:space-y-4 ${!certificate ? 'max-w-md' : 'max-w-3xl'}`}>
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -451,84 +500,205 @@ export default function StudentResultPage({
                 </span>
               </div>
 
-              {/* Official Certificate Preview Card */}
-              <div id="certificate-card-preview" className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
-                {/* Top 4 Official Partner Logos */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/nmc.png" alt="Nagpur Municipal Corporation" className="h-9 sm:h-11 w-auto object-contain" />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/ncdc.png" alt="NCDC Delhi" className="h-9 sm:h-11 w-auto object-contain" />
-                  </div>
-
-                  <div className="min-w-0 flex-1 px-1">
-                    <div className="text-[10px] sm:text-xs font-extrabold tracking-wide text-blue-900 uppercase leading-tight">
-                      NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
+              {/* Official Certificate Preview Card (1:1 Identical to Downloaded Official PDF) */}
+              <div
+                id="certificate-card-preview"
+                className="relative bg-[#feffff] p-2 sm:p-3 rounded-2xl border-[4px] border-[#1e3a8a] shadow-xl text-center select-none overflow-hidden"
+              >
+                {/* Inner Golden Amber Border matching PDF */}
+                <div className="relative border-2 border-[#d97706] p-4 sm:p-7 rounded-xl bg-[#feffff]">
+                  {/* Top 4 Official Partner Logos */}
+                  <div className="flex items-center justify-between gap-2 sm:gap-4 pb-2 border-b border-amber-200/60">
+                    {/* Left Logos: NMC & NCDC */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/nmc.png"
+                        alt="NMC Nagpur"
+                        crossOrigin="anonymous"
+                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                      />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/ncdc.png"
+                        alt="NCDC"
+                        crossOrigin="anonymous"
+                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                      />
                     </div>
-                    <div className="text-[8px] sm:text-[10px] font-bold tracking-wider text-slate-600 uppercase mt-0.5">
-                      METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/nhm.png" alt="National Health Mission (NHM)" className="h-9 sm:h-11 w-auto object-contain" />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/onehealth.png" alt="National One Health Mission" className="h-9 sm:h-11 w-auto object-contain" />
-                  </div>
-                </div>
-
-                <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mt-1">
-                  WORLD AMR AWARENESS WEEK (WAAW) 2026
-                </div>
-                <div className="text-xs sm:text-sm font-extrabold text-gray-900 mt-1.5 uppercase">
-                  {awardInfo.title}
-                </div>
-
-                <div className="my-4">
-                  <span className="text-xs text-gray-400">Awarded to</span>
-                  <div className="text-base sm:text-xl font-bold text-blue-950 mt-0.5 break-words">
-                    {profile?.full_name}
-                  </div>
-                  <div className="text-xs text-gray-600 break-words">
-                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacy officer' || profile.course.toLowerCase() === 'pharmacist')
-                      ? `Pharmacy Officer, ${profile?.college_name || ''}`
-                      : `${profile?.college_name} (${profile?.course})`}
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-                  For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacy Officers.
-                </p>
-
-                <div className="mt-3 font-serif font-bold text-[#0b2566] leading-snug">
-                  <div className="text-[11px] sm:text-xs tracking-wide uppercase">ONE HEALTH, ONE ACTION</div>
-                  <div className="text-[11px] sm:text-xs tracking-wide uppercase">PREVENT AMR NOW!</div>
-                  <div className="text-[10px] sm:text-[11px] mt-0.5">Protect • Humans • Animals • Environment</div>
-                </div>
-
-                {/* Verified Certificate ID, Auth Code & Offline QR Code */}
-                <div className="mt-5 pt-4 border-t border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-center sm:text-left space-y-0.5">
-                    <div className="text-[9px] text-gray-400 uppercase font-mono">Verified Certificate ID</div>
-                    <div className="text-xs font-mono font-bold text-gray-900 break-all">
-                      {certificate.certificate_number}
-                    </div>
-                    {authCode && (
-                      <div className="text-[10px] font-mono font-semibold text-blue-700">
-                        Auth: {authCode}
+                    {/* Center Header Authority */}
+                    <div className="min-w-0 flex-1 px-1 sm:px-2 text-center">
+                      <div className="text-[10px] sm:text-xs md:text-sm font-black tracking-wide text-[#1e3a8a] uppercase leading-tight">
+                        NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
                       </div>
-                    )}
+                      <div className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wider text-slate-700 uppercase mt-0.5">
+                        METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
+                      </div>
+                      <div className="text-[7px] sm:text-[9px] font-medium text-slate-500 hidden sm:block mt-0.5">
+                        National Awareness Initiative · Antimicrobial Resistance (AMR) Containment
+                      </div>
+                    </div>
+
+                    {/* Right Logos: NHM & One Health */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/nhm.png"
+                        alt="NHM"
+                        crossOrigin="anonymous"
+                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                      />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/onehealth.png"
+                        alt="One Health Mission"
+                        crossOrigin="anonymous"
+                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                      />
+                    </div>
                   </div>
 
-                  {qrCodeDataUrl && (
-                    <img
-                      src={qrCodeDataUrl}
-                      alt="Offline Verification QR"
-                      className="w-20 h-20 border border-gray-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
-                    />
-                  )}
+                  {/* Event Ribbon */}
+                  <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs md:text-sm font-extrabold tracking-widest text-[#b45309] uppercase">
+                    WORLD AMR AWARENESS WEEK (WAAW) 2026
+                  </div>
+
+                  {/* Certificate Title */}
+                  <h2 className="text-sm sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight mt-1 font-serif">
+                    {certificateTitle}
+                  </h2>
+
+                  {/* Presentation Line */}
+                  <div className="text-xs sm:text-sm italic font-serif text-slate-500 mt-2 sm:mt-2.5">
+                    This is proudly presented to
+                  </div>
+
+                  {/* Participant Name with Golden Accent Line */}
+                  <div className="my-2 sm:my-2.5">
+                    <div className="text-base sm:text-2xl md:text-3xl font-black text-[#1e3a8a] uppercase tracking-wide break-words px-2 font-sans">
+                      {profile?.full_name}
+                    </div>
+                    <div className="h-[2px] bg-[#d97706] w-36 sm:w-56 mx-auto mt-1 sm:mt-1.5 rounded-full" />
+                  </div>
+
+                  {/* Designation / Health Facility */}
+                  <div className="text-xs sm:text-sm font-bold text-slate-700 break-words px-2">
+                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacy officer' || profile.course.toLowerCase() === 'pharmacist')
+                      ? `Pharmacy Officer, ${profile?.college_name || 'Nagpur'}`
+                      : `${profile?.college_name}${profile?.course ? ` (${profile.course})` : ''}`}
+                  </div>
+
+                  {/* Commendation Paragraph */}
+                  <p className="text-[11px] sm:text-xs text-slate-600 max-w-xl mx-auto leading-relaxed mt-2 px-2">
+                    {achievementPhrase} the Online Quiz Competition for Pharmacy Officers on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.
+                  </p>
+
+                  {/* Score Obtained */}
+                  <div className="mt-1.5 text-xs sm:text-sm font-bold text-[#1e3a8a]">
+                    Score Obtained: {score} / {total}
+                  </div>
+
+                  {/* Official One Health / AMR Slogan Block */}
+                  <div className="mt-3 sm:mt-4 py-2 border-y border-amber-200/60 font-serif font-bold text-[#0b2566] leading-tight space-y-0.5">
+                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase">
+                      ONE HEALTH, ONE ACTION
+                    </div>
+                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase text-amber-800">
+                      PREVENT AMR NOW!
+                    </div>
+                    <div className="text-[9px] sm:text-[11px] font-sans font-medium text-slate-600 tracking-normal pt-0.5">
+                      Protect • Humans • Animals • Environment
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Verification QR & Dual Official Signatories */}
+                  <div className="mt-4 pt-3 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 sm:gap-6 text-left">
+                    {/* Left: Cryptographic Verification QR & Security Seal */}
+                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                      {qrCodeDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={qrCodeDataUrl}
+                          alt="Offline Verification QR"
+                          crossOrigin="anonymous"
+                          className="w-18 h-18 sm:w-22 sm:h-22 border border-blue-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
+                        />
+                      ) : (
+                        <div className="w-18 h-18 sm:w-22 sm:h-22 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-[10px]">
+                          QR Code
+                        </div>
+                      )}
+                      <div className="space-y-0.5 text-left">
+                        <div className="text-[10px] sm:text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
+                          Scan QR to Verify
+                        </div>
+                        <div className="text-[9px] sm:text-[11px] font-mono text-slate-600 break-all">
+                          ID: <span className="font-bold text-slate-900">{certificate.certificate_number}</span>
+                        </div>
+                        {authCode && (
+                          <div className="text-[8px] sm:text-[10px] font-mono font-medium text-blue-700 break-all">
+                            Seal: {authCode}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: Dynamic Official Signatories */}
+                    <div className="flex items-end justify-center sm:justify-end gap-5 sm:gap-8 flex-wrap w-full sm:w-auto">
+                      {activeSignatories.map((sig: any, idx: number) => {
+                        const isDrSandeep = sig.name?.toLowerCase().includes('sandeep')
+                        const sigImg = isDrSandeep
+                          ? '/signatures/dr_sandeep_bhoyar_signature.png'
+                          : (sig.signatureUrl || null)
+
+                        return (
+                          <div key={sig.id || idx} className="text-center min-w-[125px] sm:min-w-[155px] max-w-[185px]">
+                            {/* Signature Image above the line */}
+                            <div className="h-9 sm:h-11 flex items-end justify-center mb-1">
+                              {sigImg ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={sigImg}
+                                  alt={sig.name}
+                                  crossOrigin="anonymous"
+                                  className="h-8 sm:h-10 w-auto object-contain max-w-[130px] drop-shadow-xs"
+                                />
+                              ) : (
+                                <div className="h-5" />
+                              )}
+                            </div>
+
+                            {/* Signature Line */}
+                            <div className="border-t border-slate-400 w-full mb-1" />
+
+                            {/* Signatory Name */}
+                            <div className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                              {sig.name}
+                            </div>
+
+                            {/* Designation & Organization */}
+                            <div className="text-[9px] sm:text-[10px] text-slate-600 font-medium leading-tight mt-0.5">
+                              {sig.designation}
+                            </div>
+                            <div className="text-[8px] sm:text-[9px] text-slate-500 leading-tight mt-0.5">
+                              {sig.organization}
+                            </div>
+                            {sig.organizationLine2 && (
+                              <div className="text-[8px] sm:text-[9px] text-slate-400 leading-tight">
+                                {sig.organizationLine2}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Bottom Center Date of Issue */}
+                  <div className="mt-3 pt-2 border-t border-slate-100 text-[9px] sm:text-xs text-slate-400 text-center">
+                    Date of Issue: {issuedDateStr}
+                  </div>
                 </div>
               </div>
 
