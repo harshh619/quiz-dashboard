@@ -544,49 +544,27 @@ export default function LiveQuizPage({
               })}
             </div>
 
-            {/* Navigation buttons & Submit Section */}
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
-              <div className="flex items-start justify-between gap-3">
-                {/* Previous Button */}
-                <button
-                  type="button"
-                  onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentIndex === 0}
-                  className="px-4 py-2.5 sm:py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </button>
+            {/* Navigation buttons */}
+            <div className="flex items-center justify-between gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentIndex === 0}
+                className="flex-1 sm:flex-none justify-center px-4 py-2.5 sm:py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
 
-                {/* Right side: Next button with Submit Quiz stacked directly below */}
-                <div className="flex flex-col items-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentIndex < totalQuestions - 1) {
-                        setCurrentIndex(prev => prev + 1)
-                      } else {
-                        // User reached the last question and clicks Next -> prompt submit modal
-                        setShowSubmitModal(true)
-                      }
-                    }}
-                    className="w-full sm:w-auto min-w-[130px] justify-center px-5 py-2.5 sm:py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-
-                  {/* Submit Quiz Button - placed directly below Next on the right */}
-                  <button
-                    type="button"
-                    onClick={() => setShowSubmitModal(true)}
-                    className="w-full sm:w-auto min-w-[130px] justify-center px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Submit Quiz</span>
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
+                disabled={currentIndex === totalQuestions - 1}
+                className="flex-1 sm:flex-none justify-center px-5 py-2.5 sm:py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
           </div>
