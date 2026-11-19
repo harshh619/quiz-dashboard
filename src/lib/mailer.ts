@@ -28,7 +28,7 @@ export async function sendCertificateEmail({
   certificateType = 'participation',
   verificationUrl,
   score,
-  totalQuestions = 32,
+  totalQuestions = 30,
 }: {
   to: string
   studentName: string

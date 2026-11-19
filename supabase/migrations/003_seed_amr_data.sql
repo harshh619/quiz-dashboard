@@ -1,20 +1,20 @@
 -- ============================================================
--- AMR Quiz Portal - Seed Data (32 AMR MCQs + Sample Competition)
+-- AMR Quiz Portal - Seed Data (30 AMR MCQs + Sample Competition)
 -- Migration: 003_seed_amr_data.sql
 -- ============================================================
 
--- Insert 32 Specialized AMR & Microbiology Questions
+-- Insert 30 Specialized AMR & Microbiology Questions
 INSERT INTO question_bank (id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, topic, difficulty)
 VALUES
 (
   'b0000001-0000-0000-0000-000000000001',
-  'What does AMR stand for in the context of global health?',
+  'What does AMR stand for in the context of the text?',
   'Antiviral Medication Response',
   'Advanced Medical Research',
   'Antibiotic Management and Regulation',
   'Antimicrobial Resistance',
   'D',
-  'AMR stands for Antimicrobial Resistance, which occurs when bacteria, viruses, fungi, and parasites change over time and no longer respond to medicines.',
+  'AMR stands for Antimicrobial Resistance, which occurs when bacteria, viruses, fungi and parasites no longer respond to antimicrobial medicines.',
   'AMR Fundamentals',
   'easy'
 ),
@@ -26,19 +26,19 @@ VALUES
   'Exclusively focusing on human health',
   'Involving human health, animals, and the environment',
   'D',
-  'One Health is an integrated, unifying approach that aims to sustainably balance and optimize the health of people, animals, and ecosystems/environment.',
+  'One Health is an integrated approach that balances and optimizes the health of people, animals, and the environment.',
   'One Health & Stewardship',
   'easy'
 ),
 (
   'b0000001-0000-0000-0000-000000000003',
-  'How many countries have developed AMR National Action Plans (NAPs) according to global health reports?',
-  '170',
-  '150',
-  '160',
+  'How many countries have developed AMR National Action Plans (NAPs)?',
   '180',
-  'A',
-  'As per WHO and global tracking, 170 countries have developed National Action Plans (NAPs) aligned with the Global Action Plan on AMR.',
+  '150',
+  '170',
+  '178',
+  'D',
+  'According to tracking reports, 178 countries have developed AMR National Action Plans (NAPs).',
   'Policy & Global Action Plans',
   'medium'
 ),
@@ -50,7 +50,7 @@ VALUES
   'Prevention, Access to healthcare, Timely diagnosis, Appropriate medication',
   'Prevention, Access to antibiotics, Timely diagnosis, Quality treatment',
   'A',
-  'The WHO people-centred framework for addressing AMR in human health is built on 4 pillars: Prevention of infections; Access to essential health services; Timely and accurate diagnosis; and Appropriate, quality-assured treatment.',
+  'The 4 pillars are: Prevention; Access to essential health services; Timely and accurate diagnosis; and Appropriate, quality-assured treatment.',
   'Clinical Frameworks & Guidelines',
   'medium'
 ),
@@ -62,7 +62,7 @@ VALUES
   'Antimicrobial resistance includes microorganisms such as viruses, parasites and fungi and not only bacteria',
   'Both B and C are correct',
   'D',
-  'Antibiotic resistance refers specifically to resistance in bacteria against antibiotics, whereas antimicrobial resistance (AMR) is a broader term encompassing bacteria, viruses, fungi, and parasites.',
+  'Antibiotic resistance refers specifically to resistance in bacteria against antibiotics, whereas AMR includes bacteria, viruses, fungi, and parasites.',
   'AMR Fundamentals',
   'medium'
 ),
@@ -74,17 +74,17 @@ VALUES
   'You may need more expensive/stronger medicine that can cause side effects',
   'All of the above',
   'D',
-  'Antimicrobial-resistant infections often lead to prolonged illness, increased hospital admissions, higher healthcare costs, and the need for second-line or last-resort medications with more severe side effects.',
+  'Resistant infections lead to prolonged illness, increased hospital visits/admissions, and the need for costlier second-line drugs with more severe side effects.',
   'Clinical Impact of AMR',
   'easy'
 ),
 (
   'b0000001-0000-0000-0000-000000000007',
   'Which of the following illnesses cannot be treated with antibiotics?',
-  'Food poisoning (Salmonella)',
+  'Food poisoning (salmonella)',
   'Influenza',
   'Chlamydia',
-  'Urinary Tract Infection (E. coli)',
+  'UTI (e. coli)',
   'B',
   'Influenza is caused by an influenza virus, and antibiotics are ineffective against viral infections.',
   'Rational Drug Use',
@@ -98,116 +98,116 @@ VALUES
   'Short-term use of narrow-spectrum antimicrobials',
   'Short-term use of broad-spectrum antimicrobials',
   'B',
-  'Long-term use of broad-spectrum antimicrobials disrupts normal protective microflora, allowing naturally resistant pathogens or opportunistic microbes (such as Clostridioides difficile or Candida) to overgrow and cause a superinfection.',
+  'Long-term broad-spectrum antimicrobial therapy destroys protective commensal flora, allowing opportunistic pathogens or resistant microbes to cause a superinfection.',
   'Microbiology & Superinfections',
   'medium'
 ),
 (
   'b0000001-0000-0000-0000-000000000009',
-  'Which clinical situation would be appropriate for treatment with a narrow-spectrum antimicrobial drug?',
-  'Treatment of a polymicrobic mixed infection in the intestine',
-  'Prophylaxis against infection after a surgical procedure',
-  'Treatment of strep throat caused by culture identified Streptococcus pyogenes',
-  'Empiric therapy of pneumonia while waiting for culture results',
-  'C',
-  'When the causative organism has been identified by culture and susceptibility testing (such as Streptococcus pyogenes), targeted narrow-spectrum therapy (e.g., penicillin) is the preferred standard of care to minimize collateral damage to normal microflora.',
-  'Rational Drug Use & Prescribing',
+  'What is the primary purpose of the WHO AWaRe classification of antibiotics?',
+  'To classify antibiotics according to their colour',
+  'To support antibiotic stewardship and monitor antibiotic use',
+  'To classify antibiotics according to their manufacturing cost',
+  'To identify antibiotics used exclusively in veterinary medicine',
+  'B',
+  'The WHO AWaRe (Access, Watch, Reserve) classification is designed to support antibiotic stewardship activities and monitor antibiotic consumption.',
+  'Antimicrobial Stewardship & AWaRe',
   'medium'
 ),
 (
   'b0000001-0000-0000-0000-000000000010',
+  'Which statement about antimicrobial resistance is correct?',
+  'Only patients who take antibiotics can carry resistant bacteria',
+  'Resistance occurs only in hospitals',
+  'AMR can spread between people, animals and the environment',
+  'Antibiotic resistance affects only bacterial infections in adults',
+  'C',
+  'Antimicrobial resistance spreads dynamically between people, animals, food, and the environment under the One Health framework.',
+  'One Health & Stewardship',
+  'easy'
+),
+(
+  'b0000001-0000-0000-0000-000000000011',
   'Which of the following is not a type of β-lactam antimicrobial?',
   'Penicillins',
   'Glycopeptides',
   'Cephalosporins',
   'Monobactams',
   'B',
-  'Glycopeptides (such as vancomycin and teicoplanin) inhibit cell wall synthesis by binding to D-Ala-D-Ala, but they do not contain a beta-lactam ring.',
+  'Glycopeptides (e.g., vancomycin) inhibit cell wall synthesis by binding to D-Ala-D-Ala, but they do not contain a beta-lactam ring.',
   'Pharmacology & Drug Classes',
   'medium'
 ),
 (
-  'b0000001-0000-0000-0000-000000000011',
-  'Which of the following resistance mechanisms describes the function of β-lactamase?',
-  'Efflux pump',
-  'Target mimicry',
-  'Drug inactivation',
-  'Target overproduction',
-  'C',
-  'Beta-lactamase enzymes hydrolyze the beta-lactam ring of the antibiotic, rendering it inactive before it can bind to penicillin-binding proteins (drug inactivation).',
-  'Resistance Mechanisms',
-  'medium'
-),
-(
   'b0000001-0000-0000-0000-000000000012',
-  'Which of the following resistance mechanisms is commonly effective against a wide range of antimicrobials in multiple classes?',
-  'Efflux pump',
-  'Target mimicry',
-  'Target modification',
-  'Target overproduction',
-  'A',
-  'Multidrug efflux pumps (such as the RND family in Gram-negative bacteria) can actively pump out a wide variety of structurally diverse antimicrobials belonging to multiple antibiotic classes.',
-  'Resistance Mechanisms',
-  'medium'
-),
-(
-  'b0000001-0000-0000-0000-000000000013',
   'In the Kirby-Bauer disk diffusion test, the _______ of the zone of inhibition is measured and used for interpretation.',
   'Diameter',
   'Microbial population',
   'Circumference',
   'Depth',
   'A',
-  'In the standard Kirby-Bauer disk diffusion procedure, the diameter of the complete zone of inhibition is measured in millimeters using a ruler or caliper.',
+  'The complete diameter of the zone of inhibition is measured in millimeters across the antimicrobial disk.',
   'Laboratory Diagnostics & AST',
   'easy'
 ),
 (
-  'b0000001-0000-0000-0000-000000000014',
+  'b0000001-0000-0000-0000-000000000013',
   'Which of the following techniques cannot be used to determine the minimum inhibitory concentration of an antimicrobial drug against a particular microbe?',
   'Etest',
   'Microbroth dilution test',
   'Kirby-Bauer disk diffusion test',
   'Macrobroth dilution test',
   'C',
-  'The Kirby-Bauer disk diffusion test is qualitative (categorizes as Susceptible, Intermediate, or Resistant) and does not directly provide a quantitative Minimum Inhibitory Concentration (MIC). In contrast, broth dilution and Etest provide exact MIC values.',
+  'The Kirby-Bauer disk diffusion test is qualitative (categorizing into Susceptible, Intermediate, or Resistant) and cannot determine a quantitative MIC value.',
   'Laboratory Diagnostics & AST',
   'medium'
 ),
 (
+  'b0000001-0000-0000-0000-000000000014',
+  'What happens when bacteria become resistant to antibiotics?',
+  'Antibiotics become more effective.',
+  'Antibiotics may no longer kill or inhibit bacterial growth effectively.',
+  'Bacteria become viruses.',
+  'Infection disappears automatically.',
+  'B',
+  'When bacteria develop resistance, standard concentrations of antibiotics can no longer kill them or effectively inhibit their growth.',
+  'AMR Fundamentals',
+  'easy'
+),
+(
   'b0000001-0000-0000-0000-000000000015',
-  'The utility of an antibiogram is that it shows antimicrobial susceptibility trends:',
-  'Over a large geographic area.',
-  'For an individual patient.',
-  'In research laboratory strains.',
-  'In a localized population.',
-  'D',
-  'A cumulative hospital or regional antibiogram summarizes the aggregate antimicrobial susceptibility profiles of common pathogens isolated in a specific healthcare facility or localized population over a defined period (usually one year).',
-  'Surveillance & Antibiograms',
-  'medium'
+  'What does the WHO AWaRe classification stand for?',
+  'Access, Watch and Reserve',
+  'Antibiotic, Water and Resistance',
+  'Action, Warning and Response',
+  'Access, Warning and Recovery',
+  'A',
+  'AWaRe stands for Access, Watch, and Reserve—the three core categories defining global antibiotic stewardship.',
+  'Antimicrobial Stewardship & AWaRe',
+  'easy'
 ),
 (
   'b0000001-0000-0000-0000-000000000016',
-  'New forms of drug-resistant bacteria can evolve quickly because bacteria often:',
-  'Lack genetic variation, so any beneficial mutation spreads instantly to all cells',
-  'Become drug-resistant only after exposure induces directed mutations specific to the antibiotic',
-  'Have short generation times and can acquire resistance genes via horizontal gene transfer',
-  'Rely primarily on meiosis, which rapidly creates novel resistant offspring each generation',
-  'C',
-  'Rapid bacterial replication (short generation times) combined with horizontal gene transfer (conjugation, transformation, and transduction) enables the swift emergence and dissemination of resistance genes.',
-  'Microbiology & Genetics',
-  'medium'
-),
-(
-  'b0000001-0000-0000-0000-000000000017',
   'MRSA stands for:',
   'Multiple Resistant Streptococcus Aureus',
   'Methicillin-Resistant Staphylococcus aureus',
   'Medical Resistant Staphylococcus Antibiotic',
   'Methicillin Reactive Staphylococcus aureus',
   'B',
-  'MRSA stands for Methicillin-Resistant Staphylococcus aureus, a major pathogen resistant to beta-lactam antibiotics due to the acquisition of the mecA gene.',
+  'MRSA stands for Methicillin-Resistant Staphylococcus aureus, resistant to beta-lactam antibiotics via the mecA gene.',
   'Priority Pathogens',
+  'easy'
+),
+(
+  'b0000001-0000-0000-0000-000000000017',
+  'A patient forgets to take one dose of an antibiotic. What should the Pharmacy Officer advise?',
+  'Take double the next dose.',
+  'Stop the treatment.',
+  'Follow the medicine-specific missed-dose instructions and avoid doubling doses.',
+  'Take two different antibiotics.',
+  'C',
+  'Patients should follow medicine-specific missed-dose directions and never double their dose due to increased risk of toxicity and adverse effects.',
+  'Rational Drug Use & Pharmacy Practice',
   'easy'
 ),
 (
@@ -218,21 +218,21 @@ VALUES
   'Highest concentration tolerated by the patient',
   'Concentration that produces maximum bacterial growth inhibition in a patient',
   'B',
-  'MIC is defined as the lowest concentration of an antimicrobial agent that visibly inhibits the growth of the microorganism after overnight incubation.',
+  'MIC is defined as the lowest concentration of an antimicrobial that prevents visible in vitro growth of the bacterium after overnight incubation.',
   'Laboratory Diagnostics & AST',
   'medium'
 ),
 (
   'b0000001-0000-0000-0000-000000000019',
-  'What is the meaning of selective pressure caused by antibiotic exposure?',
-  'Antibiotics intentionally instruct all bacteria to develop resistance',
-  'Susceptible bacteria are suppressed while resistant variants have a survival advantage',
-  'All bacteria become equally susceptible after treatment',
-  'Resistance genes are eliminated from every bacterial population',
-  'B',
-  'Selective pressure occurs when an antimicrobial kills or inhibits susceptible bacteria, allowing preexisting or newly mutated resistant strains to survive, multiply, and dominate the population.',
-  'AMR Fundamentals',
-  'medium'
+  'Should antibiotics be taken for a common cold?',
+  'Always',
+  'Only at night',
+  'No, because common cold is usually caused by viruses.',
+  'Yes, to prevent all future infections.',
+  'C',
+  'The common cold is caused by viruses, and antibiotics have no effect against viral infections.',
+  'Rational Drug Use',
+  'easy'
 ),
 (
   'b0000001-0000-0000-0000-000000000020',
@@ -242,7 +242,7 @@ VALUES
   'Resistant',
   'Non-interpretable',
   'B',
-  'Since the measured MIC of 2 mg/L matches the defined intermediate breakpoint (I = 2 mg/L), the isolate is categorized as Intermediate.',
+  'Because the measured MIC of 2 mg/L matches the defined breakpoint (I = 2 mg/L), it is categorized as Intermediate.',
   'AST Interpretation & Breakpoints',
   'medium'
 ),
@@ -254,7 +254,7 @@ VALUES
   'By increasing dissolved oxygen in rivers',
   'By reducing microbial diversity in all aquatic ecosystems',
   'B',
-  'Hospital wastewater contains mixtures of active antibiotic residues, multiresistant bacteria, and mobile genetic elements, creating hotspots for environmental resistance dissemination and gene transfer.',
+  'Hospital wastewater contains antibiotic residues, multi-resistant pathogens, and resistance plasmids that contaminate natural water bodies.',
   'One Health & Environmental AMR',
   'easy'
 ),
@@ -266,7 +266,7 @@ VALUES
   'Follow authorised pharmaceutical take-back or biomedical/pharmaceutical waste disposal procedures',
   'Mix them with general household waste without segregation',
   'C',
-  'Flushing antibiotics or throwing them in drains contaminates water systems. Unused or expired antibiotics should be returned through authorized drug take-back schemes or disposed of via formal biomedical waste channels.',
+  'Antibiotics should never be flushed down toilets or drains; they must be disposed of via authorized take-back schemes or biomedical waste protocols.',
   'Environmental AMR & Safe Disposal',
   'easy'
 ),
@@ -278,7 +278,7 @@ VALUES
   'Gram staining',
   'Haemocytometry',
   'B',
-  'Quantitative Real-Time PCR (qPCR) is the gold standard molecular technique for identifying and quantifying specific antibiotic resistance genes (ARGs) in clinical and environmental samples.',
+  'Quantitative Real-Time PCR (qPCR) is the primary molecular diagnostic technique used to detect and quantify antibiotic resistance genes (ARGs).',
   'Laboratory Diagnostics & Molecular Biology',
   'medium'
 ),
@@ -290,7 +290,7 @@ VALUES
   'Saccharomyces cerevisiae',
   'Rhizobium species',
   'A',
-  'Escherichia coli is a coliform bacterium inhabiting the gastrointestinal tract of warm-blooded animals, making it the globally accepted primary indicator of fecal contamination in water.',
+  'Escherichia coli is the globally recognized primary bacterial indicator of fecal contamination in water and wastewater.',
   'Microbiology & Environmental Surveillance',
   'easy'
 ),
@@ -302,7 +302,7 @@ VALUES
   'Conjugation',
   'Binary fission',
   'C',
-  'Conjugation is the direct transfer of genetic material (often plasmids or transposons carrying resistance genes) between bacterial cells via a conjugation pilus (cell-to-cell contact).',
+  'Conjugation is horizontal gene transfer mediated by a pilus through direct physical cell-to-cell contact.',
   'Resistance Genetics',
   'medium'
 ),
@@ -314,81 +314,57 @@ VALUES
   'Explain that antibiotics do not treat viral infections and avoid unnecessary antibiotic use',
   'Recommend two antibiotics together',
   'C',
-  'Antibiotics are ineffective against viral upper respiratory tract infections. A Pharmacy Officer should counsel the patient on symptomatic relief and explain why antibiotics are unnecessary and potentially harmful.',
+  'Antibiotics are ineffective against viral upper respiratory tract infections. The Pharmacy Officer should educate the patient on symptomatic relief.',
   'Rational Drug Use & Pharmacy Practice',
   'easy'
 ),
 (
   'b0000001-0000-0000-0000-000000000027',
-  'Which method is most suitable for determining whether a bacterium is phenotypically resistant to a particular antibiotic?',
-  'Antibiotic susceptibility testing',
-  'Total dissolved solids measurement',
-  'Turbidity measurement alone',
-  'pH measurement',
-  'A',
-  'Antibiotic Susceptibility Testing (AST), performed via disk diffusion, broth microdilution, or automated systems, directly assesses the phenotypic susceptibility or resistance of bacteria to antimicrobial agents.',
-  'Laboratory Diagnostics & AST',
-  'easy'
-),
-(
-  'b0000001-0000-0000-0000-000000000028',
   'Which of the following can carry antibiotic resistance genes between bacterial cells?',
   'Plasmids',
   'Ribosomes',
   'Mitochondria',
   'Lysosomes',
   'A',
-  'Plasmids are extrachromosomal circular DNA molecules that frequently carry multiple antibiotic resistance genes and replicate independently, transferring easily across bacterial species.',
+  'Plasmids are mobile extra-chromosomal DNA elements that frequently carry resistance genes and transfer between bacterial cells.',
   'Resistance Genetics',
   'easy'
 ),
 (
-  'b0000001-0000-0000-0000-000000000029',
+  'b0000001-0000-0000-0000-000000000028',
   'How can the excessive use of antibiotics in humans contribute to antimicrobial resistance in aquatic ecosystems?',
   'Antibiotics and resistant bacteria can enter sewage through human excretion',
   'Antibiotics are completely destroyed inside the human body',
   'Antibiotic use increases oxygen concentration in rivers',
   'Antibiotics cannot enter wastewater',
   'A',
-  'A significant percentage of antibiotics consumed by humans are excreted un-metabolized or as active metabolites in urine and feces, entering wastewater systems and selecting for resistant bacteria in aquatic environments.',
+  'Unmetabolized antibiotics and resistant bacteria are excreted in human urine and feces, entering wastewater systems and selecting for resistance in aquatic environments.',
   'One Health & Environmental AMR',
   'easy'
 ),
 (
-  'b0000001-0000-0000-0000-000000000030',
+  'b0000001-0000-0000-0000-000000000029',
   'Which of the following microorganisms can develop antimicrobial resistance?',
   'Bacteria only',
   'Viruses only',
   'Bacteria, viruses, fungi and parasites',
   'Human cells',
   'C',
-  'Antimicrobial resistance (AMR) is a broad term encompassing bacteria (antibiotic resistance), viruses (antiviral resistance), fungi (antifungal resistance), and parasites (antiprotozoal/antihelminthic resistance).',
+  'Antimicrobial resistance (AMR) encompasses bacteria (antibiotics), viruses (antivirals), fungi (antifungals), and parasites (antiprotozoals).',
   'AMR Fundamentals',
   'easy'
 ),
 (
-  'b0000001-0000-0000-0000-000000000031',
+  'b0000001-0000-0000-0000-000000000030',
   'Which was the first antibiotic to be mass-produced on an industrial scale?',
   'Streptomycin',
   'Penicillin',
   'Tetracycline',
   'Chloramphenicol',
   'B',
-  'Penicillin, discovered by Alexander Fleming in 1928 and developed by Florey and Chain, was the first antibiotic to be successfully mass-produced on an industrial scale during World War II.',
+  'Penicillin, discovered by Alexander Fleming, was the first antibiotic to be industrially mass-produced during World War II.',
   'History of Antibiotics',
   'easy'
-),
-(
-  'b0000001-0000-0000-0000-000000000032',
-  'In the WHO priority pathogens list for research and development of new antibiotics, which group is categorized with the highest (critical) priority?',
-  'Drug-susceptible Streptococcus pneumoniae',
-  'Penicillin-susceptible Staphylococcus aureus',
-  'Carbapenem-resistant Acinetobacter baumannii, Pseudomonas aeruginosa, and Enterobacteriaceae',
-  'Non-pathogenic skin flora Staphylococcus epidermidis',
-  'C',
-  'The WHO priority pathogens list designates Carbapenem-resistant Acinetobacter baumannii, Pseudomonas aeruginosa, and Carbapenem-resistant/ESBL-producing Enterobacteriaceae as Critical Priority (Priority 1) due to their severe threat and lack of treatment options.',
-  'Priority Pathogens & Global Surveillance',
-  'medium'
 )
 ON CONFLICT (id) DO UPDATE SET
   question_text = EXCLUDED.question_text,
@@ -417,12 +393,12 @@ INSERT INTO competitions (
 VALUES (
   'c0000001-0000-0000-0000-000000000001',
   'World AMR Awareness Week 2026 – National Quiz Competition',
-  'Sensitization of Future Practitioners - Pharmacy & Microbiology College Students. 32 MCQs, 10 Minutes. Compete for First, Second, Third Prize and earn digital verified certificates.',
+  'Sensitization of Future Practitioners - Pharmacy & Microbiology College Students. 30 MCQs, 10 Minutes. Compete for First, Second, Third Prize and earn digital verified certificates.',
   'scheduled',
   NOW() - INTERVAL '5 minutes',
   NOW() + INTERVAL '24 hours',
   600,
-  32,
+  30,
   18,
   1000
 )
@@ -432,7 +408,7 @@ ON CONFLICT (id) DO UPDATE SET
   scheduled_end = EXCLUDED.scheduled_end,
   total_questions = EXCLUDED.total_questions;
 
--- Link all 32 questions to this competition
+-- Link all 30 questions to this competition
 INSERT INTO competition_questions (competition_id, question_id, display_order)
 SELECT 
   'c0000001-0000-0000-0000-000000000001'::UUID,

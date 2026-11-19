@@ -22,8 +22,8 @@ export default function AdminCompetitionsPage() {
     description: 'Online Quiz Competition for Pharmacy Officers.',
     scheduled_start: '',
     duration_minutes: 10,
-    total_questions: 32,
-    passing_score: 19,
+    total_questions: 30,
+    passing_score: 18,
     max_participants: 1000,
     status: 'draft',
   })
