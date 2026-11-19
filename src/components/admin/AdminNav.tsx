@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Calendar, Users, HelpCircle, Trophy,
-  Award, Mail, ArrowLeft, LogOut
+  Award, Mail, ArrowLeft, LogOut, Activity
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -17,6 +17,7 @@ export default function AdminNav() {
 
   const navItems = [
     { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Live War Room', href: '/admin/live', icon: Activity, isLive: true },
     { label: 'Competitions', href: '/admin/competitions', icon: Calendar },
     { label: 'Participants', href: '/admin/participants', icon: Users },
     { label: 'Question Bank', href: '/admin/questions', icon: HelpCircle },
@@ -82,10 +83,19 @@ export default function AdminNav() {
                 href={item.href}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${isActive
                   ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  : item.isLive
+                    ? 'text-amber-300 hover:bg-slate-800 hover:text-amber-200'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
+                {item.isLive ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                ) : (
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                )}
                 <span>{item.label}</span>
               </Link>
             )

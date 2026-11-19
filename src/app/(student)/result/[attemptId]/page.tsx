@@ -8,7 +8,7 @@ import { parseCategoryTopic } from '@/lib/questionCategories'
 import {
   Trophy, Award, Download, ArrowLeft, QrCode, Sparkles, Clock,
   ShieldCheck, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  BookOpen, Mail, Loader2, Medal, Lock
+  BookOpen, Mail, Loader2, Medal, Lock, Share2, ImageIcon
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -72,6 +72,7 @@ export default function StudentResultPage({
   const [showReview, setShowReview] = useState(false)
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
   const [downloading, setDownloading] = useState(false)
+  const [downloadingImage, setDownloadingImage] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const loadResult = useCallback(async (isAutoRefresh = false) => {
@@ -186,6 +187,47 @@ export default function StudentResultPage({
     } finally {
       setDownloading(false)
     }
+  }
+
+  // 1-Click High-Res Image (PNG) Download directly to phone gallery
+  const handleDownloadCertificateImage = async () => {
+    if (!certificate) return
+    setDownloadingImage(true)
+    setDownloadError(null)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const certElem = document.getElementById('certificate-card-preview')
+      if (!certElem) throw new Error('Certificate element not found')
+
+      const canvas = await html2canvas(certElem, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      })
+
+      const dataUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `AMR_Certificate_${certificate.certificate_number}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to save certificate image'
+      setDownloadError(msg)
+    } finally {
+      setDownloadingImage(false)
+    }
+  }
+
+  // 1-Click WhatsApp Share with pre-formatted message
+  const handleWhatsAppShare = () => {
+    if (!certificate) return
+    const certUrl = verifyUrl || (typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificate.certificate_number}` : '')
+    const msg = `🏥 *World AMR Awareness Week (WAAW) 2026 – Online Quiz Competition*\n*Metropolitan Surveillance Unit (MSU), Nagpur | NMC Nagpur*\n\n🎉 I participated as a Pharmacy Officer representing *${profile?.college_name || 'UPHC Nagpur'}* and scored *${score}/${total}* (Accuracy: *${percentage}%*)!\n${rank ? `🏆 Final Rank: *#${rank}*\n` : ''}📜 *Verify My Official Certificate:* ${certUrl}\n\n#WAAW2026 #StopAMR #OneHealth #MSUNagpur`
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`
+    window.open(whatsappUrl, '_blank')
   }
 
   if (loading) {
@@ -410,7 +452,7 @@ export default function StudentResultPage({
               </div>
 
               {/* Official Certificate Preview Card */}
-              <div className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
+              <div id="certificate-card-preview" className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
                 {/* Top 4 Official Partner Logos */}
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
@@ -496,40 +538,67 @@ export default function StudentResultPage({
                 </div>
               )}
 
-              {/* PDF Download & Verify Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                <button
-                  onClick={handleDownloadCertificate}
-                  disabled={downloading}
-                  className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {downloading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
-                </button>
+              {/* PDF Download, Image Save, WhatsApp & Verify Buttons */}
+              <div className="space-y-2.5 pt-1">
+                {/* Primary Row: PDF & Image Download */}
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    onClick={handleDownloadCertificate}
+                    disabled={downloading}
+                    className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {downloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
+                  </button>
 
-                {verifyUrl ? (
-                  <a
-                    href={verifyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  <button
+                    onClick={handleDownloadCertificateImage}
+                    disabled={downloadingImage}
+                    className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
                   >
-                    <QrCode className="w-4 h-4" />
-                    <span>Verify Online</span>
-                  </a>
-                ) : (
-                  <Link
-                    href={`/verify/${certificate.certificate_number}`}
-                    className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                    {downloadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ImageIcon className="w-4 h-4" />
+                    )}
+                    <span>{downloadingImage ? 'Creating Image...' : 'Save as Image (PNG / Gallery)'}</span>
+                  </button>
+                </div>
+
+                {/* Secondary Row: WhatsApp 1-Click Share & Online Verify */}
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    onClick={handleWhatsAppShare}
+                    className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
-                    <QrCode className="w-4 h-4" />
-                    <span>Verify Online</span>
-                  </Link>
-                )}
+                    <Share2 className="w-4 h-4" />
+                    <span>Share on WhatsApp</span>
+                  </button>
+
+                  {verifyUrl ? (
+                    <a
+                      href={verifyUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>Verify Online</span>
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/verify/${certificate.certificate_number}`}
+                      className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>Verify Online</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
 
