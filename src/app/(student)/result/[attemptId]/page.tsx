@@ -218,8 +218,8 @@ export default function StudentResultPage({
     : null
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-900 py-6 sm:py-10 px-3 sm:px-6">
-      <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6">
+    <div className={`min-h-screen bg-slate-50 text-gray-900 py-4 sm:py-8 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
+      <div className={`mx-auto w-full space-y-4 ${!certificate ? 'max-w-md sm:max-w-lg' : 'max-w-2xl'}`}>
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -235,348 +235,329 @@ export default function StudentResultPage({
           </span>
         </div>
 
-        {/* Email Certificate Dispatch Notice Banner */}
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
-              <Mail className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-gray-900">
-                Quiz Finished &amp; Recorded!
-              </h4>
-              <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                {certificate ? (
-                  <>
-                    Your final rank has been computed! <span className="font-semibold text-blue-900">Your official PDF certificate is ready to download below and has been queued/sent to your email.</span>
-                  </>
-                ) : (
-                  <>
-                    Thank you for participating. <span className="font-semibold text-blue-900">Your score, answer key &amp; official certificate (Merit 1st/2nd/3rd or Participation PDF) will unlock automatically once the quiz timer finishes</span> and will also be sent to your email.
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>PDF via Email</span>
-          </div>
-        </div>
-
-        {/* Hero Scorecard */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-8 shadow-sm text-center relative overflow-hidden">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 mb-4">
-            <Trophy className="w-7 h-7 sm:w-8 sm:h-8" />
-          </div>
-
-          <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">
-            Quiz Successfully Submitted!
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-md mx-auto">
-            {competition?.title || 'World AMR Awareness Week National Quiz Competition 2026'}
-          </p>
-
-          {/* Stats Badges — Score & Accuracy stay locked until competition timer ends */}
-          <div className={`grid ${rank && scoreUnlocked ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 my-5 sm:my-6 max-w-md mx-auto`}>
-            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
-              {scoreUnlocked ? (
-                <>
-                  <div className="text-base sm:text-2xl font-extrabold text-blue-700 whitespace-nowrap">
-                    {score} / {total}
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-sm sm:text-base font-extrabold text-amber-700 flex items-center justify-center gap-1 py-0.5">
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Locked</span>
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score (After Timeout)</div>
-                </>
-              )}
-            </div>
-
-            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
-              {scoreUnlocked ? (
-                <>
-                  <div className="text-base sm:text-2xl font-extrabold text-emerald-600">
-                    {percentage}%
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-sm sm:text-base font-extrabold text-amber-700 flex items-center justify-center gap-1 py-0.5">
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Locked</span>
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
-                </>
-              )}
-            </div>
-
-            <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
-              <div className="text-base sm:text-2xl font-extrabold text-indigo-700">
-                {formatTime(timeSpentSeconds)}
-              </div>
-              <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Time Taken</div>
-            </div>
-
-            {rank && scoreUnlocked && (
-              <div className="bg-amber-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-amber-200">
-                <div className="text-base sm:text-2xl font-extrabold text-amber-700">
-                  #{rank}
-                </div>
-                <div className="text-[10px] text-amber-700 uppercase font-semibold mt-0.5">Final Rank</div>
-              </div>
-            )}
-          </div>
-
-          {/* Candidate Info Summary */}
-          <div className="inline-flex flex-wrap items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-2 rounded-2xl text-xs font-medium max-w-full leading-snug">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-            <span className="break-words">{profile?.full_name} · {profile?.college_name}</span>
-          </div>
-        </div>
-
-        {/* Certificate Section — Only shown ONCE finalized! Before end time, show automatic unlock countdown */}
+        {/* STATE A: Pre-Finalization / Timer Running — Single-Screen Unified Card (Zero Scroll & Zero Repetition) */}
         {!certificate ? (
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-indigo-200 p-5 sm:p-8 shadow-sm text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center mx-auto">
-              {finalizingNow ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
-              ) : (
-                <Clock className="w-6 h-6" />
-              )}
+          <div className="bg-white rounded-3xl border border-gray-200 p-5 sm:p-7 shadow-sm text-center space-y-4">
+            
+            <div className="w-13 h-13 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
+              <CheckCircle className="w-7 h-7" />
             </div>
 
-            <div className="space-y-1.5">
-              <span className="inline-block px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100">
-                {finalizingNow ? 'Calculating Official Rankings...' : 'Final Rankings in Progress'}
-              </span>
-              <h3 className="text-base sm:text-lg font-extrabold text-gray-900">
-                Score, Answer Key &amp; Official Certificate Unlock After Quiz Ends
-              </h3>
-              <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
-                Other participants are still completing the quiz{endTimeLabel ? ` (closes at ${endTimeLabel})` : ''}. Once the timer finishes, your <strong>Score, Final Rank, Answer Key &amp; Official Certificate</strong> will automatically unlock right here.
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                Quiz Successfully Submitted!
+              </h1>
+              <p className="text-xs text-gray-500 mt-1">
+                {competition?.title || 'World AMR Awareness Week National Quiz Competition 2026'}
               </p>
             </div>
 
+            {/* Candidate Pill */}
+            <div className="inline-flex items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-1.5 rounded-xl text-xs font-semibold max-w-full">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+              <span className="truncate">{profile?.full_name} · {profile?.college_name || 'Pharmacist'}</span>
+            </div>
+
+            {/* Compact Stats Row */}
+            <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-gray-100">
+                <div className="text-base font-bold text-indigo-700">{formatTime(timeSpentSeconds)}</div>
+                <div className="text-[10px] text-gray-500 uppercase font-semibold">Time Taken</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-2.5 border border-gray-100">
+                <div className="text-base font-bold text-emerald-700">{total} Questions</div>
+                <div className="text-[10px] text-gray-500 uppercase font-semibold">Submitted</div>
+              </div>
+            </div>
+
+            {/* Auto-Unlock Countdown */}
             {secondsUntilUnlock !== null && secondsUntilUnlock > 0 ? (
-              <div className="inline-flex flex-col items-center bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-md">
-                <span className="text-[10px] uppercase tracking-widest text-blue-300 font-semibold">
-                  Auto-Unlock Countdown
-                </span>
-                <span className="text-2xl sm:text-3xl font-mono font-bold text-amber-400 mt-0.5">
+              <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-sm space-y-1">
+                <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold">
+                  Results &amp; Certificate Unlock In
+                </div>
+                <div className="text-3xl font-mono font-black text-amber-400">
                   {formatTime(secondsUntilUnlock)}
-                </span>
+                </div>
+                {endTimeLabel && (
+                  <div className="text-[10px] text-slate-400 font-medium">
+                    Quiz closes at {endTimeLabel}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <div className="text-xs text-indigo-700 font-semibold flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Finalizing leaderboard &amp; issuing verified certificate...</span>
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-2xl space-y-2">
+                <div className="text-xs font-semibold flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-700" />
+                  <span>Finalizing results &amp; issuing official certificate...</span>
                 </div>
                 <button
                   onClick={() => void loadResult(true)}
                   disabled={finalizingNow}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  Check Certificate Status Now
+                  Refresh Status Now
                 </button>
               </div>
             )}
+
+            {/* Single crisp explanation note without repetition */}
+            <p className="text-[11px] sm:text-xs text-gray-500 leading-relaxed max-w-sm mx-auto">
+              Your official score, answer key, and verified digital certificate will unlock here automatically and be sent to your registered email.
+            </p>
+
+            {/* Direct action button */}
+            <div className="pt-1">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+              >
+                <span>Go to Dashboard</span>
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-8 shadow-sm space-y-5">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                {certificate.certificate_type !== 'participation' ? (
-                  <Medal className="w-5 h-5 text-amber-500 shrink-0" />
-                ) : (
-                  <Award className="w-5 h-5 text-amber-500 shrink-0" />
-                )}
-                <h3 className="font-bold text-sm text-gray-900">Your Official Digital Certificate</h3>
-              </div>
-              <span className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full uppercase tracking-wider ${awardInfo.badgeClass}`}>
-                {awardInfo.badge}
-              </span>
-            </div>
-
-            {/* Official Certificate Preview Card */}
-            <div className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
-              {/* Top 4 Official Partner Logos: 2 Left (NMC, NCDC) · Center Title · 2 Right (NHM, One Health) */}
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/nmc.png" alt="Nagpur Municipal Corporation" className="h-9 sm:h-11 w-auto object-contain" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/ncdc.png" alt="NCDC Delhi" className="h-9 sm:h-11 w-auto object-contain" />
-                </div>
-
-                <div className="min-w-0 flex-1 px-1">
-                  <div className="text-[10px] sm:text-xs font-extrabold tracking-wide text-blue-900 uppercase leading-tight">
-                    NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
-                  </div>
-                  <div className="text-[8px] sm:text-[10px] font-bold tracking-wider text-slate-600 uppercase mt-0.5">
-                    METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/nhm.png" alt="National Health Mission (NHM)" className="h-9 sm:h-11 w-auto object-contain" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/onehealth.png" alt="National One Health Mission" className="h-9 sm:h-11 w-auto object-contain" />
-                </div>
-              </div>
-
-              <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mt-1">
-                WORLD AMR AWARENESS WEEK (WAAW) 2026
-              </div>
-              <div className="text-xs sm:text-sm font-extrabold text-gray-900 mt-1.5 uppercase">
-                {awardInfo.title}
-              </div>
-
-              <div className="my-4">
-                <span className="text-xs text-gray-400">Awarded to</span>
-                <div className="text-base sm:text-xl font-bold text-blue-950 mt-0.5 break-words">
-                  {profile?.full_name}
-                </div>
-                <div className="text-xs text-gray-600 break-words">
-                  {(!profile?.course || profile.course.toLowerCase() === 'pharmacist')
-                    ? `Pharmacist, ${profile?.college_name || ''}`
-                    : `${profile?.college_name} (${profile?.course})`}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-                For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacists.
-              </p>
-
-              <div className="mt-3 font-serif font-bold text-[#0b2566] leading-snug">
-                <div className="text-[11px] sm:text-xs tracking-wide uppercase">ONE HEALTH, ONE ACTION</div>
-                <div className="text-[11px] sm:text-xs tracking-wide uppercase">PREVENT AMR NOW!</div>
-                <div className="text-[10px] sm:text-[11px] mt-0.5">Protect • Humans • Animals • Environment</div>
-              </div>
-
-              {/* Verified Certificate ID, Auth Code & Self-Contained Offline QR Code */}
-              <div className="mt-5 pt-4 border-t border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-center sm:text-left space-y-0.5">
-                  <div className="text-[9px] text-gray-400 uppercase font-mono">Verified Certificate ID</div>
-                  <div className="text-xs font-mono font-bold text-gray-900 break-all">
-                    {certificate.certificate_number}
-                  </div>
-                  {authCode && (
-                    <div className="text-[10px] font-mono font-semibold text-blue-700">
-                      Auth: {authCode}
-                    </div>
-                  )}
-                </div>
-
-                {qrCodeDataUrl && (
-                  <img
-                    src={qrCodeDataUrl}
-                    alt="Offline Verification QR"
-                    className="w-20 h-20 border border-gray-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
-                  />
-                )}
-              </div>
-            </div>
-
-            {downloadError && (
-              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
-                {downloadError}
-              </div>
-            )}
-
-            {/* Real Official PDF Download & Online Verification Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-1">
-              <button
-                onClick={handleDownloadCertificate}
-                disabled={downloading}
-                className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                {downloading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
-              </button>
-
-              {verifyUrl ? (
-                <a
-                  href={verifyUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Verify Online</span>
-                </a>
-              ) : (
-                <Link
-                  href={`/verify/${certificate.certificate_number}`}
-                  className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Verify Online</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Question by Question Review Accordion — Strictly Locked Until Competition Timer Ends */}
-        {!answerKeyUnlocked ? (
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-amber-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="p-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl shrink-0">
-                <Lock className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-gray-900">
-                  Answer Key &amp; Explanations Locked
-                </h3>
-                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                  To ensure fair play while other participants are still taking the quiz{endTimeLabel ? ` (closes at ${endTimeLabel})` : ''}, the Answer Key &amp; detailed solutions will automatically unlock once the competition timer ends.
-                </p>
-              </div>
-            </div>
-            {secondsUntilUnlock !== null && secondsUntilUnlock > 0 && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-mono font-bold shrink-0 self-start sm:self-center">
-                <Clock className="w-3.5 h-3.5 text-amber-700" />
-                <span>{formatTime(secondsUntilUnlock)}</span>
-              </div>
-            )}
-          </div>
-        ) : responses.length > 0 && (
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
-            <button
-              onClick={() => setShowReview(!showReview)}
-              className="w-full p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 transition-colors text-left"
-            >
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="p-2 bg-blue-50 text-blue-700 rounded-xl shrink-0">
-                  <BookOpen className="w-5 h-5" />
+          /* STATE B: Post-Finalization — Full Certificate & Final Score Presentation */
+          <>
+            {/* Email Dispatch Notice */}
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-gray-900">
-                    Review Your Answers &amp; Explanations
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    See correct answers, your selected options, and detailed explanations for all {responses.length} questions.
+                  <h4 className="text-sm font-bold text-gray-900">
+                    Official Certificate Issued!
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                    Your final score and rank have been computed. Your verified certificate is ready to download below and has also been emailed.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 shrink-0 self-end sm:self-center">
-                <span>{showReview ? 'Hide Answers' : 'View Answers'}</span>
-                {showReview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>PDF Available</span>
               </div>
-            </button>
+            </div>
+
+            {/* Final Scorecard */}
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-8 shadow-sm text-center relative overflow-hidden">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 mb-4">
+                <Trophy className="w-7 h-7 sm:w-8 sm:h-8" />
+              </div>
+
+              <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">
+                Quiz Result &amp; Score
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-md mx-auto">
+                {competition?.title || 'World AMR Awareness Week National Quiz Competition 2026'}
+              </p>
+
+              {/* Stats Badges */}
+              <div className={`grid ${rank ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2 sm:gap-3 my-5 sm:my-6 max-w-md mx-auto`}>
+                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+                  <div className="text-base sm:text-2xl font-extrabold text-blue-700 whitespace-nowrap">
+                    {score} / {total}
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Score</div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+                  <div className="text-base sm:text-2xl font-extrabold text-emerald-600">
+                    {percentage}%
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Accuracy</div>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-gray-100">
+                  <div className="text-base sm:text-2xl font-extrabold text-indigo-700">
+                    {formatTime(timeSpentSeconds)}
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold mt-0.5">Time Taken</div>
+                </div>
+
+                {rank && (
+                  <div className="bg-amber-50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-amber-200">
+                    <div className="text-base sm:text-2xl font-extrabold text-amber-700">
+                      #{rank}
+                    </div>
+                    <div className="text-[10px] text-amber-700 uppercase font-semibold mt-0.5">Final Rank</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Candidate Info Summary */}
+              <div className="inline-flex flex-wrap items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-2 rounded-2xl text-xs font-medium max-w-full leading-snug">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                <span className="break-words">{profile?.full_name} · {profile?.college_name}</span>
+              </div>
+            </div>
+
+            {/* Digital Certificate Preview Card */}
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-8 shadow-sm space-y-5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  {certificate.certificate_type !== 'participation' ? (
+                    <Medal className="w-5 h-5 text-amber-500 shrink-0" />
+                  ) : (
+                    <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                  )}
+                  <h3 className="font-bold text-sm text-gray-900">Your Official Digital Certificate</h3>
+                </div>
+                <span className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full uppercase tracking-wider ${awardInfo.badgeClass}`}>
+                  {awardInfo.badge}
+                </span>
+              </div>
+
+              {/* Official Certificate Preview Card */}
+              <div className={`border-4 rounded-2xl p-4 sm:p-6 text-center relative shadow-inner ${awardInfo.borderClass}`}>
+                {/* Top 4 Official Partner Logos */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/nmc.png" alt="Nagpur Municipal Corporation" className="h-9 sm:h-11 w-auto object-contain" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/ncdc.png" alt="NCDC Delhi" className="h-9 sm:h-11 w-auto object-contain" />
+                  </div>
+
+                  <div className="min-w-0 flex-1 px-1">
+                    <div className="text-[10px] sm:text-xs font-extrabold tracking-wide text-blue-900 uppercase leading-tight">
+                      NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
+                    </div>
+                    <div className="text-[8px] sm:text-[10px] font-bold tracking-wider text-slate-600 uppercase mt-0.5">
+                      METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/nhm.png" alt="National Health Mission (NHM)" className="h-9 sm:h-11 w-auto object-contain" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/onehealth.png" alt="National One Health Mission" className="h-9 sm:h-11 w-auto object-contain" />
+                  </div>
+                </div>
+
+                <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mt-1">
+                  WORLD AMR AWARENESS WEEK (WAAW) 2026
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-gray-900 mt-1.5 uppercase">
+                  {awardInfo.title}
+                </div>
+
+                <div className="my-4">
+                  <span className="text-xs text-gray-400">Awarded to</span>
+                  <div className="text-base sm:text-xl font-bold text-blue-950 mt-0.5 break-words">
+                    {profile?.full_name}
+                  </div>
+                  <div className="text-xs text-gray-600 break-words">
+                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacist')
+                      ? `Pharmacist, ${profile?.college_name || ''}`
+                      : `${profile?.college_name} (${profile?.course})`}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
+                  For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacists.
+                </p>
+
+                <div className="mt-3 font-serif font-bold text-[#0b2566] leading-snug">
+                  <div className="text-[11px] sm:text-xs tracking-wide uppercase">ONE HEALTH, ONE ACTION</div>
+                  <div className="text-[11px] sm:text-xs tracking-wide uppercase">PREVENT AMR NOW!</div>
+                  <div className="text-[10px] sm:text-[11px] mt-0.5">Protect • Humans • Animals • Environment</div>
+                </div>
+
+                {/* Verified Certificate ID, Auth Code & Offline QR Code */}
+                <div className="mt-5 pt-4 border-t border-amber-200/70 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-center sm:text-left space-y-0.5">
+                    <div className="text-[9px] text-gray-400 uppercase font-mono">Verified Certificate ID</div>
+                    <div className="text-xs font-mono font-bold text-gray-900 break-all">
+                      {certificate.certificate_number}
+                    </div>
+                    {authCode && (
+                      <div className="text-[10px] font-mono font-semibold text-blue-700">
+                        Auth: {authCode}
+                      </div>
+                    )}
+                  </div>
+
+                  {qrCodeDataUrl && (
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="Offline Verification QR"
+                      className="w-20 h-20 border border-gray-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {downloadError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                  {downloadError}
+                </div>
+              )}
+
+              {/* PDF Download & Verify Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <button
+                  onClick={handleDownloadCertificate}
+                  disabled={downloading}
+                  className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {downloading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
+                </button>
+
+                {verifyUrl ? (
+                  <a
+                    href={verifyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>Verify Online</span>
+                  </a>
+                ) : (
+                  <Link
+                    href={`/verify/${certificate.certificate_number}`}
+                    className="py-3 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>Verify Online</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Question by Question Review Accordion (Only after unlock) */}
+            {answerKeyUnlocked && responses.length > 0 && (
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
+                <button
+                  onClick={() => setShowReview(!showReview)}
+                  className="w-full p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/80 transition-colors text-left cursor-pointer"
+                >
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-700 rounded-xl shrink-0">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900">
+                        Review Your Answers &amp; Explanations
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        See correct answers, your selected options, and detailed explanations for all {responses.length} questions.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 shrink-0 self-end sm:self-center">
+                    <span>{showReview ? 'Hide Answers' : 'View Answers'}</span>
+                    {showReview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </div>
+                </button>
 
             {showReview && (
               <div className="p-4 sm:p-5 border-t border-gray-100 space-y-5 bg-slate-50/40">
@@ -687,6 +668,8 @@ export default function StudentResultPage({
               </div>
             )}
           </div>
+        )}
+          </>
         )}
 
       </div>

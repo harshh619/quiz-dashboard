@@ -176,27 +176,27 @@ export async function generateCertificatePdfBuffer({
     }
   }
 
-  // 3. Top Header: NMC (Primary Authority - Larger Font) & MSU (Operating Unit - Smaller Font)
+  // 3. Top Header: NMC (Primary Authority - Larger Font) & MSU (Operating Unit - Medium Font)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
+  doc.setFontSize(16)
   doc.setTextColor(30, 58, 138)
   doc.text('NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR', width / 2, 26.5, { align: 'center' })
 
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9.5)
+  doc.setFontSize(12.5)
   doc.setTextColor(51, 65, 85)
-  doc.text('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', width / 2, 32.5, { align: 'center' })
+  doc.text('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', width / 2, 33.5, { align: 'center' })
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8.5)
+  doc.setFontSize(10.5)
   doc.setTextColor(100, 116, 139)
-  doc.text('National Awareness Initiative · Antimicrobial Resistance (AMR) Containment', width / 2, 37.5, { align: 'center' })
+  doc.text('National Awareness Initiative · Antimicrobial Resistance (AMR) Containment', width / 2, 39.5, { align: 'center' })
 
   // 4. Main Event Ribbon
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(12.5)
+  doc.setFontSize(14)
   doc.setTextColor(180, 83, 9)
-  doc.text('WORLD AMR AWARENESS WEEK (WAAW) 2026', width / 2, 46.5, { align: 'center' })
+  doc.text('WORLD AMR AWARENESS WEEK (WAAW) 2026', width / 2, 49, { align: 'center' })
 
   // 5. Certificate Title
   let titleText = 'CERTIFICATE OF PARTICIPATION'
@@ -204,30 +204,30 @@ export async function generateCertificatePdfBuffer({
   else if (certificateType === 'second_prize') titleText = 'CERTIFICATE OF MERIT - SECOND PRIZE'
   else if (certificateType === 'third_prize') titleText = 'CERTIFICATE OF MERIT - THIRD PRIZE'
 
-  doc.setFontSize(21.5)
+  doc.setFontSize(25)
   doc.setTextColor(15, 23, 42)
-  doc.text(titleText, width / 2, 57, { align: 'center' })
+  doc.text(titleText, width / 2, 61, { align: 'center' })
 
   // 6. Presentation Line
   doc.setFont('helvetica', 'italic')
-  doc.setFontSize(10.5)
+  doc.setFontSize(13)
   doc.setTextColor(100, 116, 139)
-  doc.text('This is proudly presented to', width / 2, 66.5, { align: 'center' })
+  doc.text('This is proudly presented to', width / 2, 71, { align: 'center' })
 
   // 7. Participant Name
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(24)
+  doc.setFontSize(27)
   doc.setTextColor(30, 58, 138)
-  doc.text(studentName.toUpperCase(), width / 2, 78, { align: 'center' })
+  doc.text(studentName.toUpperCase(), width / 2, 82.5, { align: 'center' })
 
   // Horizontal accent line under name
   doc.setDrawColor(217, 119, 6)
-  doc.setLineWidth(0.8)
-  doc.line(width / 2 - 60, 81.5, width / 2 + 60, 81.5)
+  doc.setLineWidth(0.9)
+  doc.line(width / 2 - 70, 86, width / 2 + 70, 86)
 
   // 8. Designation / Health Facility details & Appreciation text
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13.5)
   doc.setTextColor(51, 65, 85)
   const isPharmacist = !course || course.toLowerCase() === 'pharmacist'
   const affiliationLine = collegeName
@@ -239,7 +239,7 @@ export async function generateCertificatePdfBuffer({
     : course || ''
 
   if (affiliationLine) {
-    doc.text(affiliationLine, width / 2, 88.5, { align: 'center' })
+    doc.text(affiliationLine, width / 2, 94.5, { align: 'center' })
   }
 
   let achievementPhrase = 'for actively participating in'
@@ -247,26 +247,28 @@ export async function generateCertificatePdfBuffer({
   else if (certificateType === 'second_prize') achievementPhrase = 'for securing Second Prize in'
   else if (certificateType === 'third_prize') achievementPhrase = 'for securing Third Prize in'
 
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(13)
   const descText = `${achievementPhrase} the Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.`
-  const splitDesc = doc.splitTextToSize(descText, 215)
-  doc.text(splitDesc, width / 2, 97.5, { align: 'center' })
+  const splitDesc = doc.splitTextToSize(descText, 226)
+  doc.text(splitDesc, width / 2, 104, { align: 'center', lineHeightFactor: 1.35 })
 
   // Score badge
   if (typeof score === 'number') {
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(12)
     doc.setTextColor(30, 58, 138)
-    doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 110.5, { align: 'center' })
+    doc.text(`Score Obtained: ${score} / ${totalQuestions}`, width / 2, 118, { align: 'center' })
   }
 
   // 8.5 Official One Health / AMR Slogan Block
   doc.setFont('times', 'bold')
-  doc.setFontSize(11)
+  doc.setFontSize(13.5)
   doc.setTextColor(11, 37, 102)
-  doc.text('ONE HEALTH, ONE ACTION', width / 2, 120.5, { align: 'center' })
-  doc.text('PREVENT AMR NOW!', width / 2, 125.8, { align: 'center' })
-  doc.setFontSize(10)
-  doc.text('Protect \u2022 Humans \u2022 Animals \u2022 Environment', width / 2, 131.2, { align: 'center' })
+  doc.text('ONE HEALTH, ONE ACTION', width / 2, 128.5, { align: 'center' })
+  doc.text('PREVENT AMR NOW!', width / 2, 135, { align: 'center' })
+  doc.setFontSize(11.5)
+  doc.text('Protect \u2022 Humans \u2022 Animals \u2022 Environment', width / 2, 141.5, { align: 'center' })
 
   // 9. Cryptographically Signed (ECDSA P-256) Permanent GitHub Pages Verification QR
   let qrTarget = verificationUrl
@@ -296,22 +298,22 @@ export async function generateCertificatePdfBuffer({
       errorCorrectionLevel: 'M',
       color: { dark: '#1e3a8a', light: '#ffffff' },
     })
-    doc.addImage(qrDataUrl, 'PNG', 24, 138, 31, 31)
+    doc.addImage(qrDataUrl, 'PNG', 24, 143, 31, 31)
   } catch (err) {
     console.error('Error generating QR for PDF:', err)
   }
 
   // QR label & Digital Seal Code
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7.2)
+  doc.setFontSize(7.5)
   doc.setTextColor(30, 58, 138)
-  doc.text('Scan QR to Verify', 39.5, 173, { align: 'center' })
+  doc.text('Scan QR to Verify', 39.5, 178, { align: 'center' })
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.8)
+  doc.setFontSize(7)
   doc.setTextColor(100, 116, 139)
-  doc.text(`ID: ${certificateNumber}`, 39.5, 176.8, { align: 'center' })
+  doc.text(`ID: ${certificateNumber}`, 39.5, 181.8, { align: 'center' })
   if (authCode) {
-    doc.text(`Seal: ${authCode}`, 39.5, 180.4, { align: 'center' })
+    doc.text(`Seal: ${authCode}`, 39.5, 185.4, { align: 'center' })
   }
 
   // 10. Dynamic Official Signatories (Supports 1 to 4 Signatories with Transparent PNG Signatures!)
@@ -329,7 +331,7 @@ export async function generateCertificatePdfBuffer({
     const lineHalfWidth = sigCount === 4 ? 22 : sigCount === 3 ? 27 : 31
     const maxSigImgW = sigCount === 4 ? 36 : 44
     const maxSigImgH = 15
-    const lineY = 163
+    const lineY = 166
 
     // Fetch all PNG signatures in parallel
     const sigImages = await Promise.all(
@@ -372,20 +374,20 @@ export async function generateCertificatePdfBuffer({
 
       // Signatory Name
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(sigCount === 4 ? 8.5 : 9.5)
+      doc.setFontSize(sigCount === 4 ? 9.5 : 11)
       doc.setTextColor(15, 23, 42)
       const textMaxW = slotWidth - 4
       const nameLines = doc.splitTextToSize(sig.name || '', textMaxW)
-      doc.text(nameLines, centerX, lineY + 4.5, { align: 'center' })
+      doc.text(nameLines, centerX, lineY + 5, { align: 'center' })
 
-      // Signatory Designation + Organization Line 1 + Organization Line 2 (each cleanly on its own line)
+      // Signatory Designation + Organization Line 1 + Organization Line 2
       doc.setFont('helvetica', 'normal')
-      const subFontSize = sigCount === 4 ? 7.0 : sigCount === 3 ? 7.5 : 8.0
+      const subFontSize = sigCount === 4 ? 7.5 : sigCount === 3 ? 8.2 : 9.0
       doc.setFontSize(subFontSize)
       doc.setTextColor(100, 116, 139)
 
-      const lineStep = sigCount === 4 ? 3.2 : 3.5
-      let cursorY = lineY + 4.5 + nameLines.length * 3.8
+      const lineStep = sigCount === 4 ? 3.5 : 3.8
+      let cursorY = lineY + 5 + nameLines.length * 4.2
       const subLines = [sig.designation, sig.organization, sig.organizationLine2]
         .map((v) => (v || '').trim())
         .filter(Boolean)
@@ -400,9 +402,9 @@ export async function generateCertificatePdfBuffer({
 
   // Bottom issue date
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
+  doc.setFontSize(8.5)
   doc.setTextColor(148, 163, 184)
-  doc.text(`Date of Issue: ${dateStr}`, width / 2, 192, { align: 'center' })
+  doc.text(`Date of Issue: ${dateStr}`, width / 2, 193.5, { align: 'center' })
 
   return Buffer.from(doc.output('arraybuffer'))
 }
