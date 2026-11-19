@@ -57,7 +57,7 @@ export const HEALTH_FACILITIES = [
   'Hazaripahad UPHC',
   'Hiwri Nagar UPHC',
   'Hudkeshwar UPHC',
-  'Indira Gandhi (IGR) UPHC',
+  'Indira Gandhi Rugnalaya',
   'Indora UPHC',
   'Jagnath Budhwari UPHC',
   'Jaitala UPHC',
