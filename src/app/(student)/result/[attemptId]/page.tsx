@@ -218,8 +218,8 @@ export default function StudentResultPage({
     : null
 
   return (
-    <div className={`min-h-screen bg-slate-50 text-gray-900 py-4 sm:py-8 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
-      <div className={`mx-auto w-full space-y-4 ${!certificate ? 'max-w-md sm:max-w-lg' : 'max-w-2xl'}`}>
+    <div className={`min-h-screen min-h-[100dvh] bg-slate-50 text-gray-900 py-3 sm:py-6 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
+      <div className={`mx-auto w-full space-y-3 sm:space-y-4 ${!certificate ? 'max-w-md' : 'max-w-2xl'}`}>
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -237,34 +237,34 @@ export default function StudentResultPage({
 
         {/* STATE A: Pre-Finalization / Timer Running — Single-Screen Unified Card (Zero Scroll & Zero Repetition) */}
         {!certificate ? (
-          <div className="bg-white rounded-3xl border border-gray-200 p-5 sm:p-7 shadow-sm text-center space-y-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-6 shadow-sm text-center space-y-3 sm:space-y-3.5">
 
-            <div className="w-13 h-13 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
-              <CheckCircle className="w-7 h-7" />
+            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
+              <CheckCircle className="w-6 h-6" />
             </div>
 
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">
                 Quiz Successfully Submitted!
               </h1>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                 {competition?.title || 'World AMR Awareness Week National Quiz Competition 2026'}
               </p>
             </div>
 
             {/* Candidate Pill */}
-            <div className="inline-flex items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-1.5 rounded-xl text-xs font-semibold max-w-full">
+            <div className="inline-flex items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3 py-1 rounded-xl text-xs font-semibold max-w-full">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
               <span className="truncate">{profile?.full_name} · {profile?.college_name || 'Pharmacy Officer'}</span>
             </div>
 
             {/* Compact Stats Row */}
             <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-gray-100">
+              <div className="bg-slate-50 rounded-xl p-2 border border-gray-100">
                 <div className="text-base font-bold text-indigo-700">{formatTime(timeSpentSeconds)}</div>
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">Time Taken</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-gray-100">
+              <div className="bg-slate-50 rounded-xl p-2 border border-gray-100">
                 <div className="text-base font-bold text-emerald-700">{total} Questions</div>
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">Submitted</div>
               </div>
@@ -272,11 +272,11 @@ export default function StudentResultPage({
 
             {/* Auto-Unlock Countdown */}
             {secondsUntilUnlock !== null && secondsUntilUnlock > 0 ? (
-              <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-sm space-y-1">
+              <div className="bg-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-sm space-y-0.5">
                 <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold">
                   Results &amp; Certificate Unlock In
                 </div>
-                <div className="text-3xl font-mono font-black text-amber-400">
+                <div className="text-2xl sm:text-3xl font-mono font-black text-amber-400">
                   {formatTime(secondsUntilUnlock)}
                 </div>
                 {endTimeLabel && (
@@ -286,7 +286,7 @@ export default function StudentResultPage({
                 )}
               </div>
             ) : (
-              <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-2xl space-y-2">
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-3 sm:p-4 rounded-2xl space-y-2">
                 <div className="text-xs font-semibold flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-indigo-700" />
                   <span>Finalizing results &amp; issuing official certificate...</span>
@@ -294,7 +294,7 @@ export default function StudentResultPage({
                 <button
                   onClick={() => void loadResult(true)}
                   disabled={finalizingNow}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   Refresh Status Now
                 </button>
@@ -302,12 +302,12 @@ export default function StudentResultPage({
             )}
 
             {/* Single crisp explanation note without repetition */}
-            <p className="text-[11px] sm:text-xs text-gray-500 leading-relaxed max-w-sm mx-auto">
-              Your official score, answer key, and verified digital certificate will unlock here automatically and be sent to your registered email.
+            <p className="text-[11px] text-gray-500 leading-relaxed max-w-xs mx-auto">
+              Your score, answer key, and verified certificate will unlock automatically once the quiz ends and will also be sent to your email.
             </p>
 
             {/* Direct action button */}
-            <div className="pt-1">
+            <div className="pt-0.5">
               <Link
                 href="/dashboard"
                 className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
