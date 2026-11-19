@@ -147,7 +147,7 @@ export default function HomePage() {
           {[
             {
               icon: FileText,
-              value: '30 MCQs',
+              value: '32 MCQs',
               label: 'Objective Format',
               iconBg: 'bg-blue-50 text-blue-700 ring-blue-100',
               accent: 'from-blue-600 to-blue-400',

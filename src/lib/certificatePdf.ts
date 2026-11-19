@@ -99,7 +99,7 @@ export async function generateCertificatePdfBuffer({
   certificateType = 'participation',
   verificationUrl,
   score,
-  totalQuestions = 30,
+  totalQuestions = 32,
   dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }),
   signatories: customSignatories,
 }: {

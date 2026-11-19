@@ -22,8 +22,8 @@ export default function AdminCompetitionsPage() {
     description: 'Online Quiz Competition for Pharmacy Officers.',
     scheduled_start: '',
     duration_minutes: 10,
-    total_questions: 30,
-    passing_score: 18,
+    total_questions: 32,
+    passing_score: 19,
     max_participants: 1000,
     status: 'draft',
   })
@@ -141,7 +141,8 @@ export default function AdminCompetitionsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const questionsToLink = matchingBankQuestions.slice(0, 30)
+      const maxQ = Number(newComp.total_questions) || matchingBankQuestions.length
+      const questionsToLink = matchingBankQuestions.slice(0, maxQ)
       if (questionsToLink.length === 0) {
         alert(`No questions found in category "${selectedQuestionCategory}". Please add questions to this category first or select another category.`)
         return

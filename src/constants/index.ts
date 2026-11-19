@@ -6,7 +6,7 @@ export const APP_NAME = 'AMR Quiz Portal'
 export const APP_TAGLINE = 'World AMR Awareness Week – Online Quiz Competition'
 
 export const QUIZ_CONFIG = {
-  TOTAL_QUESTIONS: 30,
+  TOTAL_QUESTIONS: 32,
   DURATION_SECONDS: 600,       // 10 minutes
   WAITING_ROOM_OPEN_MINS: 15,  // Open 15 mins before quiz
   MAX_PARTICIPANTS: 1000,

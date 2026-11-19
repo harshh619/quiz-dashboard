@@ -72,7 +72,7 @@ export async function buildSignedQrVerificationUrl(input: {
   if (input.course?.trim()) payloadObj.cr = input.course.trim()
   if (typeof input.score === 'number') {
     payloadObj.s = input.score
-    payloadObj.t = input.totalQuestions ?? 30
+    payloadObj.t = input.totalQuestions ?? 32
   }
   if (input.eventName?.trim()) payloadObj.e = input.eventName.trim()
 
