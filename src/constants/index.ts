@@ -75,7 +75,7 @@ export const HEALTH_FACILITIES = [
   'Narsala UPHC',
   'Netaji UPHC',
   'Pachpaoli UPHC',
-  'Pachpaoli Maternity Home UPHC',
+  'Pachpaoli Maternity Hospital',
   'Pardi UPHC',
   'Sachidanand UPHC',
   'Satrangipura UPHC',
