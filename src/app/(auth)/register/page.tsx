@@ -103,7 +103,7 @@ export default function RegisterProfilePage() {
         .update({
           full_name: formattedFullName,
           college_name: selectedFacility,
-          course: 'Pharmacist',
+          course: 'Pharmacy Officer',
           year_semester: 'NMC Nagpur',
           mobile: cleanMobile,
           registration_number: regNum,
@@ -147,7 +147,7 @@ export default function RegisterProfilePage() {
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Participant Registration</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1 px-2">
-            Enter your name and select your NMC Health Facility to participate in the Online Quiz Competition for Pharmacists and receive your official E-Certificate.
+            Enter your name and select your NMC Health Facility to participate in the Online Quiz Competition for Pharmacy Officers and receive your official E-Certificate.
           </p>
         </div>
 

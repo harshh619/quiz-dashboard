@@ -99,7 +99,7 @@ export async function sendCertificateEmail({
 
       <div style="padding: 24px;">
         <p style="font-size: 16px;">Dear <b>${studentName}</b>,</p>
-        <p>Congratulations on completing the <b>Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR)</b>!</p>
+        <p>Congratulations on completing the <b>Online Quiz Competition for Pharmacy Officers on Antimicrobial Resistance (AMR)</b>!</p>
 
         <div style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 16px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0 0 8px;"><b>Certificate ID:</b> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${certificateNumber}</code></p>

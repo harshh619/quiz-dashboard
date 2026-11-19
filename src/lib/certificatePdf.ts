@@ -229,13 +229,13 @@ export async function generateCertificatePdfBuffer({
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13.5)
   doc.setTextColor(51, 65, 85)
-  const isPharmacist = !course || course.toLowerCase() === 'pharmacist'
+  const isPharmacyOfficer = !course || course.toLowerCase() === 'pharmacy officer' || course.toLowerCase() === 'pharmacist'
   const affiliationLine = collegeName
-    ? isPharmacist
-      ? `Pharmacist, ${collegeName}`
+    ? isPharmacyOfficer
+      ? `Pharmacy Officer, ${collegeName}`
       : `of ${collegeName}${course ? ` (${course})` : ''}`
-    : isPharmacist
-    ? 'Pharmacist'
+    : isPharmacyOfficer
+    ? 'Pharmacy Officer'
     : course || ''
 
   if (affiliationLine) {
@@ -249,7 +249,7 @@ export async function generateCertificatePdfBuffer({
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(13)
-  const descText = `${achievementPhrase} the Online Quiz Competition for Pharmacists on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.`
+  const descText = `${achievementPhrase} the Online Quiz Competition for Pharmacy Officers on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.`
   const splitDesc = doc.splitTextToSize(descText, 226)
   doc.text(splitDesc, width / 2, 104, { align: 'center', lineHeightFactor: 1.35 })
 

@@ -373,9 +373,9 @@
 
     function renderVerified(cert, sigPreview) {
       const awardTitle = formatAward(cert.a);
-      const isPharm = !cert.cr || cert.cr.toLowerCase() === "pharmacist";
+      const isPharm = !cert.cr || cert.cr.toLowerCase() === "pharmacist" || cert.cr.toLowerCase() === "pharmacy officer";
       const institution = cert.c
-        ? (isPharm ? `Pharmacist, ${cert.c}` : `${cert.c}${cert.cr ? ` (${cert.cr})` : ""}`)
+        ? (isPharm ? `Pharmacy Officer, ${cert.c}` : `${cert.c}${cert.cr ? ` (${cert.cr})` : ""}`)
         : (cert.cr || "NMC Health Facility");
 
       const scoreText = (typeof cert.s === "number")

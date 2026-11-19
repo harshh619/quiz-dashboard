@@ -255,7 +255,7 @@ export default function StudentResultPage({
             {/* Candidate Pill */}
             <div className="inline-flex items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-1.5 rounded-xl text-xs font-semibold max-w-full">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-              <span className="truncate">{profile?.full_name} · {profile?.college_name || 'Pharmacist'}</span>
+              <span className="truncate">{profile?.full_name} · {profile?.college_name || 'Pharmacy Officer'}</span>
             </div>
 
             {/* Compact Stats Row */}
@@ -450,14 +450,14 @@ export default function StudentResultPage({
                     {profile?.full_name}
                   </div>
                   <div className="text-xs text-gray-600 break-words">
-                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacist')
-                      ? `Pharmacist, ${profile?.college_name || ''}`
+                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacy officer' || profile.course.toLowerCase() === 'pharmacist')
+                      ? `Pharmacy Officer, ${profile?.college_name || ''}`
                       : `${profile?.college_name} (${profile?.course})`}
                   </div>
                 </div>
 
                 <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-                  For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacists.
+                  For demonstrating commitment to Antimicrobial Stewardship in the Online Quiz Competition for Pharmacy Officers.
                 </p>
 
                 <div className="mt-3 font-serif font-bold text-[#0b2566] leading-snug">

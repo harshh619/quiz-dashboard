@@ -314,7 +314,7 @@ export default function AdminParticipantsPage() {
                           <span>{p.college_name || 'Profile Incomplete'}</span>
                         </div>
                         <div className="text-[11px] text-gray-400 mt-0.5 pl-5">
-                          {p.course || 'Pharmacist'}
+                          {p.course || 'Pharmacy Officer'}
                         </div>
                       </td>
                       <td className="px-4 py-3">

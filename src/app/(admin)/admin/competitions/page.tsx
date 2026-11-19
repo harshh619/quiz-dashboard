@@ -19,7 +19,7 @@ export default function AdminCompetitionsPage() {
 
   const [newComp, setNewComp] = useState({
     title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
-    description: 'Online Quiz Competition for Pharmacists.',
+    description: 'Online Quiz Competition for Pharmacy Officers.',
     scheduled_start: '',
     duration_minutes: 10,
     total_questions: 30,

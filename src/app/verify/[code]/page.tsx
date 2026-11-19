@@ -112,7 +112,7 @@ export default function CertificateVerificationPage({
 
               <div className="pb-3 border-b border-gray-100 flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Role / Category</span>
-                <span className="font-semibold text-gray-800">{cert?.student?.course || 'Pharmacist'}</span>
+                <span className="font-semibold text-gray-800">{cert?.student?.course || 'Pharmacy Officer'}</span>
               </div>
 
               <div className="pb-3 border-b border-gray-100 flex justify-between items-center">
