@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatTime } from '@/lib/utils'
 import { parseCategoryTopic } from '@/lib/questionCategories'
+import { renderPdfAsImage, type PdfImageResult } from '@/lib/pdfToImage'
 import {
   Trophy, Award, Download, ArrowLeft, QrCode, Sparkles, Clock,
   ShieldCheck, CheckCircle, XCircle, ChevronDown, ChevronUp,
@@ -82,6 +83,9 @@ export default function StudentResultPage({
     fileName: string
     file?: File
   } | null>(null)
+  const [certPreviewUrl, setCertPreviewUrl] = useState<string | null>(null)
+  const [certPreviewLoading, setCertPreviewLoading] = useState(false)
+  const [certPdfImage, setCertPdfImage] = useState<PdfImageResult | null>(null)
 
   const loadResult = useCallback(async (isAutoRefresh = false) => {
     if (isAutoRefresh) setFinalizingNow(true)
@@ -169,6 +173,25 @@ export default function StudentResultPage({
     return () => clearInterval(interval)
   }, [certificate, answerKeyUnlocked, scoreUnlocked, unlockAt, serverOffsetMs, loadResult])
 
+  // Render official PDF certificate as image for preview (once certificate is available)
+  useEffect(() => {
+    if (!certificate || certPreviewUrl || certPreviewLoading) return
+    setCertPreviewLoading(true)
+
+    const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
+    renderPdfAsImage(`/api/certificate/${attemptId}/pdf`, fileName, 2.5)
+      .then((result) => {
+        setCertPreviewUrl(result.blobUrl)
+        setCertPdfImage(result)
+      })
+      .catch((err) => {
+        console.error('Failed to render certificate preview:', err)
+      })
+      .finally(() => {
+        setCertPreviewLoading(false)
+      })
+  }, [certificate, attemptId, certPreviewUrl, certPreviewLoading])
+
   // Direct Official PDF Certificate Download (NOT webpage print!)
   const handleDownloadCertificate = async () => {
     if (!certificate) return
@@ -201,141 +224,24 @@ export default function StudentResultPage({
     }
   }
 
-  // 1-Click High-Res Image (PNG) Download directly to phone gallery
+  // 1-Click High-Res Image (PNG) Download — renders official PDF certificate as PNG
   const handleDownloadCertificateImage = async () => {
     if (!certificate) return
     setDownloadingImage(true)
     setDownloadError(null)
 
-    const originalGetComputedStyle = window.getComputedStyle
-
     try {
-      const html2canvas = (await import('html2canvas')).default
-      const certElem = document.getElementById('certificate-card-preview')
-      if (!certElem) throw new Error('Certificate element not found')
-
-      // Offscreen canvas for color conversions from modern CSS lab/oklch to RGB
-      let convCanvas: HTMLCanvasElement | null = null
-      let convCtx: CanvasRenderingContext2D | null = null
-      try {
-        convCanvas = document.createElement('canvas')
-        convCanvas.width = 1
-        convCanvas.height = 1
-        convCtx = convCanvas.getContext('2d')
-      } catch {}
-
-      const sanitizeColorOrStyle = (val: string, prop?: string): string => {
-        if (!val || typeof val !== 'string') return val
-        const lower = val.toLowerCase()
-        if (
-          !lower.includes('lab(') &&
-          !lower.includes('oklch(') &&
-          !lower.includes('oklab(') &&
-          !lower.includes('lch(') &&
-          !lower.includes('color(')
-        ) {
-          return val
-        }
-        const propLower = (prop || '').toLowerCase()
-        if (
-          propLower.includes('shadow') ||
-          propLower.includes('filter') ||
-          lower.includes('shadow') ||
-          lower.includes('drop-shadow')
-        ) {
-          return 'none'
-        }
-        if (convCtx) {
-          try {
-            convCtx.fillStyle = '#1e293b'
-            convCtx.fillStyle = val
-            const converted = convCtx.fillStyle
-            if (converted && !converted.includes('lab') && !converted.includes('oklch')) {
-              return converted
-            }
-          } catch {}
-        }
-        return '#1e293b'
-      }
-
-      const wrapComputedStyle = (style: CSSStyleDeclaration): CSSStyleDeclaration => {
-        return new Proxy(style, {
-          get(target, prop) {
-            if (prop === 'getPropertyValue') {
-              return (propertyName: string) => {
-                const raw = target.getPropertyValue(propertyName)
-                return sanitizeColorOrStyle(raw, propertyName)
-              }
-            }
-            const val = Reflect.get(target, prop, target)
-            if (typeof val === 'function') {
-              return val.bind(target)
-            }
-            if (typeof prop === 'string' && typeof val === 'string') {
-              return sanitizeColorOrStyle(val, prop)
-            }
-            return val
-          },
-        })
-      }
-
-      // Intercept window.getComputedStyle while html2canvas runs
-      window.getComputedStyle = function (elt: Element, pseudoElt?: string | null) {
-        const res = originalGetComputedStyle.call(window, elt, pseudoElt)
-        return wrapComputedStyle(res)
-      }
-
-      const canvas = await html2canvas(certElem, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        onclone: (clonedDoc, clonedElement) => {
-          // Intercept iframe window's getComputedStyle as well
-          if (clonedDoc.defaultView) {
-            const iframeGCS = clonedDoc.defaultView.getComputedStyle
-            clonedDoc.defaultView.getComputedStyle = function (elt: Element, pseudoElt?: string | null) {
-              const res = iframeGCS.call(clonedDoc.defaultView, elt, pseudoElt)
-              return wrapComputedStyle(res)
-            }
-          }
-
-          if (clonedDoc.documentElement) {
-            clonedDoc.documentElement.style.backgroundColor = '#ffffff'
-            clonedDoc.documentElement.style.color = '#000000'
-          }
-          if (clonedDoc.body) {
-            clonedDoc.body.style.backgroundColor = '#ffffff'
-            clonedDoc.body.style.color = '#000000'
-          }
-
-          // Strip any modern filter or box-shadow with lab/oklch on cloned elements
-          const elements = [clonedElement, ...Array.from(clonedElement.querySelectorAll<HTMLElement>('*'))]
-          for (const el of elements) {
-            const inlineBoxShadow = el.style.boxShadow
-            if (inlineBoxShadow && (inlineBoxShadow.includes('lab') || inlineBoxShadow.includes('oklch'))) {
-              el.style.boxShadow = 'none'
-            }
-            const inlineFilter = el.style.filter
-            if (inlineFilter && (inlineFilter.includes('lab') || inlineFilter.includes('oklch'))) {
-              el.style.filter = 'none'
-            }
-          }
-        },
-      })
-
-      // Convert to binary Blob (ensures mobile browser & Android DownloadManager compatibility instead of failing on huge data: URIs)
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), 'image/png')
-      })
-
-      if (!blob) {
-        throw new Error('Failed to generate certificate image blob')
-      }
-
       const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
-      const blobUrl = window.URL.createObjectURL(blob)
-      const file = new File([blob], fileName, { type: 'image/png' })
+
+      // Reuse already-rendered PDF image if available, otherwise render fresh
+      let result = certPdfImage
+      if (!result) {
+        result = await renderPdfAsImage(`/api/certificate/${attemptId}/pdf`, fileName, 2.5)
+        setCertPreviewUrl(result.blobUrl)
+        setCertPdfImage(result)
+      }
+
+      const { blobUrl, file } = result
 
       // 1. Mobile Native Share Sheet (Save to Gallery / Photos directly)
       if (
@@ -381,7 +287,6 @@ export default function StudentResultPage({
       const msg = err instanceof Error ? err.message : 'Failed to save certificate image'
       setDownloadError(msg)
     } finally {
-      window.getComputedStyle = originalGetComputedStyle
       setDownloadingImage(false)
     }
   }
@@ -500,53 +405,6 @@ export default function StudentResultPage({
       minute: '2-digit',
     })
     : null
-
-  let certificateTitle = 'CERTIFICATE OF PARTICIPATION'
-  let achievementPhrase = 'for actively participating in'
-  if (certificate?.certificate_type === 'first_prize') {
-    certificateTitle = 'CERTIFICATE OF MERIT - FIRST PRIZE'
-    achievementPhrase = 'for securing First Prize in'
-  } else if (certificate?.certificate_type === 'second_prize') {
-    certificateTitle = 'CERTIFICATE OF MERIT - SECOND PRIZE'
-    achievementPhrase = 'for securing Second Prize in'
-  } else if (certificate?.certificate_type === 'third_prize') {
-    certificateTitle = 'CERTIFICATE OF MERIT - THIRD PRIZE'
-    achievementPhrase = 'for securing Third Prize in'
-  }
-
-  const issuedDateStr = certificate?.issued_at
-    ? new Date(certificate.issued_at).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      })
-    : new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      })
-
-  const activeSignatories =
-    signatories && signatories.length > 0
-      ? signatories
-      : [
-          {
-            id: 'sig-1',
-            name: 'Dr. Sandeep Bhoyar',
-            designation: 'Microbiologist',
-            organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
-            organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
-            signatureUrl: '/signatures/dr_sandeep_bhoyar_signature.png',
-          },
-          {
-            id: 'sig-2',
-            name: 'Dr. Deepak Selokar',
-            designation: 'Medical Officer Health (MOH)',
-            organization: 'Nagpur Municipal Corporation, Nagpur',
-            organizationLine2: '',
-            signatureUrl: '/signatures/dr_deepak_selokar_signature.png',
-          },
-        ]
 
   return (
     <div className={`min-h-screen min-h-[100dvh] bg-slate-50 text-gray-900 py-3 sm:py-6 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
@@ -740,217 +598,61 @@ export default function StudentResultPage({
                 </span>
               </div>
 
-              {/* Official Certificate Preview Card (1:1 Identical to Downloaded Official PDF) */}
+              {/* Official Certificate Preview — PDF rendered as high-res image */}
               <div
-                id="certificate-card-preview"
-                className="relative bg-[#feffff] p-2 sm:p-3 rounded-2xl border-[4px] border-[#1e3a8a] text-center select-none overflow-hidden"
-                style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
+                className="relative rounded-2xl border-2 border-indigo-200 overflow-hidden bg-slate-50 transition-all shadow-md"
               >
-                {/* Inner Golden Amber Border matching PDF */}
-                <div className="relative border-2 border-[#d97706] p-4 sm:p-7 rounded-xl bg-[#feffff]">
-                  {/* Top 4 Official Partner Logos */}
-                  <div
-                    className="flex items-center justify-between gap-2 sm:gap-4 pb-2 border-b"
-                    style={{ borderColor: 'rgba(253, 230, 138, 0.6)' }}
-                  >
-                    {/* Left Logos: NMC & NCDC */}
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/nmc.png"
-                        alt="NMC Nagpur"
-                        crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain"
-                      />
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/ncdc.png"
-                        alt="NCDC"
-                        crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain"
-                      />
-                    </div>
-
-                    {/* Center Header Authority */}
-                    <div className="min-w-0 flex-1 px-1 sm:px-2 text-center">
-                      <div className="text-[10px] sm:text-xs md:text-sm font-black tracking-wide text-[#1e3a8a] uppercase leading-tight">
-                        NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
-                      </div>
-                      <div className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wider text-[#334155] uppercase mt-0.5">
-                        METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
-                      </div>
-                      <div className="text-[7px] sm:text-[9px] font-medium text-[#64748b] hidden sm:block mt-0.5">
-                        National Awareness Initiative · Antimicrobial Resistance (AMR) Containment
-                      </div>
-                    </div>
-
-                    {/* Right Logos: NHM & One Health */}
-                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/nhm.png"
-                        alt="NHM"
-                        crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain"
-                      />
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/onehealth.png"
-                        alt="One Health Mission"
-                        crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain"
-                      />
+                {certPreviewUrl ? (
+                  <div className="relative group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={certPreviewUrl}
+                      alt="Official Certificate Preview"
+                      className="w-full h-auto object-contain block select-none cursor-pointer"
+                      onClick={() => {
+                        if (certPdfImage) {
+                          setImagePreviewModal({
+                            url: certPdfImage.blobUrl,
+                            fileName: certPdfImage.file.name,
+                            file: certPdfImage.file,
+                          })
+                        }
+                      }}
+                      title="Click to expand / view full screen"
+                    />
+                    <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-lg">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>Official Certificate Preview</span>
                     </div>
                   </div>
-
-                  {/* Event Ribbon */}
-                  <div className="mt-3 sm:mt-4 text-[10px] sm:text-xs md:text-sm font-extrabold tracking-widest text-[#b45309] uppercase">
-                    WORLD AMR AWARENESS WEEK (WAAW) 2026
+                ) : certPreviewLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <p className="text-xs text-gray-600 font-medium">Generating official certificate preview...</p>
                   </div>
-
-                  {/* Certificate Title */}
-                  <h2 className="text-sm sm:text-lg md:text-xl font-black text-[#0f172a] uppercase tracking-tight mt-1 font-serif">
-                    {certificateTitle}
-                  </h2>
-
-                  {/* Presentation Line */}
-                  <div className="text-xs sm:text-sm italic font-serif text-[#64748b] mt-2 sm:mt-2.5">
-                    This is proudly presented to
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center px-4">
+                    <Award className="w-10 h-10 text-gray-300" />
+                    <p className="text-xs text-gray-500 font-medium">Could not render certificate preview.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCertPreviewLoading(true)
+                        const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
+                        renderPdfAsImage(`/api/certificate/${attemptId}/pdf`, fileName, 2.5)
+                          .then((result) => {
+                            setCertPreviewUrl(result.blobUrl)
+                            setCertPdfImage(result)
+                          })
+                          .catch((err) => console.error('Retry preview failed:', err))
+                          .finally(() => setCertPreviewLoading(false))
+                      }}
+                      className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      Retry Loading
+                    </button>
                   </div>
-
-                  {/* Participant Name with Golden Accent Line */}
-                  <div className="my-2 sm:my-2.5">
-                    <div className="text-base sm:text-2xl md:text-3xl font-black text-[#1e3a8a] uppercase tracking-wide break-words px-2 font-sans">
-                      {profile?.full_name}
-                    </div>
-                    <div className="h-[2px] bg-[#d97706] w-36 sm:w-56 mx-auto mt-1 sm:mt-1.5 rounded-full" />
-                  </div>
-
-                  {/* Designation / Health Facility */}
-                  <div className="text-xs sm:text-sm font-bold text-[#334155] break-words px-2">
-                    {(!profile?.course || profile.course.toLowerCase() === 'pharmacy officer' || profile.course.toLowerCase() === 'pharmacist')
-                      ? `Pharmacy Officer, ${profile?.college_name || 'Nagpur'}`
-                      : `${profile?.college_name}${profile?.course ? ` (${profile.course})` : ''}`}
-                  </div>
-
-                  {/* Commendation Paragraph */}
-                  <p className="text-[11px] sm:text-xs text-[#475569] max-w-xl mx-auto leading-relaxed mt-2 px-2">
-                    {achievementPhrase} the Online Quiz Competition for Pharmacy Officers on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.
-                  </p>
-
-                  {/* Score Obtained */}
-                  <div className="mt-1.5 text-xs sm:text-sm font-bold text-[#1e3a8a]">
-                    Score Obtained: {score} / {total}
-                  </div>
-
-                  {/* Official One Health / AMR Slogan Block */}
-                  <div
-                    className="mt-3 sm:mt-4 py-2 border-y font-serif font-bold text-[#0b2566] leading-tight space-y-0.5"
-                    style={{ borderColor: 'rgba(253, 230, 138, 0.6)' }}
-                  >
-                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase">
-                      ONE HEALTH, ONE ACTION
-                    </div>
-                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase text-[#92400e]">
-                      PREVENT AMR NOW!
-                    </div>
-                    <div className="text-[9px] sm:text-[11px] font-sans font-medium text-[#475569] tracking-normal pt-0.5">
-                      Protect • Humans • Animals • Environment
-                    </div>
-                  </div>
-
-                  {/* Bottom Row: Verification QR & Dual Official Signatories */}
-                  <div className="mt-4 pt-3 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 sm:gap-6 text-left">
-                    {/* Left: Cryptographic Verification QR & Security Seal */}
-                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                      {qrCodeDataUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={qrCodeDataUrl}
-                          alt="Offline Verification QR"
-                          crossOrigin="anonymous"
-                          className="w-18 h-18 sm:w-22 sm:h-22 border border-[#bfdbfe] rounded-lg p-1 bg-white shrink-0"
-                          style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
-                        />
-                      ) : (
-                        <div className="w-18 h-18 sm:w-22 sm:h-22 border border-dashed border-[#cbd5e1] rounded-lg flex items-center justify-center text-[#94a3b8] text-[10px]">
-                          QR Code
-                        </div>
-                      )}
-                      <div className="space-y-0.5 text-left">
-                        <div className="text-[10px] sm:text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
-                          Scan QR to Verify
-                        </div>
-                        <div className="text-[9px] sm:text-[11px] font-mono text-[#475569] break-all">
-                          ID: <span className="font-bold text-[#0f172a]">{certificate.certificate_number}</span>
-                        </div>
-                        {authCode && (
-                          <div className="text-[8px] sm:text-[10px] font-mono font-medium text-[#1d4ed8] break-all">
-                            Seal: {authCode.replace(/^MSU-/i, 'NMC-Nagpur-')}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Dynamic Official Signatories */}
-                    <div className="flex items-end justify-center sm:justify-end gap-5 sm:gap-8 flex-wrap w-full sm:w-auto">
-                      {activeSignatories.map((sig: any, idx: number) => {
-                        const isDrSandeep = sig.name?.toLowerCase().includes('sandeep')
-                        const isDrDeepak = sig.name?.toLowerCase().includes('deepak') || sig.name?.toLowerCase().includes('selokar')
-                        const sigImg = isDrSandeep
-                          ? '/signatures/dr_sandeep_bhoyar_signature.png'
-                          : isDrDeepak
-                          ? '/signatures/dr_deepak_selokar_signature.png'
-                          : (sig.signatureUrl || null)
-
-                        return (
-                          <div key={sig.id || idx} className="text-center min-w-[125px] sm:min-w-[155px] max-w-[185px]">
-                            {/* Signature Image above the line */}
-                            <div className="h-11 sm:h-15 flex items-end justify-center mb-0">
-                              {sigImg ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={sigImg}
-                                  alt={sig.name}
-                                  crossOrigin="anonymous"
-                                  className={`${isDrDeepak ? 'h-10 sm:h-14 max-w-[140px]' : 'h-7 sm:h-10 max-w-[140px]'} w-auto object-contain block`}
-                                />
-                              ) : (
-                                <div className="h-5" />
-                              )}
-                            </div>
-
-                            {/* Signature Line */}
-                            <div className="border-t border-[#94a3b8] w-full mt-0 mb-1" />
-
-                            {/* Signatory Name */}
-                            <div className="text-xs sm:text-sm font-bold text-[#0f172a] leading-tight">
-                              {sig.name}
-                            </div>
-
-                            {/* Designation & Organization */}
-                            <div className="text-[9px] sm:text-[10px] text-[#475569] font-medium leading-tight mt-0.5">
-                              {sig.designation}
-                            </div>
-                            <div className="text-[8px] sm:text-[9px] text-[#64748b] leading-tight mt-0.5">
-                              {sig.organization}
-                            </div>
-                            {sig.organizationLine2 && (
-                              <div className="text-[8px] sm:text-[9px] text-[#94a3b8] leading-tight">
-                                {sig.organizationLine2}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Bottom Center Date of Issue */}
-                  <div className="mt-3 pt-2 border-t border-[#f1f5f9] text-[9px] sm:text-xs text-[#94a3b8] text-center">
-                    Date of Issue: {issuedDateStr}
-                  </div>
-                </div>
+                )}
               </div>
 
               {downloadError && (
@@ -996,11 +698,10 @@ export default function StudentResultPage({
                     <button
                       onClick={handleWhatsAppShare}
                       disabled={sharingWhatsApp}
-                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${
-                        sharedStatus === 'opened'
-                          ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      }`}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${sharedStatus === 'opened'
+                        ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
                     >
                       {sharingWhatsApp ? (
                         <>
@@ -1094,8 +795,8 @@ export default function StudentResultPage({
                         <div
                           key={q.id || index}
                           className={`p-4 rounded-2xl border transition-all ${isCorrect
-                              ? 'bg-white border-emerald-200 shadow-xs'
-                              : 'bg-white border-red-200 shadow-xs'
+                            ? 'bg-white border-emerald-200 shadow-xs'
+                            : 'bg-white border-red-200 shadow-xs'
                             }`}
                         >
                           {/* Question Header */}
@@ -1111,8 +812,8 @@ export default function StudentResultPage({
 
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase shrink-0 ${isCorrect
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-red-100 text-red-800'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-red-100 text-red-800'
                                 }`}
                             >
                               {isCorrect ? (
@@ -1254,7 +955,7 @@ export default function StudentResultPage({
                         title: 'AMR Quiz Certificate',
                         text: `Official Certificate - ${certificate?.certificate_number}`,
                       })
-                    } catch {}
+                    } catch { }
                   }}
                   className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
