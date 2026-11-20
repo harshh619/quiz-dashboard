@@ -74,6 +74,7 @@ export default function StudentResultPage({
   const [signatories, setSignatories] = useState<any[]>([])
   const [downloading, setDownloading] = useState(false)
   const [downloadingImage, setDownloadingImage] = useState(false)
+  const [sharingWhatsApp, setSharingWhatsApp] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [sharedStatus, setSharedStatus] = useState<'idle' | 'opened'>('idle')
   const [imagePreviewModal, setImagePreviewModal] = useState<{
@@ -385,39 +386,89 @@ export default function StudentResultPage({
     }
   }
 
-  // 1-Click WhatsApp Share (Native Web Share & Direct Protocol - eliminates stuck 'Click to send' tab)
+  // 1-Click WhatsApp Share with Attached Official PDF Certificate
   const handleWhatsAppShare = async () => {
     if (!certificate) return
-    const certUrl = verifyUrl || (typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificate.certificate_number}` : '')
+    setSharingWhatsApp(true)
+    setDownloadError(null)
+
+    const certUrl =
+      verifyUrl ||
+      (typeof window !== 'undefined'
+        ? `${window.location.origin}/verify/${certificate.certificate_number}`
+        : '')
     const msg = `🏥 *World AMR Awareness Week (WAAW) 2026 – Online Quiz Competition*\n*Metropolitan Surveillance Unit (MSU), Nagpur | NMC Nagpur*\n\n🎉 I participated as a Pharmacy Officer representing *${profile?.college_name || 'UPHC Nagpur'}* and scored *${score}/${total}* (Accuracy: *${percentage}%*)!\n${rank ? `🏆 Final Rank: *#${rank}*\n` : ''}📜 *Verify My Official Certificate:* ${certUrl}\n\n#WAAW2026 #StopAMR #OneHealth #MSUNagpur`
 
-    setSharedStatus('opened')
-    setTimeout(() => setSharedStatus('idle'), 7000)
-
-    // 1. Preferred Mobile: Native Web Share API (opens native WhatsApp without creating any extra browser tab)
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      // 1. Fetch official PDF certificate blob
+      let pdfFile: File | null = null
+      let pdfBlob: Blob | null = null
       try {
-        await navigator.share({
-          title: 'AMR WAAW 2026 Quiz Certificate',
-          text: msg,
-        })
-        return
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          // User closed share dialog intentionally
+        const res = await fetch(`/api/certificate/${attemptId}/pdf`)
+        if (res.ok) {
+          pdfBlob = await res.blob()
+          const fileName = `AMR_Certificate_${certificate.certificate_number}.pdf`
+          pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' })
+        }
+      } catch (e) {
+        console.warn('Could not fetch PDF for attachment:', e)
+      }
+
+      setSharedStatus('opened')
+      setTimeout(() => setSharedStatus('idle'), 8000)
+
+      // 2. Native Web Share with attached PDF file (Android / iOS / Mobile)
+      if (
+        pdfFile &&
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [pdfFile] })
+      ) {
+        try {
+          await navigator.share({
+            title: 'Official AMR Quiz Certificate (PDF)',
+            text: msg,
+            files: [pdfFile],
+          })
           return
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') {
+            // User cancelled native share sheet intentionally
+            return
+          }
         }
       }
-    }
 
-    // 2. Direct Mobile App Protocol (whatsapp://) - launches WhatsApp directly without leaving wa.me tab
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-    if (isMobile) {
-      window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`
-    } else {
-      // 3. Desktop / Web WhatsApp
-      const webUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`
-      window.open(webUrl, '_blank')
+      // 3. Fallback: If native file share is not supported (e.g. Desktop PC or unsupported browser):
+      // Download the PDF file to user's device so they have it immediately
+      if (pdfBlob) {
+        const url = window.URL.createObjectURL(pdfBlob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `AMR_Certificate_${certificate.certificate_number}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+      }
+
+      // 4. Launch WhatsApp with message & link
+      const isMobile =
+        typeof navigator !== 'undefined' &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      if (isMobile) {
+        window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`
+      } else {
+        const webUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`
+        window.open(webUrl, '_blank')
+      }
+    } catch (err: unknown) {
+      console.error('WhatsApp share error:', err)
+      const errText = err instanceof Error ? err.message : 'Failed to share on WhatsApp'
+      setDownloadError(errText)
+    } finally {
+      setSharingWhatsApp(false)
     }
   }
 
@@ -944,13 +995,19 @@ export default function StudentResultPage({
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <button
                       onClick={handleWhatsAppShare}
-                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      disabled={sharingWhatsApp}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${
                         sharedStatus === 'opened'
                           ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
                           : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       }`}
                     >
-                      {sharedStatus === 'opened' ? (
+                      {sharingWhatsApp ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Attaching Official PDF...</span>
+                        </>
+                      ) : sharedStatus === 'opened' ? (
                         <>
                           <Check className="w-4 h-4 text-emerald-200" />
                           <span>WhatsApp Opened!</span>
@@ -958,7 +1015,7 @@ export default function StudentResultPage({
                       ) : (
                         <>
                           <Share2 className="w-4 h-4" />
-                          <span>Share on WhatsApp</span>
+                          <span>Share PDF on WhatsApp</span>
                         </>
                       )}
                     </button>
@@ -985,9 +1042,9 @@ export default function StudentResultPage({
                   </div>
 
                   {sharedStatus === 'opened' && (
-                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 text-center flex items-center justify-center gap-1.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 text-center flex items-center justify-center gap-1.5 shadow-2xs">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>WhatsApp launched successfully! Your official certificate is saved safely here.</span>
+                      <span>WhatsApp launched with your official certificate PDF attached!</span>
                     </div>
                   )}
                 </div>
