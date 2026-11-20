@@ -378,6 +378,25 @@ export default function AdminCompetitionsPage() {
   }
 
   const handleUpdateStatus = async (compId: string, status: string) => {
+    const targetComp = competitions.find((c) => c.id === compId)
+    // If admin is setting to 'scheduled', check if scheduled_end is in the past!
+    if (status === 'scheduled' && targetComp) {
+      const isPast = new Date(targetComp.scheduled_end).getTime() <= Date.now()
+      if (isPast) {
+        if (
+          confirm(
+            `⚠️ Notice: The scheduled time for "${targetComp.title}" has already ended (${new Date(targetComp.scheduled_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}).\n\nDo you want to start it RIGHT NOW for live testing?\n(This will set the start time to NOW, extend end time by ${Math.round((targetComp.duration_seconds || 600) / 60)} mins, and clear prior test attempts so you can play immediately).`
+          )
+        ) {
+          await handleStartQuizNow(targetComp)
+          return
+        } else {
+          handleOpenReschedule(targetComp)
+          return
+        }
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('competitions')
@@ -417,12 +436,14 @@ export default function AdminCompetitionsPage() {
 
   const handleOpenReschedule = (comp: any) => {
     setRescheduleComp(comp)
-    const d = new Date(comp.scheduled_start)
-    const offset = d.getTimezoneOffset() * 60000
-    const localIso = new Date(d.getTime() - offset).toISOString().slice(0, 16)
+    const compStart = new Date(comp.scheduled_start)
+    // If start time is already in the past, default base to NOW so admin doesn't pick an expired time
+    const baseDate = compStart.getTime() < Date.now() ? new Date() : compStart
+    const offset = baseDate.getTimezoneOffset() * 60000
+    const localIso = new Date(baseDate.getTime() - offset).toISOString().slice(0, 16)
     setRescheduleStart(localIso)
     setRescheduleDuration(Math.round((comp.duration_seconds || 600) / 60))
-    setRescheduleStatus(comp.status || 'scheduled')
+    setRescheduleStatus('scheduled')
     setRescheduleResetAttempts(true)
   }
 
@@ -606,12 +627,23 @@ export default function AdminCompetitionsPage() {
 
                       <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
                         <button
+                          type="button"
+                          onClick={() => handleStartQuizNow(comp)}
+                          disabled={isRescheduling}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                          title="Instant 1-Click Test: Sets start time to NOW, extends duration, & clears test attempts"
+                        >
+                          <Zap className="w-3.5 h-3.5 fill-white" />
+                          <span>Make Live Now</span>
+                        </button>
+
+                        <button
                           onClick={() => handleOpenReschedule(comp)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                           title="Change quiz start time, duration or start instantly for live testing"
                         >
                           <Clock className="w-3.5 h-3.5" />
-                          <span>Reschedule Quiz</span>
+                          <span>Reschedule</span>
                         </button>
 
                         <button
@@ -658,7 +690,14 @@ export default function AdminCompetitionsPage() {
                       </div>
                       <div>
                         <span className="text-gray-400 block text-[10px] uppercase font-semibold">End Time</span>
-                        <span className="font-semibold text-gray-800">{new Date(comp.scheduled_end).toLocaleString('en-IN')}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-gray-800">{new Date(comp.scheduled_end).toLocaleString('en-IN')}</span>
+                          {new Date(comp.scheduled_end).getTime() <= Date.now() && (
+                            <span className="text-[9px] font-bold text-red-700 bg-red-100 px-1 py-0.2 rounded border border-red-200">
+                              Ended
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <span className="text-gray-400 block text-[10px] uppercase font-semibold">Duration &amp; Qs</span>
