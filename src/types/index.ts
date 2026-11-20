@@ -49,6 +49,7 @@ export interface Competition {
   total_questions: number   // 30
   passing_score: number
   max_participants: number
+  certificate_enabled?: boolean
   created_by: string
   created_at: string
 }

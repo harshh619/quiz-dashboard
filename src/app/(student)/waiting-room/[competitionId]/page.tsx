@@ -66,6 +66,15 @@ export default function WaitingRoomPage({
   useEffect(() => {
     async function loadComp() {
       try {
+        // Ensure student is registered for this competition (handles direct link entries)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          void supabase.rpc('register_student_for_competition', {
+            p_competition_id: competitionId,
+            p_student_id: user.id,
+          })
+        }
+
         // Fetch via server API so 'scheduled' competitions are always accessible even before start
         const res = await fetch(`/api/student/competitions?id=${competitionId}`, { cache: 'no-store' })
         if (res.ok) {
@@ -277,7 +286,11 @@ export default function WaitingRoomPage({
             <li><strong className="text-white">Server-Synchronized Timer:</strong> Timer is controlled by the server; refreshing your page will not add time.</li>
             <li><strong className="text-white">Autosave:</strong> Every option you click is immediately saved in the database.</li>
             <li><strong className="text-white">Winner Selection Criteria:</strong> Ranks are determined strictly by <span className="text-amber-300">Highest Correct Answers</span> first, followed by <span className="text-amber-300">Fastest Submission Time</span>.</li>
-            <li><strong className="text-white">Certificates:</strong> Top 3 participants receive Rank Certificates (1st, 2nd, 3rd Prize); all valid submitted participants receive Participation Certificates.</li>
+            {competition?.certificate_enabled ? (
+              <li><strong className="text-white">Certificates:</strong> Top 3 participants receive Rank Certificates (1st, 2nd, 3rd Prize); all valid submitted participants receive Participation Certificates.</li>
+            ) : (
+              <li><strong className="text-white">Results & Recognition:</strong> Official scores, accuracy, and merit rankings will be published by Metropolitan Surveillance Unit (MSU), Nagpur upon quiz conclusion.</li>
+            )}
           </ul>
         </div>
 
