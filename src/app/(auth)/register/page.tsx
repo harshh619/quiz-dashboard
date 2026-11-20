@@ -37,16 +37,19 @@ export default function RegisterProfilePage() {
         return
       }
 
-      // Check if profile exists
+      // Check if profile already has health facility completed
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
-      if (profile && profile.college_name && profile.course) {
-        // Already completed profile, redirect to dashboard
-        router.push('/dashboard')
+      if (profile && profile.college_name) {
+        // Already completed profile, redirect directly to dashboard or target
+        const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
+        const saved = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect_target') || localStorage.getItem('auth_redirect_target') : null
+        const dest = (search && search.startsWith('/')) ? search : (saved && saved.startsWith('/') ? saved : '/dashboard')
+        router.push(dest)
         return
       }
 
@@ -115,7 +118,14 @@ export default function RegisterProfilePage() {
         throw new Error('Please enter a valid 10-digit mobile number.')
       }
 
-      const regNum = `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
+      // Check existing profile to preserve existing registration number
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('registration_number')
+        .eq('id', user.id)
+        .single()
+
+      const regNum = existingProfile?.registration_number || `AMR-WAAW-2026-${Math.floor(100000 + Math.random() * 900000)}`
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -133,8 +143,9 @@ export default function RegisterProfilePage() {
 
       if (updateError) throw updateError
 
-      const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
-      const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
+      const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
+      const saved = typeof window !== 'undefined' ? sessionStorage.getItem('auth_redirect_target') || localStorage.getItem('auth_redirect_target') : null
+      const target = (search && search.startsWith('/')) ? search : (saved && saved.startsWith('/') ? saved : '/dashboard')
       router.push(target)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save profile'

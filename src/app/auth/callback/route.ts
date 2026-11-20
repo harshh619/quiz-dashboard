@@ -1,5 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -13,11 +14,33 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const targetPath = next.startsWith('/') ? next : '/dashboard'
+    let redirectResponse = NextResponse.redirect(new URL(targetPath, origin))
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+              redirectResponse.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
+
     if (!error) {
-      // Check user role & profile completion
       const { data: { user } } = await supabase.auth.getUser()
+
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -25,21 +48,29 @@ export async function GET(request: Request) {
           .eq('id', user.id)
           .single()
 
+        // 1. Admin redirect
         if (profile?.role === 'admin' || user.email === 'msunagpur@gmail.com') {
-          return NextResponse.redirect(`${origin}/admin/dashboard`)
+          const adminResp = NextResponse.redirect(new URL('/admin/dashboard', origin))
+          redirectResponse.cookies.getAll().forEach(c => adminResp.cookies.set(c.name, c.value, c))
+          return adminResp
         }
 
-        // If profile is incomplete, route directly to register (preserving target destination)
-        if (!profile || !profile.college_name || !profile.course) {
+        // 2. Incomplete profile check:
+        // If college_name is missing, user needs to complete registration
+        if (!profile || !profile.college_name) {
           const regTarget = next && next !== '/dashboard'
-            ? `${origin}/register?redirect=${encodeURIComponent(next)}`
-            : `${origin}/register`
-          return NextResponse.redirect(regTarget)
+            ? `/register?redirect=${encodeURIComponent(next)}`
+            : '/register'
+          const regResp = NextResponse.redirect(new URL(regTarget, origin))
+          redirectResponse.cookies.getAll().forEach(c => regResp.cookies.set(c.name, c.value, c))
+          return regResp
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`)
+      // 3. User is already registered and complete -> proceed to target destination
+      return redirectResponse
     }
+
     console.error('Exchange code error:', error.message)
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
   }
