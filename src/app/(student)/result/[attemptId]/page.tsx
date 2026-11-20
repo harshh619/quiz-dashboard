@@ -8,7 +8,7 @@ import { parseCategoryTopic } from '@/lib/questionCategories'
 import {
   Trophy, Award, Download, ArrowLeft, QrCode, Sparkles, Clock,
   ShieldCheck, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  BookOpen, Mail, Loader2, Medal, Lock, Share2, ImageIcon, Check
+  BookOpen, Mail, Loader2, Medal, Lock, Share2, ImageIcon, Check, X
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -76,6 +76,11 @@ export default function StudentResultPage({
   const [downloadingImage, setDownloadingImage] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [sharedStatus, setSharedStatus] = useState<'idle' | 'opened'>('idle')
+  const [imagePreviewModal, setImagePreviewModal] = useState<{
+    url: string
+    fileName: string
+    file?: File
+  } | null>(null)
 
   const loadResult = useCallback(async (isAutoRefresh = false) => {
     if (isAutoRefresh) setFinalizingNow(true)
@@ -183,7 +188,10 @@ export default function StudentResultPage({
       document.body.appendChild(a)
       a.click()
       a.remove()
-      window.URL.revokeObjectURL(url)
+      // Delay revoke so mobile download managers have ample time to complete
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url)
+      }, 60000)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Download failed'
       setDownloadError(msg)
@@ -277,7 +285,7 @@ export default function StudentResultPage({
       }
 
       const canvas = await html2canvas(certElem, {
-        scale: 3,
+        scale: 2.5,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
@@ -315,13 +323,58 @@ export default function StudentResultPage({
         },
       })
 
-      const dataUrl = canvas.toDataURL('image/png')
+      // Convert to binary Blob (ensures mobile browser & Android DownloadManager compatibility instead of failing on huge data: URIs)
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/png')
+      })
+
+      if (!blob) {
+        throw new Error('Failed to generate certificate image blob')
+      }
+
+      const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
+      const blobUrl = window.URL.createObjectURL(blob)
+      const file = new File([blob], fileName, { type: 'image/png' })
+
+      // 1. Mobile Native Share Sheet (Save to Gallery / Photos directly)
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [file] }) &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      ) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'AMR Official Quiz Certificate',
+            text: `Certificate of ${profile?.full_name || 'Participant'} - Nagpur Municipal Corporation`,
+          })
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') {
+            // User cancelled native share sheet
+          }
+        }
+      }
+
+      // 2. Programmatic Blob Download
       const a = document.createElement('a')
-      a.href = dataUrl
-      a.download = `AMR_Certificate_${certificate.certificate_number}.png`
+      a.href = blobUrl
+      a.download = fileName
       document.body.appendChild(a)
       a.click()
       a.remove()
+
+      // 3. Open in-app Preview Modal so user can always view the full image and save to Gallery
+      setImagePreviewModal({
+        url: blobUrl,
+        fileName,
+        file,
+      })
+
+      // Delayed revoke so mobile download managers have ample time to write to disk
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl)
+      }, 120000)
     } catch (err: unknown) {
       console.error('Save certificate image error:', err)
       const msg = err instanceof Error ? err.message : 'Failed to save certificate image'
@@ -1079,6 +1132,95 @@ export default function StudentResultPage({
         )}
 
       </div>
+
+      {/* High-Res Certificate Image Preview & Save Modal */}
+      {imagePreviewModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 space-y-4 shadow-2xl relative border border-gray-200 text-center my-auto animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setImagePreviewModal(null)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              title="Close Preview"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Certificate Image Ready!</span>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                Official Certificate (PNG Image)
+              </h3>
+              <p className="text-xs text-gray-500 max-w-md mx-auto">
+                Tap &amp; hold (long-press) on the certificate image to save directly to Gallery, or use the buttons below.
+              </p>
+            </div>
+
+            {/* Certificate Image View */}
+            <div className="rounded-xl overflow-hidden border-2 border-indigo-200 shadow-md bg-slate-50 max-h-[55vh] flex items-center justify-center p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imagePreviewModal.url}
+                alt="AMR Certificate"
+                className="w-full h-auto max-h-[52vh] object-contain rounded-lg shadow-xs"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const a = document.createElement('a')
+                  a.href = imagePreviewModal.url
+                  a.download = imagePreviewModal.fileName
+                  document.body.appendChild(a)
+                  a.click()
+                  a.remove()
+                }}
+                className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Image (PNG)</span>
+              </button>
+
+              {imagePreviewModal.file && typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.share({
+                        files: [imagePreviewModal.file!],
+                        title: 'AMR Quiz Certificate',
+                        text: `Official Certificate - ${certificate?.certificate_number}`,
+                      })
+                    } catch {}
+                  }}
+                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Save to Gallery / Share</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setImagePreviewModal(null)}
+                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+            <p className="text-[11px] text-gray-400">
+              💡 Mobile Tip: You can also tap and hold (long-press) on the certificate image above and select &quot;Download Image&quot; or &quot;Save to Photos&quot;.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
