@@ -84,29 +84,6 @@ function getShuffledOptions(q: QuestionItem | undefined, seedPrefix: string) {
   }))
 }
 
-// Dynamic AI-Resistant Reading Speed Calculator:
-// Computes fair time based on word count of question + 4 options (average human reading rate 3 words/sec + 12s buffer)
-// Fairly clamped between 18s (short) and 45s (long clinical scenarios)
-export function computeQuestionTimeSeconds(q: QuestionItem | undefined): number {
-  if (!q) return 25
-
-  const fullText = [
-    q.question_text || '',
-    q.option_a || '',
-    q.option_b || '',
-    q.option_c || '',
-    q.option_d || '',
-  ].join(' ')
-
-  const words = fullText.trim().split(/\s+/).filter(Boolean).length
-
-  // 3 words per second (180 words/min) + 12s thinking, analyzing & clicking buffer
-  const rawSeconds = Math.round(words / 3) + 12
-
-  // Fairly clamped: min 18s (short facts), max 45s (long clinical case scenarios)
-  return Math.min(45, Math.max(18, rawSeconds))
-}
-
 export default function LiveQuizPage({
   params,
 }: {
@@ -125,8 +102,7 @@ export default function LiveQuizPage({
   const [questions, setQuestions] = useState<QuestionItem[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({})
-  const [timeRemaining, setTimeRemaining] = useState<number>(600) // 10 mins default
-  const [questionTimes, setQuestionTimes] = useState<Record<string, number>>({})
+  const [timeRemaining, setTimeRemaining] = useState<number>(600) // Fixed to Admin's competition duration
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
@@ -183,23 +159,6 @@ export default function LiveQuizPage({
         
         const qList: QuestionItem[] = data.questions || []
         setQuestions(qList)
-
-        // Initialize dynamic time per question based on word count with local cache persistence
-        const initialTimes: Record<string, number> = {}
-        let localCachedTimes: Record<string, number> = {}
-        try {
-          const cachedTimes = localStorage.getItem(`quiz_q_times_${data.attempt_id}`)
-          if (cachedTimes) localCachedTimes = JSON.parse(cachedTimes)
-        } catch {}
-
-        qList.forEach((q) => {
-          if (typeof localCachedTimes[q.id] === 'number') {
-            initialTimes[q.id] = localCachedTimes[q.id]
-          } else {
-            initialTimes[q.id] = computeQuestionTimeSeconds(q)
-          }
-        })
-        setQuestionTimes(initialTimes)
 
         // Hydrate existing answers from server & localStorage fallback
         const initialAnswers: Record<string, 'A' | 'B' | 'C' | 'D'> = {}
@@ -283,17 +242,9 @@ export default function LiveQuizPage({
     return getShuffledOptions(currentQ, attemptId || studentId || competitionId)
   }, [currentQ, attemptId, studentId, competitionId])
 
-  const allocatedTime = computeQuestionTimeSeconds(currentQ)
-  const remainingQTime = currentQ
-    ? Math.max(0, questionTimes[currentQ.id] !== undefined ? questionTimes[currentQ.id] : allocatedTime)
-    : allocatedTime
-  const isQuestionExpired = remainingQTime <= 0
-
-  // Refs for keyboard shortcuts & async timer listener
+  // Refs for keyboard shortcuts
   const optionsRef = useRef(options)
   optionsRef.current = options
-  const isExpiredRef = useRef(isQuestionExpired)
-  isExpiredRef.current = isQuestionExpired
   const totalQuestionsRef = useRef(totalQuestions)
   totalQuestionsRef.current = totalQuestions
 
@@ -307,7 +258,7 @@ export default function LiveQuizPage({
 
   // 4. Select Option & Autosave
   const handleSelectOption = useCallback(async (option: 'A' | 'B' | 'C' | 'D') => {
-    if (!currentQ || !attemptId || !studentId || isExpiredRef.current) return
+    if (!currentQ || !attemptId || !studentId) return
 
     // Optimistic UI update & localStorage backup
     setAnswers((prev) => {
@@ -335,46 +286,7 @@ export default function LiveQuizPage({
     }
   }, [currentQ, attemptId, studentId, supabase])
 
-  // 5. Dynamic Per-Question Countdown Timer (AI-Cheat & Camera Resistance)
-  useEffect(() => {
-    if (loading || isSubmitting || screenBlurred || showSubmitModal) return
-    if (!currentQ) return
-
-    const qId = currentQ.id
-    // If this question has already run out of time, lock it
-    if (questionTimes[qId] !== undefined && questionTimes[qId] <= 0) return
-
-    const timer = setInterval(() => {
-      setQuestionTimes((prev) => {
-        const rem = prev[qId] !== undefined ? prev[qId] : computeQuestionTimeSeconds(currentQ)
-        if (rem <= 1) {
-          clearInterval(timer)
-          const updated = { ...prev, [qId]: 0 }
-          try {
-            if (attemptId) {
-              localStorage.setItem(`quiz_q_times_${attemptId}`, JSON.stringify(updated))
-            }
-          } catch {}
-
-          // Auto-advance to next question if time runs out
-          setCurrentIndex((cur) => Math.min(totalQuestionsRef.current - 1, cur + 1))
-          return updated
-        }
-
-        const updated = { ...prev, [qId]: rem - 1 }
-        try {
-          if (attemptId) {
-            localStorage.setItem(`quiz_q_times_${attemptId}`, JSON.stringify(updated))
-          }
-        } catch {}
-        return updated
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [currentIndex, currentQ, loading, isSubmitting, screenBlurred, showSubmitModal, attemptId])
-
-  // 6. Security Proctoring, Screen Protection & Desktop Keyboard Shortcuts
+  // 5. Security Proctoring, Screen Protection & Desktop Keyboard Shortcuts
   useEffect(() => {
     const preventEvent = (e: Event) => {
       e.preventDefault()
@@ -439,7 +351,7 @@ export default function LiveQuizPage({
 
       // Answering Shortcuts: A, B, C, D or 1, 2, 3, 4
       if (['1', '2', '3', '4', 'a', 'b', 'c', 'd'].includes(key) && !isCtrlOrMeta) {
-        if (!isExpiredRef.current && !screenBlurred && !showSubmitModal) {
+        if (!screenBlurred && !showSubmitModal) {
           let optIndex = -1
           if (key === '1' || key === 'a') optIndex = 0
           else if (key === '2' || key === 'b') optIndex = 1
@@ -647,39 +559,6 @@ export default function LiveQuizPage({
         {/* Left Column: Active Question & Options (8 cols) */}
         <div className="lg:col-span-8 space-y-4 min-w-0">
           <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-8 shadow-xs">
-            
-            {/* Dynamic Question Fair Timer Header & Progress Line */}
-            <div className="rounded-xl border border-blue-100 bg-linear-to-r from-blue-50/80 to-indigo-50/50 p-3 mb-4">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Clock className={`w-4 h-4 ${remainingQTime <= 5 ? 'text-red-600 animate-pulse' : remainingQTime <= 10 ? 'text-amber-600' : 'text-blue-700'}`} />
-                  <span className="text-xs font-bold text-gray-800">Question Timer:</span>
-                  <span className={`text-xs font-mono font-extrabold ${remainingQTime <= 5 ? 'text-red-600 animate-pulse' : remainingQTime <= 10 ? 'text-amber-600' : 'text-blue-700'}`}>
-                    {remainingQTime}s left
-                  </span>
-                  <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
-                    (allocated {allocatedTime}s by length)
-                  </span>
-                </div>
-                {isQuestionExpired ? (
-                  <span className="text-[10px] sm:text-[11px] font-bold text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Question Locked
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-gray-500 hidden sm:inline">
-                    Auto-moves when time ends
-                  </span>
-                )}
-              </div>
-              <div className="w-full bg-gray-200/80 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-1000 ease-linear rounded-full ${
-                    remainingQTime <= 5 ? 'bg-red-500' : remainingQTime <= 10 ? 'bg-amber-500' : 'bg-blue-600'
-                  }`}
-                  style={{ width: `${Math.max(0, Math.min(100, (remainingQTime / allocatedTime) * 100))}%` }}
-                />
-              </div>
-            </div>
 
             {/* Topic, Autosave (mobile) & Display number */}
             <div className="flex items-center justify-between gap-2 mb-3.5 sm:mb-4 pb-3 border-b border-gray-100 flex-wrap">
@@ -711,14 +590,11 @@ export default function LiveQuizPage({
                   <button
                     key={opt.key}
                     type="button"
-                    disabled={isQuestionExpired}
                     onClick={() => handleSelectOption(opt.key)}
-                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-[13px] sm:text-sm flex items-start gap-3 sm:gap-3.5 transition-all ${
-                      isQuestionExpired
-                        ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200'
-                        : isSelected
-                        ? 'bg-blue-50/70 border-blue-600 text-blue-950 font-semibold ring-1 ring-blue-600 shadow-xs active:scale-[0.99] cursor-pointer'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 active:scale-[0.99] cursor-pointer'
+                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-[13px] sm:text-sm flex items-start gap-3 sm:gap-3.5 transition-all active:scale-[0.99] cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50/70 border-blue-600 text-blue-950 font-semibold ring-1 ring-blue-600 shadow-xs'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
@@ -764,7 +640,7 @@ export default function LiveQuizPage({
             <div className="hidden sm:flex items-center justify-between text-[11px] text-gray-500 pt-4 mt-2 border-t border-gray-100 flex-wrap gap-2">
               <div className="flex items-center gap-1.5">
                 <Keyboard className="w-3.5 h-3.5 text-blue-600" />
-                <span className="font-semibold text-gray-700">Desktop Keys:</span>
+                <span className="font-semibold text-gray-700">Desktop Shortcuts:</span>
                 <span className="text-gray-500">Press</span>
                 <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">A</kbd>
                 <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">B</kbd>
@@ -775,10 +651,12 @@ export default function LiveQuizPage({
                 <span className="text-gray-500">to select &bull;</span>
                 <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">&rarr;</kbd>
                 <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">Enter</kbd>
-                <span className="text-gray-500">Next</span>
+                <span className="text-gray-500">Next &bull;</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">&larr;</kbd>
+                <span className="text-gray-500">Previous</span>
               </div>
               <span className="text-[10px] text-gray-400">
-                Anti-Cheat Dynamic Speed Control
+                Total quiz time fixed to admin schedule
               </span>
             </div>
 
@@ -811,9 +689,6 @@ export default function LiveQuizPage({
               {questions.map((q, idx) => {
                 const isAnswered = !!answers[q.id]
                 const isCurrent = idx === currentIndex
-                const qAllocated = computeQuestionTimeSeconds(q)
-                const qRemaining = questionTimes[q.id] !== undefined ? questionTimes[q.id] : qAllocated
-                const isExpired = qRemaining <= 0
 
                 return (
                   <button
@@ -824,27 +699,19 @@ export default function LiveQuizPage({
                         ? 'ring-2 ring-blue-600 ring-offset-1 text-white bg-blue-700'
                         : isAnswered
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                        : isExpired
-                        ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     {idx + 1}
-                    {isExpired && !isAnswered && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500"></span>
-                    )}
                   </button>
                 )
               })}
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-3 text-[10px] text-gray-500 pt-5 mt-4 border-t border-gray-100 flex-wrap">
+            <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500 pt-5 mt-4 border-t border-gray-100">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Answered
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Locked
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-gray-300"></span> Unanswered
