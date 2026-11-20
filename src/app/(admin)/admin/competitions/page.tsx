@@ -247,19 +247,32 @@ export default function AdminCompetitionsPage() {
       if (ctx.measureText(comp.title).width > maxTitleWidth) {
         ctx.font = 'bold 21px sans-serif'
       }
-      ctx.fillText(comp.title, 450, 280)
+      ctx.fillText(comp.title, 450, 276)
+
+      // Dedicated Audience Pill Badge ("FOR PHARMACY OFFICERS")
+      ctx.fillStyle = '#fef3c7'
+      ctx.beginPath()
+      ctx.roundRect(140, 296, 620, 36, 18)
+      ctx.fill()
+      ctx.strokeStyle = '#d97706'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+
+      ctx.fillStyle = '#92400e'
+      ctx.font = 'bold 17px sans-serif'
+      ctx.fillText('★ EXCLUSIVELY FOR PHARMACY OFFICERS ★', 450, 320)
 
       // Timing & Info Pill
       ctx.fillStyle = '#eff6ff'
       ctx.beginPath()
-      ctx.roundRect(100, 310, 700, 48, 12)
+      ctx.roundRect(100, 342, 700, 44, 12)
       ctx.fill()
       ctx.strokeStyle = '#bfdbfe'
       ctx.lineWidth = 1.5
       ctx.stroke()
 
       ctx.fillStyle = '#1e40af'
-      ctx.font = 'bold 16px sans-serif'
+      ctx.font = 'bold 15px sans-serif'
       const startStr = new Date(comp.scheduled_start).toLocaleString('en-IN', {
         day: 'numeric',
         month: 'short',
@@ -268,7 +281,7 @@ export default function AdminCompetitionsPage() {
         minute: '2-digit',
       })
       const durMin = Math.round(comp.duration_seconds / 60)
-      ctx.fillText(`🗓 Starts: ${startStr}   ⏱ Duration: ${durMin} Mins (${comp.total_questions} MCQs)`, 450, 341)
+      ctx.fillText(`🗓 Starts: ${startStr}   ⏱ Duration: ${durMin} Mins (${comp.total_questions} MCQs)`, 450, 370)
 
       // Load QR Image
       const qrImg = new Image()
@@ -282,27 +295,27 @@ export default function AdminCompetitionsPage() {
       // QR Code Card Container
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
-      ctx.roundRect(220, 385, 460, 460, 20)
+      ctx.roundRect(230, 396, 440, 440, 20)
       ctx.fill()
       ctx.strokeStyle = '#94a3b8'
       ctx.lineWidth = 2.5
       ctx.stroke()
 
-      ctx.drawImage(qrImg, 245, 410, 410, 410)
+      ctx.drawImage(qrImg, 255, 421, 390, 390)
 
       // Scan Instructions Callout
       ctx.fillStyle = '#059669'
-      ctx.font = 'bold 25px sans-serif'
-      ctx.fillText('📲 SCAN WITH PHONE OR CLICK LINK TO JOIN', 450, 885)
+      ctx.font = 'bold 24px sans-serif'
+      ctx.fillText('📲 SCAN WITH PHONE OR CLICK LINK TO JOIN', 450, 874)
 
       ctx.fillStyle = '#475569'
-      ctx.font = '16px sans-serif'
-      ctx.fillText('Scan this QR code with camera or tap the direct link below', 450, 920)
+      ctx.font = '15px sans-serif'
+      ctx.fillText('Exclusively for Pharmacy Officers · Scan QR or tap direct link below', 450, 906)
 
       // Direct Join Link Container
       ctx.fillStyle = '#f1f5f9'
       ctx.beginPath()
-      ctx.roundRect(90, 948, 720, 46, 10)
+      ctx.roundRect(90, 930, 720, 46, 10)
       ctx.fill()
       ctx.strokeStyle = '#cbd5e1'
       ctx.lineWidth = 1
@@ -310,16 +323,16 @@ export default function AdminCompetitionsPage() {
 
       ctx.fillStyle = '#1e3a8a'
       ctx.font = 'bold 14px monospace'
-      ctx.fillText(joinUrl, 450, 977)
+      ctx.fillText(joinUrl, 450, 959)
 
       // Bottom One Health Slogan
       ctx.fillStyle = '#0b2566'
       ctx.font = 'bold 16px sans-serif'
-      ctx.fillText('ONE HEALTH, ONE ACTION  ·  PREVENT AMR NOW!', 450, 1045)
+      ctx.fillText('ONE HEALTH, ONE ACTION  ·  PREVENT AMR NOW!', 450, 1024)
 
       ctx.fillStyle = '#64748b'
       ctx.font = '13px sans-serif'
-      ctx.fillText('Protect • Humans • Animals • Environment  ·  UPHC & Nagpur Municipal Corporation', 450, 1075)
+      ctx.fillText('Protect • Humans • Animals • Environment  ·  UPHC & Nagpur Municipal Corporation', 450, 1054)
 
       if (format === 'pdf') {
         const { jsPDF } = await import('jspdf')
@@ -330,8 +343,8 @@ export default function AdminCompetitionsPage() {
         })
         doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height)
         // Add live clickable URI hyperlinks in PDF!
-        doc.link(90, 948, 720, 46, { url: joinUrl })
-        doc.link(220, 385, 460, 460, { url: joinUrl })
+        doc.link(90, 930, 720, 46, { url: joinUrl })
+        doc.link(230, 396, 440, 440, { url: joinUrl })
         doc.save(`AMR_Quiz_Poster_${comp.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}.pdf`)
       } else {
         const a = document.createElement('a')
@@ -359,7 +372,7 @@ export default function AdminCompetitionsPage() {
       hour: '2-digit',
       minute: '2-digit',
     })
-    const text = `🏆 *${comp.title}*\n🏛️ *Nagpur Municipal Corporation (NMC) & MSU Nagpur*\n\n🗓️ *Starts:* ${startStr}\n⏱️ *Duration:* ${Math.round(comp.duration_seconds / 60)} Mins (${comp.total_questions} MCQs)\n\n📲 *Join Live Quiz Waiting Room (Click Link below):*\n👉 ${joinUrl}\n\n_Scan QR code or click link directly on mobile/PC to participate._`
+    const text = `🏆 *${comp.title}*\n⚕️ *Target Group: EXCLUSIVELY FOR PHARMACY OFFICERS*\n🏛️ *Nagpur Municipal Corporation (NMC) & MSU Nagpur*\n\n🗓️ *Starts:* ${startStr}\n⏱️ *Duration:* ${Math.round(comp.duration_seconds / 60)} Mins (${comp.total_questions} MCQs)\n\n📲 *Join Live Quiz Waiting Room (Click Link below):*\n👉 ${joinUrl}\n\n⚠️ *Notice:* This competition is strictly & exclusively for *Pharmacy Officers* under Nagpur Municipal Corporation.`
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
     window.open(waUrl, '_blank')
   }
@@ -690,16 +703,21 @@ export default function AdminCompetitionsPage() {
                           <QrCode className="w-3.5 h-3.5 text-blue-700" />
                           <span>Participant Join QR</span>
                         </div>
-                        <a
-                          href={`/waiting-room/${comp.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline mt-0.5 cursor-pointer"
-                          title="Direct Click to Join Waiting Room"
-                        >
-                          <span>Click to Join Quiz</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                            Pharmacy Officers
+                          </span>
+                          <a
+                            href={`/waiting-room/${comp.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            title="Direct Click to Join Waiting Room"
+                          >
+                            <span>Open</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        </div>
                       </div>
 
                       <button
@@ -815,6 +833,9 @@ export default function AdminCompetitionsPage() {
               <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
                 {enlargedComp.title}
               </h3>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-900 border border-amber-300 rounded-full text-xs font-bold mt-1.5 shadow-2xs">
+                <span>⚕️ Exclusively for Pharmacy Officers</span>
+              </div>
               <p className="text-xs text-gray-500 mt-1">
                 Starts: {new Date(enlargedComp.scheduled_start).toLocaleString('en-IN')} · Duration: {Math.round(enlargedComp.duration_seconds / 60)} Mins
               </p>

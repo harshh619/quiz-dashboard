@@ -171,9 +171,14 @@ export default function WaitingRoomPage({
 
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-semibold border border-emerald-400/30">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Registration Confirmed · Quiz Waiting Room</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-semibold border border-emerald-400/30">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Registration Confirmed · Quiz Waiting Room</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/25 text-amber-300 rounded-full text-xs font-bold border border-amber-400/40 shadow-xs">
+              <span>⚕️ Exclusively for Pharmacy Officers</span>
+            </div>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {competition?.title || 'World AMR Awareness Week Quiz'}
@@ -263,6 +268,7 @@ export default function WaitingRoomPage({
           </h4>
 
           <ul className="space-y-2.5 text-gray-300 leading-relaxed list-disc list-inside">
+            <li><strong className="text-amber-300">Target Group & Eligibility:</strong> This quiz is organized <strong className="text-amber-300">Exclusively for Pharmacy Officers</strong> under Nagpur Municipal Corporation (NMC).</li>
             <li><strong className="text-white">Total {competition?.total_questions || 30} MCQs</strong> to be completed within <strong className="text-white">{Math.round((competition?.duration_seconds || 600) / 60)} minutes ({competition?.duration_seconds || 600} seconds)</strong>.</li>
             <li><strong className="text-white">Single Attempt Only:</strong> Once submitted or if time expires, you cannot retake the quiz.</li>
             <li><strong className="text-white">Server-Synchronized Timer:</strong> Timer is controlled by the server; refreshing your page will not add time.</li>
