@@ -124,11 +124,26 @@ export default function LiveQuizPage({
         setStudentId(user.id)
 
         // Call RPC function to start or resume attempt
-        const { data, error: rpcError } = await supabase.rpc('start_or_resume_quiz_attempt', {
+        let rpcRes = await supabase.rpc('start_or_resume_quiz_attempt', {
           p_competition_id: competitionId,
           p_student_id: user.id,
         })
 
+        // Absorb sub-second device/server clock skew gracefully without failing
+        let retries = 0
+        while (
+          (!rpcRes.data?.success && rpcRes.data?.error?.toLowerCase().includes('not started yet')) &&
+          retries < 4
+        ) {
+          retries++
+          await new Promise((r) => setTimeout(r, 350))
+          rpcRes = await supabase.rpc('start_or_resume_quiz_attempt', {
+            p_competition_id: competitionId,
+            p_student_id: user.id,
+          })
+        }
+
+        const { data, error: rpcError } = rpcRes
         if (rpcError) throw rpcError
 
         if (!data.success) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -49,6 +49,19 @@ export default function WaitingRoomPage({
     totalSeconds: 0,
   })
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const redirectedRef = useRef(false)
+
+  // Instant redirect helper: immediately transitions without artificial delay
+  const redirectToQuiz = useCallback(() => {
+    if (redirectedRef.current) return
+    redirectedRef.current = true
+    router.replace(`/quiz/${competitionId}`)
+  }, [competitionId, router])
+
+  // Pre-fetch quiz page route in background so transition is instantaneous (0 network delay)
+  useEffect(() => {
+    router.prefetch(`/quiz/${competitionId}`)
+  }, [competitionId, router])
 
   useEffect(() => {
     async function loadComp() {
@@ -72,6 +85,8 @@ export default function WaitingRoomPage({
             setTimeLeft(initial)
             if (initial.totalSeconds <= 0) {
               setIsUnlocked(true)
+              redirectToQuiz()
+              return
             }
           }
         } else {
@@ -88,6 +103,8 @@ export default function WaitingRoomPage({
             setTimeLeft(initial)
             if (initial.totalSeconds <= 0) {
               setIsUnlocked(true)
+              redirectToQuiz()
+              return
             }
           }
         }
@@ -99,9 +116,9 @@ export default function WaitingRoomPage({
     }
 
     loadComp()
-  }, [competitionId, supabase])
+  }, [competitionId, supabase, redirectToQuiz])
 
-  // Server-synchronized 1-second countdown timer
+  // Sub-second precision timer (ticks every 200ms to immediately detect start time without lag)
   useEffect(() => {
     if (!competition) return
 
@@ -112,6 +129,7 @@ export default function WaitingRoomPage({
       setTimeLeft(next)
       if (next.totalSeconds <= 0) {
         setIsUnlocked(true)
+        redirectToQuiz()
         return true
       }
       return false
@@ -123,19 +141,10 @@ export default function WaitingRoomPage({
       if (tick()) {
         clearInterval(interval)
       }
-    }, 1000)
+    }, 200)
 
     return () => clearInterval(interval)
-  }, [competition, serverOffsetMs])
-
-  // Automatically open quiz the moment countdown reaches zero!
-  useEffect(() => {
-    if (!isUnlocked || !competition) return
-    const timer = setTimeout(() => {
-      router.push(`/quiz/${competitionId}`)
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [isUnlocked, competition, competitionId, router])
+  }, [competition, serverOffsetMs, redirectToQuiz])
 
   if (loading) {
     return (
@@ -224,19 +233,23 @@ export default function WaitingRoomPage({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 text-emerald-400 font-bold text-base sm:text-lg animate-bounce">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span>The quiz is now open! Launching...</span>
+            <div className="py-6 space-y-3">
+              <div className="inline-flex items-center gap-2.5 text-emerald-400 font-bold text-base sm:text-xl animate-pulse">
+                <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                <span>Quiz Time Started! Entering Exam Now...</span>
               </div>
-              <div>
-                <Link
-                  href={`/quiz/${competitionId}`}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/30 transition-all transform hover:scale-105"
+              <p className="text-xs text-blue-200/80">
+                Opening your questions automatically. Please wait...
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={redirectToQuiz}
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-300 hover:text-white underline cursor-pointer"
                 >
-                  <span>Enter Examination Now</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                  <span>Manual fallback: Click here if not redirected</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}

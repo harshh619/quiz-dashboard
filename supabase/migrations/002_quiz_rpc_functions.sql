@@ -80,8 +80,8 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Competition not found');
   END IF;
 
-  -- Validate timing: quiz must be active or waiting_room (if active or server time within window)
-  IF v_now < v_comp.scheduled_start THEN
+  -- Validate timing: allow a 5-second leeway to eliminate client-server clock jitter
+  IF v_now < (v_comp.scheduled_start - INTERVAL '5 seconds') THEN
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Quiz has not started yet',
