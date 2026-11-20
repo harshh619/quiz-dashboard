@@ -8,7 +8,7 @@ import { parseCategoryTopic } from '@/lib/questionCategories'
 import {
   Trophy, Award, Download, ArrowLeft, QrCode, Sparkles, Clock,
   ShieldCheck, CheckCircle, XCircle, ChevronDown, ChevronUp,
-  BookOpen, Mail, Loader2, Medal, Lock, Share2, ImageIcon
+  BookOpen, Mail, Loader2, Medal, Lock, Share2, ImageIcon, Check
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -75,6 +75,7 @@ export default function StudentResultPage({
   const [downloading, setDownloading] = useState(false)
   const [downloadingImage, setDownloadingImage] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [sharedStatus, setSharedStatus] = useState<'idle' | 'opened'>('idle')
 
   const loadResult = useCallback(async (isAutoRefresh = false) => {
     if (isAutoRefresh) setFinalizingNow(true)
@@ -331,13 +332,40 @@ export default function StudentResultPage({
     }
   }
 
-  // 1-Click WhatsApp Share with pre-formatted message
-  const handleWhatsAppShare = () => {
+  // 1-Click WhatsApp Share (Native Web Share & Direct Protocol - eliminates stuck 'Click to send' tab)
+  const handleWhatsAppShare = async () => {
     if (!certificate) return
     const certUrl = verifyUrl || (typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificate.certificate_number}` : '')
     const msg = `🏥 *World AMR Awareness Week (WAAW) 2026 – Online Quiz Competition*\n*Metropolitan Surveillance Unit (MSU), Nagpur | NMC Nagpur*\n\n🎉 I participated as a Pharmacy Officer representing *${profile?.college_name || 'UPHC Nagpur'}* and scored *${score}/${total}* (Accuracy: *${percentage}%*)!\n${rank ? `🏆 Final Rank: *#${rank}*\n` : ''}📜 *Verify My Official Certificate:* ${certUrl}\n\n#WAAW2026 #StopAMR #OneHealth #MSUNagpur`
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`
-    window.open(whatsappUrl, '_blank')
+
+    setSharedStatus('opened')
+    setTimeout(() => setSharedStatus('idle'), 7000)
+
+    // 1. Preferred Mobile: Native Web Share API (opens native WhatsApp without creating any extra browser tab)
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: 'AMR WAAW 2026 Quiz Certificate',
+          text: msg,
+        })
+        return
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // User closed share dialog intentionally
+          return
+        }
+      }
+    }
+
+    // 2. Direct Mobile App Protocol (whatsapp://) - launches WhatsApp directly without leaving wa.me tab
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isMobile) {
+      window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`
+    } else {
+      // 3. Desktop / Web WhatsApp
+      const webUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`
+      window.open(webUrl, '_blank')
+    }
   }
 
   if (loading) {
@@ -859,33 +887,55 @@ export default function StudentResultPage({
                 </div>
 
                 {/* Secondary Row: WhatsApp 1-Click Share & Online Verify */}
-                <div className="flex flex-col sm:flex-row gap-2.5">
-                  <button
-                    onClick={handleWhatsAppShare}
-                    className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Share on WhatsApp</span>
-                  </button>
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <button
+                      onClick={handleWhatsAppShare}
+                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        sharedStatus === 'opened'
+                          ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                    >
+                      {sharedStatus === 'opened' ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-200" />
+                          <span>WhatsApp Opened!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-4 h-4" />
+                          <span>Share on WhatsApp</span>
+                        </>
+                      )}
+                    </button>
 
-                  {verifyUrl ? (
-                    <a
-                      href={verifyUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <QrCode className="w-4 h-4" />
-                      <span>Verify Online</span>
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/verify/${certificate.certificate_number}`}
-                      className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <QrCode className="w-4 h-4" />
-                      <span>Verify Online</span>
-                    </Link>
+                    {verifyUrl ? (
+                      <a
+                        href={verifyUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Verify Online</span>
+                      </a>
+                    ) : (
+                      <Link
+                        href={`/verify/${certificate.certificate_number}`}
+                        className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Verify Online</span>
+                      </Link>
+                    )}
+                  </div>
+
+                  {sharedStatus === 'opened' && (
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 text-center flex items-center justify-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>WhatsApp launched successfully! Your official certificate is saved safely here.</span>
+                    </div>
                   )}
                 </div>
               </div>
