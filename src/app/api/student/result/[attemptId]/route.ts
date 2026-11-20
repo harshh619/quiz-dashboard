@@ -88,9 +88,10 @@ export async function GET(
       responses = respRows || []
     }
 
-    // If finalized & certificate exists, automatically dispatch this student's pending email once
+    // If finalized & certificate exists & certificates are enabled for this competition,
+    // automatically dispatch this student's pending email once
     // Uses Next.js after() to keep the serverless container alive until SMTP email completes
-    if (cert && attempt.student?.email) {
+    if (attempt.competition?.certificate_enabled && cert && attempt.student?.email) {
       after(async () => {
         try {
           await autoSendPendingCertificateEmailForCert({

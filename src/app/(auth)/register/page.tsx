@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { HEALTH_FACILITIES } from '@/constants'
 import { formatPersonName, formatCollegeName } from '@/lib/textFormat'
-import { User, Building2, Phone, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { User, Building2, Phone, CheckCircle, AlertCircle, Info, ShieldCheck } from 'lucide-react'
 
 export default function RegisterProfilePage() {
   const router = useRouter()
@@ -18,6 +18,8 @@ export default function RegisterProfilePage() {
 
   const [formData, setFormData] = useState({
     full_name: '',
+    designation: 'Pharmacy Officer',
+    other_designation: '',
     health_facility: '',
     other_facility: '',
     mobile: '',
@@ -50,8 +52,13 @@ export default function RegisterProfilePage() {
           existingFacility as (typeof HEALTH_FACILITIES)[number]
         )
 
+        const existingCourse = (profile.course || '').trim()
+        const isPharmacyOfficer = !existingCourse || existingCourse.toLowerCase() === 'pharmacy officer'
+
         setFormData({
           full_name: formatPersonName(profile.full_name || user.user_metadata?.full_name || '', true),
+          designation: isPharmacyOfficer ? 'Pharmacy Officer' : 'OTHER',
+          other_designation: isPharmacyOfficer ? '' : existingCourse,
           health_facility: isKnownFacility
             ? existingFacility
             : existingFacility
@@ -84,6 +91,11 @@ export default function RegisterProfilePage() {
           ? formatCollegeName(formData.other_facility, true)
           : formData.health_facility.trim()
 
+      const selectedDesignation =
+        formData.designation === 'OTHER'
+          ? (formData.other_designation.trim() || 'GNM (In-charge Pharmacy Officer)')
+          : 'Pharmacy Officer'
+
       const cleanMobile = formData.mobile.replace(/\D/g, '')
 
       if (!formattedFullName) {
@@ -91,6 +103,9 @@ export default function RegisterProfilePage() {
       }
       if (!selectedFacility) {
         throw new Error('Please select your Health Facility.')
+      }
+      if (formData.designation === 'OTHER' && !formData.other_designation.trim()) {
+        throw new Error('Please specify your designation (e.g. GNM / Staff Nurse in-charge).')
       }
       if (!/^\d{10}$/.test(cleanMobile)) {
         throw new Error('Please enter a valid 10-digit mobile number.')
@@ -103,7 +118,7 @@ export default function RegisterProfilePage() {
         .update({
           full_name: formattedFullName,
           college_name: selectedFacility,
-          course: 'Pharmacy Officer',
+          course: selectedDesignation,
           year_semester: 'NMC Nagpur',
           mobile: cleanMobile,
           registration_number: regNum,
@@ -149,7 +164,7 @@ export default function RegisterProfilePage() {
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Participant Registration</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1 px-2">
-            Enter your name and select your NMC Health Facility to participate in the Online Quiz Competition for Pharmacy Officers and receive your official E-Certificate.
+            Enter your details to participate in the Online Quiz Competition for Pharmacy Officers &amp; Health Facility Staff.
           </p>
         </div>
 
@@ -191,9 +206,57 @@ export default function RegisterProfilePage() {
               <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 text-[11px] text-amber-800 leading-snug">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
                 <span>
-                  <strong>Important:</strong> This exact name will be printed on your official E-Certificate. Please verify spelling carefully.
+                  <strong>Important:</strong> Please ensure your full official name is spelled correctly.
                 </span>
               </div>
+            </div>
+
+            {/* Designation / पदनाम */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Designation / पदनाम *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <select
+                  required
+                  value={formData.designation}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      designation: e.target.value,
+                      other_designation: e.target.value === 'OTHER' ? formData.other_designation : '',
+                    })
+                  }
+                  className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900 bg-white"
+                >
+                  <option value="Pharmacy Officer">Pharmacy Officer</option>
+                  <option value="OTHER">Other (e.g. GNM / Staff Nurse in-charge)</option>
+                </select>
+              </div>
+
+              {formData.designation === 'OTHER' && (
+                <div className="mt-2.5 space-y-1">
+                  <input
+                    type="text"
+                    required
+                    value={formData.other_designation}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        other_designation: e.target.value,
+                      })
+                    }
+                    placeholder="Specify Designation (e.g. GNM Staff Nurse In-charge)"
+                    className="block w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-gray-900"
+                  />
+                  <p className="text-[11px] text-gray-500">
+                    उदा. GNM Staff Nurse (In-charge Pharmacy Officer)
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Name of Health Facility */}
@@ -256,7 +319,7 @@ export default function RegisterProfilePage() {
               <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 text-[11px] text-amber-800 leading-snug">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" />
                 <span>
-                  <strong>Important:</strong> Your selected Health Facility will appear on your official E-Certificate &amp; participation report.
+                  <strong>Important:</strong> Your selected Health Facility will appear on your official results, leaderboards &amp; reports.
                 </span>
               </div>
             </div>

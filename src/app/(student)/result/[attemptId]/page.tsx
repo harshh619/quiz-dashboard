@@ -173,9 +173,9 @@ export default function StudentResultPage({
     return () => clearInterval(interval)
   }, [certificate, answerKeyUnlocked, scoreUnlocked, unlockAt, serverOffsetMs, loadResult])
 
-  // Render official PDF certificate as image for preview (once certificate is available)
+  // Render official PDF certificate as image for preview (once certificate is available and enabled)
   useEffect(() => {
-    if (!certificate || certPreviewUrl || certPreviewLoading) return
+    if (!certificate || !competition?.certificate_enabled || certPreviewUrl || certPreviewLoading) return
     setCertPreviewLoading(true)
 
     const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
@@ -190,7 +190,7 @@ export default function StudentResultPage({
       .finally(() => {
         setCertPreviewLoading(false)
       })
-  }, [certificate, attemptId, certPreviewUrl, certPreviewLoading])
+  }, [certificate, competition, attemptId, certPreviewUrl, certPreviewLoading])
 
   // Direct Official PDF Certificate Download (NOT webpage print!)
   const handleDownloadCertificate = async () => {
@@ -291,20 +291,47 @@ export default function StudentResultPage({
     }
   }
 
-  // 1-Click WhatsApp Share with Attached Official PDF Certificate
+  // 1-Click WhatsApp Share
   const handleWhatsAppShare = async () => {
-    if (!certificate) return
     setSharingWhatsApp(true)
     setDownloadError(null)
 
+    const isCertEnabled = Boolean(competition?.certificate_enabled)
     const certUrl =
-      verifyUrl ||
-      (typeof window !== 'undefined'
-        ? `${window.location.origin}/verify/${certificate.certificate_number}`
-        : '')
-    const msg = `🏥 *World AMR Awareness Week (WAAW) 2026 – Online Quiz Competition*\n*Metropolitan Surveillance Unit (MSU), Nagpur | NMC Nagpur*\n\n🎉 I participated as a Pharmacy Officer representing *${profile?.college_name || 'UPHC Nagpur'}* and scored *${score}/${total}* (Accuracy: *${percentage}%*)!\n${rank ? `🏆 Final Rank: *#${rank}*\n` : ''}📜 *Verify My Official Certificate:* ${certUrl}\n\n#WAAW2026 #StopAMR #OneHealth #MSUNagpur`
+      isCertEnabled && certificate
+        ? (verifyUrl ||
+          (typeof window !== 'undefined'
+            ? `${window.location.origin}/verify/${certificate.certificate_number}`
+            : ''))
+        : ''
+
+    const desig = profile?.course || 'Pharmacy Officer'
+    const facility = profile?.college_name || 'UPHC Nagpur'
+
+    let msg = `🏥 *World AMR Awareness Week (WAAW) 2026 – Online Quiz Competition*\n*Metropolitan Surveillance Unit (MSU), Nagpur | NMC Nagpur*\n\n🎉 I participated as a ${desig} representing *${facility}* and scored *${score}/${total}* (Accuracy: *${percentage}%*)!\n${rank ? `🏆 Final Rank: *#${rank}*\n` : ''}`
+    if (isCertEnabled && certUrl) {
+      msg += `📜 *Verify My Official Certificate:* ${certUrl}\n`
+    }
+    msg += `\n#WAAW2026 #StopAMR #OneHealth #MSUNagpur`
 
     try {
+      // If certificates are disabled or no cert, share text directly
+      if (!isCertEnabled || !certificate) {
+        setSharedStatus('opened')
+        setTimeout(() => setSharedStatus('idle'), 8000)
+
+        const isMobile =
+          typeof navigator !== 'undefined' &&
+          /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+        if (isMobile) {
+          window.location.href = `whatsapp://send?text=${encodeURIComponent(msg)}`
+        } else {
+          const webUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(msg)}`
+          window.open(webUrl, '_blank')
+        }
+        return
+      }
+
       // 1. Fetch official PDF certificate blob
       let pdfFile: File | null = null
       let pdfBlob: Blob | null = null
@@ -399,6 +426,14 @@ export default function StudentResultPage({
   }
 
   const awardInfo = getAwardDisplay(certificate?.certificate_type)
+  const certsEnabled = Boolean(competition?.certificate_enabled)
+  const isResultsUnlocked = Boolean(
+    scoreUnlocked ||
+    certificate ||
+    (competition?.status === 'results_published') ||
+    (competition?.status === 'closed')
+  )
+
   const endTimeLabel = competition?.scheduled_end
     ? new Date(competition.scheduled_end).toLocaleTimeString('en-IN', {
       hour: '2-digit',
@@ -407,8 +442,8 @@ export default function StudentResultPage({
     : null
 
   return (
-    <div className={`min-h-screen min-h-[100dvh] bg-slate-50 text-gray-900 py-3 sm:py-6 px-3 sm:px-6 flex flex-col ${!certificate ? 'justify-center' : ''}`}>
-      <div className={`mx-auto w-full space-y-3 sm:space-y-4 ${!certificate ? 'max-w-md' : 'max-w-3xl'}`}>
+    <div className={`min-h-screen min-h-[100dvh] bg-slate-50 text-gray-900 py-3 sm:py-6 px-3 sm:px-6 flex flex-col ${!isResultsUnlocked ? 'justify-center' : ''}`}>
+      <div className={`mx-auto w-full space-y-3 sm:space-y-4 ${!isResultsUnlocked ? 'max-w-md' : 'max-w-3xl'}`}>
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -425,7 +460,7 @@ export default function StudentResultPage({
         </div>
 
         {/* STATE A: Pre-Finalization / Timer Running — Single-Screen Unified Card (Zero Scroll & Zero Repetition) */}
-        {!certificate ? (
+        {!isResultsUnlocked ? (
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-6 shadow-sm text-center space-y-3 sm:space-y-3.5">
 
             <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20">
@@ -444,7 +479,7 @@ export default function StudentResultPage({
             {/* Candidate Pill */}
             <div className="inline-flex items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3 py-1 rounded-xl text-xs font-semibold max-w-full">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-              <span className="truncate">{profile?.full_name} · {profile?.college_name || 'Pharmacy Officer'}</span>
+              <span className="truncate">{profile?.full_name} · {profile?.course || 'Pharmacy Officer'} · {profile?.college_name || 'NMC Nagpur'}</span>
             </div>
 
             {/* Compact Stats Row */}
@@ -463,7 +498,7 @@ export default function StudentResultPage({
             {secondsUntilUnlock !== null && secondsUntilUnlock > 0 ? (
               <div className="bg-slate-900 text-white p-3.5 sm:p-4 rounded-2xl shadow-sm space-y-0.5">
                 <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold">
-                  Results &amp; Certificate Unlock In
+                  Results Unlock In
                 </div>
                 <div className="text-2xl sm:text-3xl font-mono font-black text-amber-400">
                   {formatTime(secondsUntilUnlock)}
@@ -478,7 +513,7 @@ export default function StudentResultPage({
               <div className="bg-indigo-50 border border-indigo-200 text-indigo-900 p-3 sm:p-4 rounded-2xl space-y-2">
                 <div className="text-xs font-semibold flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-indigo-700" />
-                  <span>Finalizing results &amp; issuing official certificate...</span>
+                  <span>Finalizing results &amp; rankings...</span>
                 </div>
                 <button
                   onClick={() => void loadResult(true)}
@@ -492,7 +527,9 @@ export default function StudentResultPage({
 
             {/* Single crisp explanation note without repetition */}
             <p className="text-[11px] text-gray-500 leading-relaxed max-w-xs mx-auto">
-              Your score, answer key, and verified certificate will unlock automatically once the quiz ends and will also be sent to your email.
+              {certsEnabled
+                ? 'Your score, answer key, and verified certificate will unlock automatically once the quiz ends and will also be sent to your email.'
+                : 'Your score, final rank, and answer key with detailed explanations will unlock automatically once the quiz closes.'}
             </p>
 
             {/* Direct action button */}
@@ -508,26 +545,48 @@ export default function StudentResultPage({
         ) : (
           /* STATE B: Post-Finalization — Full Certificate & Final Score Presentation */
           <>
-            {/* Email Dispatch Notice */}
-            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
-              <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <Mail className="w-5 h-5" />
+            {/* Notice Banner */}
+            {certsEnabled ? (
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">
+                      Official Certificate Issued!
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      Your final score and rank have been computed. Your verified certificate is ready to download below and has also been emailed.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900">
-                    Official Certificate Issued!
-                  </h4>
-                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                    Your final score and rank have been computed. Your verified certificate is ready to download below and has also been emailed.
-                  </p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>PDF Available</span>
                 </div>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>PDF Available</span>
+            ) : (
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <CheckCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">
+                      Official Quiz Results Published!
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      Your final score, accuracy, and rank have been evaluated. Detailed answers with explanations are unlocked below.
+                    </p>
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold shrink-0 shadow-2xs">
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Rankings Final</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Final Scorecard */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-8 shadow-sm text-center relative overflow-hidden">
@@ -578,179 +637,203 @@ export default function StudentResultPage({
               {/* Candidate Info Summary */}
               <div className="inline-flex flex-wrap items-center justify-center gap-1.5 bg-blue-50 text-blue-900 border border-blue-100 px-3.5 py-2 rounded-2xl text-xs font-medium max-w-full leading-snug">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                <span className="break-words">{profile?.full_name} · {profile?.college_name}</span>
+                <span className="break-words">{profile?.full_name} · {profile?.course || 'Pharmacy Officer'} · {profile?.college_name || 'NMC Nagpur'}</span>
               </div>
             </div>
 
-            {/* Digital Certificate Preview Card */}
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-8 shadow-sm space-y-5">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  {certificate.certificate_type !== 'participation' ? (
-                    <Medal className="w-5 h-5 text-amber-500 shrink-0" />
-                  ) : (
-                    <Award className="w-5 h-5 text-amber-500 shrink-0" />
-                  )}
-                  <h3 className="font-bold text-sm text-gray-900">Your Official Digital Certificate</h3>
+            {/* Digital Certificate Preview Card OR Clean Result Share Card (if disabled) */}
+            {certsEnabled && certificate ? (
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-8 shadow-sm space-y-5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    {certificate.certificate_type !== 'participation' ? (
+                      <Medal className="w-5 h-5 text-amber-500 shrink-0" />
+                    ) : (
+                      <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                    )}
+                    <h3 className="font-bold text-sm text-gray-900">Your Official Digital Certificate</h3>
+                  </div>
+                  <span className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full uppercase tracking-wider ${awardInfo.badgeClass}`}>
+                    {awardInfo.badge}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full uppercase tracking-wider ${awardInfo.badgeClass}`}>
-                  {awardInfo.badge}
-                </span>
-              </div>
 
-              {/* Official Certificate Preview — PDF rendered as high-res image */}
-              <div
-                className="relative rounded-2xl border-2 border-indigo-200 overflow-hidden bg-slate-50 transition-all shadow-md"
-              >
-                {certPreviewUrl ? (
-                  <div className="relative group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={certPreviewUrl}
-                      alt="Official Certificate Preview"
-                      className="w-full h-auto object-contain block select-none cursor-pointer"
-                      onClick={() => {
-                        if (certPdfImage) {
-                          setImagePreviewModal({
-                            url: certPdfImage.blobUrl,
-                            fileName: certPdfImage.file.name,
-                            file: certPdfImage.file,
-                          })
-                        }
-                      }}
-                      title="Click to expand / view full screen"
-                    />
-                    <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-lg">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Official Certificate Preview</span>
+                {/* Official Certificate Preview — PDF rendered as high-res image */}
+                <div
+                  className="relative rounded-2xl border-2 border-indigo-200 overflow-hidden bg-slate-50 transition-all shadow-md"
+                >
+                  {certPreviewUrl ? (
+                    <div className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={certPreviewUrl}
+                        alt="Official Certificate Preview"
+                        className="w-full h-auto object-contain block select-none cursor-pointer"
+                        onClick={() => {
+                          if (certPdfImage) {
+                            setImagePreviewModal({
+                              url: certPdfImage.blobUrl,
+                              fileName: certPdfImage.file.name,
+                              file: certPdfImage.file,
+                            })
+                          }
+                        }}
+                        title="Click to expand / view full screen"
+                      />
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-1 rounded-lg">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>Official Certificate Preview</span>
+                      </div>
                     </div>
-                  </div>
-                ) : certPreviewLoading ? (
-                  <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-                    <p className="text-xs text-gray-600 font-medium">Generating official certificate preview...</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center px-4">
-                    <Award className="w-10 h-10 text-gray-300" />
-                    <p className="text-xs text-gray-500 font-medium">Could not render certificate preview.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCertPreviewLoading(true)
-                        const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
-                        renderPdfAsImage(`/api/certificate/${attemptId}/pdf`, fileName, 2.5)
-                          .then((result) => {
-                            setCertPreviewUrl(result.blobUrl)
-                            setCertPdfImage(result)
-                          })
-                          .catch((err) => console.error('Retry preview failed:', err))
-                          .finally(() => setCertPreviewLoading(false))
-                      }}
-                      className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Retry Loading
-                    </button>
+                  ) : certPreviewLoading ? (
+                    <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3">
+                      <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                      <p className="text-xs text-gray-600 font-medium">Generating official certificate preview...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center px-4">
+                      <Award className="w-10 h-10 text-gray-300" />
+                      <p className="text-xs text-gray-500 font-medium">Could not render certificate preview.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCertPreviewLoading(true)
+                          const fileName = `AMR_Certificate_${certificate.certificate_number}.png`
+                          renderPdfAsImage(`/api/certificate/${attemptId}/pdf`, fileName, 2.5)
+                            .then((result) => {
+                              setCertPreviewUrl(result.blobUrl)
+                              setCertPdfImage(result)
+                            })
+                            .catch((err) => console.error('Retry preview failed:', err))
+                            .finally(() => setCertPreviewLoading(false))
+                        }}
+                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Retry Loading
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {downloadError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+                    {downloadError}
                   </div>
                 )}
-              </div>
 
-              {downloadError && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
-                  {downloadError}
-                </div>
-              )}
-
-              {/* PDF Download, Image Save, WhatsApp & Verify Buttons */}
-              <div className="space-y-2.5 pt-1">
-                {/* Primary Row: PDF & Image Download */}
-                <div className="flex flex-col sm:flex-row gap-2.5">
-                  <button
-                    onClick={handleDownloadCertificate}
-                    disabled={downloading}
-                    className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
-                  >
-                    {downloading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                    <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
-                  </button>
-
-                  <button
-                    onClick={handleDownloadCertificateImage}
-                    disabled={downloadingImage}
-                    className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
-                  >
-                    {downloadingImage ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ImageIcon className="w-4 h-4" />
-                    )}
-                    <span>{downloadingImage ? 'Creating Image...' : 'Save as Image (PNG / Gallery)'}</span>
-                  </button>
-                </div>
-
-                {/* Secondary Row: WhatsApp 1-Click Share & Online Verify */}
-                <div className="space-y-2">
+                {/* PDF Download, Image Save, WhatsApp & Verify Buttons */}
+                <div className="space-y-2.5 pt-1">
+                  {/* Primary Row: PDF & Image Download */}
                   <div className="flex flex-col sm:flex-row gap-2.5">
                     <button
-                      onClick={handleWhatsAppShare}
-                      disabled={sharingWhatsApp}
-                      className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${sharedStatus === 'opened'
-                        ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        }`}
+                      onClick={handleDownloadCertificate}
+                      disabled={downloading}
+                      className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
                     >
-                      {sharingWhatsApp ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Attaching Official PDF...</span>
-                        </>
-                      ) : sharedStatus === 'opened' ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-200" />
-                          <span>WhatsApp Opened!</span>
-                        </>
+                      {downloading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <>
-                          <Share2 className="w-4 h-4" />
-                          <span>Share PDF on WhatsApp</span>
-                        </>
+                        <Download className="w-4 h-4" />
                       )}
+                      <span>{downloading ? 'Generating Official PDF...' : 'Download Official Certificate (PDF)'}</span>
                     </button>
 
-                    {verifyUrl ? (
-                      <a
-                        href={verifyUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <QrCode className="w-4 h-4" />
-                        <span>Verify Online</span>
-                      </a>
-                    ) : (
-                      <Link
-                        href={`/verify/${certificate.certificate_number}`}
-                        className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                      >
-                        <QrCode className="w-4 h-4" />
-                        <span>Verify Online</span>
-                      </Link>
-                    )}
+                    <button
+                      onClick={handleDownloadCertificateImage}
+                      disabled={downloadingImage}
+                      className="flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {downloadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
+                      )}
+                      <span>{downloadingImage ? 'Creating Image...' : 'Save as Image (PNG / Gallery)'}</span>
+                    </button>
                   </div>
 
-                  {sharedStatus === 'opened' && (
-                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 text-center flex items-center justify-center gap-1.5 shadow-2xs">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>WhatsApp launched with your official certificate PDF attached!</span>
+                  {/* Secondary Row: WhatsApp 1-Click Share & Online Verify */}
+                  <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <button
+                        onClick={handleWhatsAppShare}
+                        disabled={sharingWhatsApp}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 ${sharedStatus === 'opened'
+                          ? 'bg-emerald-700 text-white ring-2 ring-emerald-400/50'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          }`}
+                      >
+                        {sharingWhatsApp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Attaching Official PDF...</span>
+                          </>
+                        ) : sharedStatus === 'opened' ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-200" />
+                            <span>WhatsApp Opened!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="w-4 h-4" />
+                            <span>Share PDF on WhatsApp</span>
+                          </>
+                        )}
+                      </button>
+
+                      {verifyUrl ? (
+                        <a
+                          href={verifyUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>Verify Online</span>
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/verify/${certificate.certificate_number}`}
+                          className="py-2.5 px-5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>Verify Online</span>
+                        </Link>
+                      )}
                     </div>
-                  )}
+
+                    {sharedStatus === 'opened' && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 text-center flex items-center justify-center gap-1.5 shadow-2xs">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>WhatsApp launched with your official certificate PDF attached!</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <CheckCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Official Results Finalized</h4>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Your score, rank, and detailed question reviews have been evaluated and recorded. You can share your performance score directly on WhatsApp.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleWhatsAppShare}
+                  disabled={sharingWhatsApp}
+                  className="w-full sm:w-auto py-2.5 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Share Score on WhatsApp</span>
+                </button>
+              </div>
+            )}
 
             {/* Question by Question Review Accordion (Only after unlock) */}
             {answerKeyUnlocked && responses.length > 0 && (

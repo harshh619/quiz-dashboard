@@ -42,6 +42,7 @@ export default function AdminCompetitionsPage() {
   const [enlargedComp, setEnlargedComp] = useState<any | null>(null)
   const [downloadingQrId, setDownloadingQrId] = useState<string | null>(null)
   const [declaringResultId, setDeclaringResultId] = useState<string | null>(null)
+  const [togglingCertId, setTogglingCertId] = useState<string | null>(null)
 
   // Reschedule state
   const [rescheduleComp, setRescheduleComp] = useState<any | null>(null)
@@ -60,6 +61,7 @@ export default function AdminCompetitionsPage() {
     passing_score: 18,
     max_participants: 1000,
     status: 'draft',
+    certificate_enabled: false,
   })
 
   useEffect(() => {
@@ -115,6 +117,24 @@ export default function AdminCompetitionsPage() {
       alert(err.message || 'Failed to update protection status')
     } finally {
       setTogglingLockId(null)
+    }
+  }
+
+  const handleToggleCertificate = async (compId: string, enable: boolean) => {
+    setTogglingCertId(compId)
+    try {
+      const { error } = await supabase
+        .from('competitions')
+        .update({ certificate_enabled: enable, updated_at: new Date().toISOString() })
+        .eq('id', compId)
+
+      if (error) throw error
+      setStatusMsg(`Digital certificates ${enable ? 'ENABLED ✅' : 'DISABLED ❌'} for this competition!`)
+      await loadCompetitions()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to update certificate setting')
+    } finally {
+      setTogglingCertId(null)
     }
   }
 
@@ -574,6 +594,7 @@ export default function AdminCompetitionsPage() {
         passing_score: Math.ceil(questionsToLink.length * 0.6),
         max_participants: newComp.max_participants,
         status: 'draft',
+        certificate_enabled: Boolean(newComp.certificate_enabled),
       }
 
       const { data, error } = await supabase.from('competitions').insert([payload]).select().single()
@@ -711,6 +732,24 @@ export default function AdminCompetitionsPage() {
                         </button>
 
                         <button
+                          onClick={() => handleToggleCertificate(comp.id, !comp.certificate_enabled)}
+                          disabled={togglingCertId === comp.id}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer disabled:opacity-50 ${
+                            comp.certificate_enabled
+                              ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border-purple-300'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+                          }`}
+                          title="Click to toggle whether digital certificates are issued to participants"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>
+                            {togglingCertId === comp.id
+                              ? 'Updating...'
+                              : `Digital Certificate: ${comp.certificate_enabled ? 'ON ✅' : 'OFF ❌'}`}
+                          </span>
+                        </button>
+
+                        <button
                           onClick={() => handleUpdateStatus(comp.id, 'results_published')}
                           disabled={declaringResultId === comp.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-xs transition-colors cursor-pointer disabled:opacity-50"
@@ -733,7 +772,7 @@ export default function AdminCompetitionsPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
                       <div>
                         <span className="text-gray-400 block text-[10px] uppercase font-semibold">Start Time</span>
                         <span className="font-semibold text-gray-800">{new Date(comp.scheduled_start).toLocaleString('en-IN')}</span>
@@ -754,8 +793,14 @@ export default function AdminCompetitionsPage() {
                         <span className="font-semibold text-gray-800">{comp.duration_seconds / 60} Mins ({comp.total_questions} MCQs)</span>
                       </div>
                       <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">Certificates</span>
+                        <span className={`font-semibold ${comp.certificate_enabled ? 'text-purple-700' : 'text-gray-500'}`}>
+                          {comp.certificate_enabled ? 'Enabled (ON)' : 'Disabled (OFF)'}
+                        </span>
+                      </div>
+                      <div>
                         <span className="text-gray-400 block text-[10px] uppercase font-semibold">Capacity</span>
-                        <span className="font-semibold text-gray-800">Max {comp.max_participants} Participants</span>
+                        <span className="font-semibold text-gray-800">Max {comp.max_participants}</span>
                       </div>
                     </div>
 
@@ -1264,6 +1309,24 @@ export default function AdminCompetitionsPage() {
                   Up to 30 questions from this category will be linked automatically.
                 </span>
               </div>
+
+              {/* Digital Certificate Toggle */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={newComp.certificate_enabled}
+                  onChange={(e) => setNewComp({ ...newComp, certificate_enabled: e.target.checked })}
+                  className="w-4 h-4 mt-0.5 accent-blue-600 rounded cursor-pointer"
+                />
+                <div className="text-[11px] leading-snug">
+                  <span className="font-bold text-gray-900 block">
+                    Issue Digital Certificates to Participants
+                  </span>
+                  <span className="text-gray-500">
+                    When checked, participants receive downloadable official PDF/PNG certificates. Keep unchecked if digital certificates should not be issued.
+                  </span>
+                </div>
+              </label>
 
               <div className="flex gap-2.5 pt-2">
                 <button

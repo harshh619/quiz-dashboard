@@ -23,12 +23,19 @@ export async function GET(
 
     const { data: attempt, error: attErr } = await admin
       .from('quiz_attempts')
-      .select('*, student:profiles(*)')
+      .select('*, competition:competitions(*), student:profiles(*)')
       .eq('id', attemptId)
       .single()
 
     if (attErr || !attempt) {
       return NextResponse.json({ error: 'Attempt not found' }, { status: 404 })
+    }
+
+    if (attempt.competition && attempt.competition.certificate_enabled === false) {
+      return NextResponse.json(
+        { error: 'Digital certificates are not enabled for this competition.' },
+        { status: 403 }
+      )
     }
 
     // Security check: student owns attempt or viewer is admin

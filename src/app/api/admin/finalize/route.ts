@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     // so student result screens unlock immediately with zero countdown delay!
     const { data: compRow } = await admin
       .from('competitions')
-      .select('scheduled_end')
+      .select('scheduled_end, certificate_enabled')
       .eq('id', competitionId)
       .single()
 
@@ -107,6 +107,16 @@ export async function POST(request: Request) {
             .update({ qr_verification_url: expectedUrl })
             .eq('id', cert.id)
         }
+      }
+
+      // If certificates are disabled for this competition, remove any queued certificate email jobs
+      if (compRow?.certificate_enabled === false) {
+        const certNums = certs.map((c) => c.certificate_number)
+        await admin
+          .from('email_jobs')
+          .delete()
+          .eq('type', 'certificate')
+          .in('payload->>certificate_number', certNums)
       }
     }
 

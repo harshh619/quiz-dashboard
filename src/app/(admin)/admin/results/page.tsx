@@ -324,7 +324,7 @@ export default function AdminResultsPage() {
       <AdminNav />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        
+
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -361,11 +361,10 @@ export default function AdminResultsPage() {
             <button
               onClick={() => handleDeclareResults()}
               disabled={finalizing || loading || competitions.length === 0}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
-                results.length > 0
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all disabled:opacity-50 cursor-pointer ${results.length > 0
                   ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
                   : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 shadow-amber-500/25 ring-2 ring-amber-400/50'
-              }`}
+                }`}
               title="Declare final results now without waiting for 10-minute countdown to expire"
             >
               {finalizing ? (
@@ -377,8 +376,8 @@ export default function AdminResultsPage() {
                 {finalizing
                   ? 'Declaring Results & Issuing Certificates...'
                   : results.length > 0
-                  ? '⚡ Re-Calculate / Update Results'
-                  : '⚡ Declare Results Now'}
+                    ? '⚡ Re-Calculate / Update Results'
+                    : '⚡ Declare Results Now'}
               </span>
             </button>
 
@@ -410,11 +409,10 @@ export default function AdminResultsPage() {
         {/* Status Notification Banner */}
         {statusMsg && (
           <div
-            className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-2xs ${
-              statusMsg.type === 'success'
+            className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-2xs ${statusMsg.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-red-50 border-red-200 text-red-800'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-2">
               {statusMsg.type === 'success' ? (
@@ -437,11 +435,10 @@ export default function AdminResultsPage() {
         <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
           <button
             onClick={() => setActiveTab('individual')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'individual'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'individual'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <Trophy className="w-3.5 h-3.5" />
             <span>Individual Leaderboard</span>
@@ -452,11 +449,10 @@ export default function AdminResultsPage() {
 
           <button
             onClick={() => setActiveTab('facilities')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'facilities'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'facilities'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>UPHC Facility Analytics</span>
@@ -467,11 +463,10 @@ export default function AdminResultsPage() {
 
           <button
             onClick={() => setActiveTab('knowledge_gap')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'knowledge_gap'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'knowledge_gap'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <BrainCircuit className="w-3.5 h-3.5" />
             <span>AMR Knowledge-Gap &amp; Training Assessment</span>
@@ -621,12 +616,11 @@ export default function AdminResultsPage() {
                             {new Date(r.submitted_at).toLocaleTimeString('en-IN')}
                           </td>
                           <td className="px-5 py-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              r.certificate_type === 'first_prize' ? 'bg-amber-100 text-amber-800' :
-                              r.certificate_type === 'second_prize' ? 'bg-slate-200 text-slate-800' :
-                              r.certificate_type === 'third_prize' ? 'bg-orange-100 text-orange-800' :
-                              'bg-blue-50 text-blue-800'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${r.certificate_type === 'first_prize' ? 'bg-amber-100 text-amber-800' :
+                                r.certificate_type === 'second_prize' ? 'bg-slate-200 text-slate-800' :
+                                  r.certificate_type === 'third_prize' ? 'bg-orange-100 text-orange-800' :
+                                    'bg-blue-50 text-blue-800'
+                              }`}>
                               {r.certificate_type.replace('_', ' ')}
                             </span>
                           </td>
@@ -776,7 +770,7 @@ export default function AdminResultsPage() {
         {/* ============================================================== */}
         {activeTab === 'knowledge_gap' && (
           <div className="space-y-6">
-            
+
             {/* Advisory Executive Note */}
             <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm space-y-2 border border-blue-800">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
@@ -806,13 +800,12 @@ export default function AdminResultsPage() {
                       </p>
                     </div>
 
-                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shrink-0 ${
-                      d.statusLevel === 'high'
+                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border shrink-0 ${d.statusLevel === 'high'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : d.statusLevel === 'gap'
-                        ? 'bg-red-50 text-red-700 border-red-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
                       {d.statusLevel === 'high' ? 'High Mastery' : d.statusLevel === 'gap' ? 'Critical Gap' : 'Moderate'}
                     </span>
                   </div>
@@ -823,7 +816,7 @@ export default function AdminResultsPage() {
                       <span className="text-gray-500">Correct Response Rate:</span>
                       <span className={
                         d.statusLevel === 'high' ? 'text-emerald-700' :
-                        d.statusLevel === 'gap' ? 'text-red-600' : 'text-amber-700'
+                          d.statusLevel === 'gap' ? 'text-red-600' : 'text-amber-700'
                       }>
                         {d.accuracy}% ({d.correctCount}/{d.totalAnswered} answered)
                       </span>
@@ -831,13 +824,12 @@ export default function AdminResultsPage() {
 
                     <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          d.statusLevel === 'high'
+                        className={`h-full rounded-full transition-all duration-500 ${d.statusLevel === 'high'
                             ? 'bg-emerald-500'
                             : d.statusLevel === 'gap'
-                            ? 'bg-red-500'
-                            : 'bg-amber-500'
-                        }`}
+                              ? 'bg-red-500'
+                              : 'bg-amber-500'
+                          }`}
                         style={{ width: `${Math.max(d.accuracy, 4)}%` }}
                       />
                     </div>
