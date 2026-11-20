@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback, use } from 'react'
+import { useState, useEffect, useCallback, use, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { formatTime } from '@/lib/utils'
 import { parseCategoryTopic } from '@/lib/questionCategories'
 import { 
   Clock, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight, 
-  Send, ShieldAlert, Check, HelpCircle 
+  Send, ShieldAlert, Check, HelpCircle, Keyboard
 } from 'lucide-react'
 
 interface QuestionItem {
@@ -84,6 +84,29 @@ function getShuffledOptions(q: QuestionItem | undefined, seedPrefix: string) {
   }))
 }
 
+// Dynamic AI-Resistant Reading Speed Calculator:
+// Computes fair time based on word count of question + 4 options (average human reading rate 3 words/sec + 12s buffer)
+// Fairly clamped between 18s (short) and 45s (long clinical scenarios)
+export function computeQuestionTimeSeconds(q: QuestionItem | undefined): number {
+  if (!q) return 25
+
+  const fullText = [
+    q.question_text || '',
+    q.option_a || '',
+    q.option_b || '',
+    q.option_c || '',
+    q.option_d || '',
+  ].join(' ')
+
+  const words = fullText.trim().split(/\s+/).filter(Boolean).length
+
+  // 3 words per second (180 words/min) + 12s thinking, analyzing & clicking buffer
+  const rawSeconds = Math.round(words / 3) + 12
+
+  // Fairly clamped: min 18s (short facts), max 45s (long clinical case scenarios)
+  return Math.min(45, Math.max(18, rawSeconds))
+}
+
 export default function LiveQuizPage({
   params,
 }: {
@@ -103,6 +126,7 @@ export default function LiveQuizPage({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({})
   const [timeRemaining, setTimeRemaining] = useState<number>(600) // 10 mins default
+  const [questionTimes, setQuestionTimes] = useState<Record<string, number>>({})
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
@@ -159,6 +183,23 @@ export default function LiveQuizPage({
         
         const qList: QuestionItem[] = data.questions || []
         setQuestions(qList)
+
+        // Initialize dynamic time per question based on word count with local cache persistence
+        const initialTimes: Record<string, number> = {}
+        let localCachedTimes: Record<string, number> = {}
+        try {
+          const cachedTimes = localStorage.getItem(`quiz_q_times_${data.attempt_id}`)
+          if (cachedTimes) localCachedTimes = JSON.parse(cachedTimes)
+        } catch {}
+
+        qList.forEach((q) => {
+          if (typeof localCachedTimes[q.id] === 'number') {
+            initialTimes[q.id] = localCachedTimes[q.id]
+          } else {
+            initialTimes[q.id] = computeQuestionTimeSeconds(q)
+          }
+        })
+        setQuestionTimes(initialTimes)
 
         // Hydrate existing answers from server & localStorage fallback
         const initialAnswers: Record<string, 'A' | 'B' | 'C' | 'D'> = {}
@@ -231,7 +272,109 @@ export default function LiveQuizPage({
     return () => clearInterval(timer)
   }, [loading, isSubmitting, timeRemaining, handleSubmitQuiz])
 
-  // 4. Copy / Google Lens / Print Block + Instant Blur Shield on Focus Loss or Screenshot Shortcuts
+  // Question metadata & timing references
+  const currentQ = questions[currentIndex]
+  const answeredCount = Object.keys(answers).length
+  const totalQuestions = questions.length || 30
+  const isUrgentTime = timeRemaining <= 120 // Less than 2 minutes
+
+  // Deterministically shuffled MCQ options per participant & question
+  const options = useMemo(() => {
+    return getShuffledOptions(currentQ, attemptId || studentId || competitionId)
+  }, [currentQ, attemptId, studentId, competitionId])
+
+  const allocatedTime = computeQuestionTimeSeconds(currentQ)
+  const remainingQTime = currentQ
+    ? Math.max(0, questionTimes[currentQ.id] !== undefined ? questionTimes[currentQ.id] : allocatedTime)
+    : allocatedTime
+  const isQuestionExpired = remainingQTime <= 0
+
+  // Refs for keyboard shortcuts & async timer listener
+  const optionsRef = useRef(options)
+  optionsRef.current = options
+  const isExpiredRef = useRef(isQuestionExpired)
+  isExpiredRef.current = isQuestionExpired
+  const totalQuestionsRef = useRef(totalQuestions)
+  totalQuestionsRef.current = totalQuestions
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => Math.min(totalQuestionsRef.current - 1, prev + 1))
+  }, [])
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1))
+  }, [])
+
+  // 4. Select Option & Autosave
+  const handleSelectOption = useCallback(async (option: 'A' | 'B' | 'C' | 'D') => {
+    if (!currentQ || !attemptId || !studentId || isExpiredRef.current) return
+
+    // Optimistic UI update & localStorage backup
+    setAnswers((prev) => {
+      const updated = { ...prev, [currentQ.id]: option }
+      try {
+        localStorage.setItem(`quiz_answers_${attemptId}`, JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
+    setAutosaveStatus('saving')
+
+    try {
+      const { error: saveError } = await supabase.rpc('autosave_quiz_response', {
+        p_attempt_id: attemptId,
+        p_student_id: studentId,
+        p_question_id: currentQ.id,
+        p_selected_option: option,
+      })
+
+      if (saveError) throw saveError
+      setAutosaveStatus('saved')
+    } catch (err) {
+      console.error('Autosave failed:', err)
+      setAutosaveStatus('error')
+    }
+  }, [currentQ, attemptId, studentId, supabase])
+
+  // 5. Dynamic Per-Question Countdown Timer (AI-Cheat & Camera Resistance)
+  useEffect(() => {
+    if (loading || isSubmitting || screenBlurred || showSubmitModal) return
+    if (!currentQ) return
+
+    const qId = currentQ.id
+    // If this question has already run out of time, lock it
+    if (questionTimes[qId] !== undefined && questionTimes[qId] <= 0) return
+
+    const timer = setInterval(() => {
+      setQuestionTimes((prev) => {
+        const rem = prev[qId] !== undefined ? prev[qId] : computeQuestionTimeSeconds(currentQ)
+        if (rem <= 1) {
+          clearInterval(timer)
+          const updated = { ...prev, [qId]: 0 }
+          try {
+            if (attemptId) {
+              localStorage.setItem(`quiz_q_times_${attemptId}`, JSON.stringify(updated))
+            }
+          } catch {}
+
+          // Auto-advance to next question if time runs out
+          setCurrentIndex((cur) => Math.min(totalQuestionsRef.current - 1, cur + 1))
+          return updated
+        }
+
+        const updated = { ...prev, [qId]: rem - 1 }
+        try {
+          if (attemptId) {
+            localStorage.setItem(`quiz_q_times_${attemptId}`, JSON.stringify(updated))
+          }
+        } catch {}
+        return updated
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [currentIndex, currentQ, loading, isSubmitting, screenBlurred, showSubmitModal, attemptId])
+
+  // 6. Security Proctoring, Screen Protection & Desktop Keyboard Shortcuts
   useEffect(() => {
     const preventEvent = (e: Event) => {
       e.preventDefault()
@@ -241,7 +384,7 @@ export default function LiveQuizPage({
       if (document.hidden && !isSubmitting) {
         setBlurReason('focus')
         setScreenBlurred(true)
-        setWarningCount(prev => prev + 1)
+        setWarningCount((prev) => prev + 1)
         setShowTabWarning(true)
       }
     }
@@ -254,7 +397,7 @@ export default function LiveQuizPage({
     }
 
     const handleWindowFocus = () => {
-      setScreenBlurred(prev => (blurReason === 'focus' ? false : prev))
+      setScreenBlurred((prev) => (blurReason === 'focus' ? false : prev))
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -291,6 +434,41 @@ export default function LiveQuizPage({
           setBlurReason('shortcut')
           setScreenBlurred(true)
         }
+        return
+      }
+
+      // Answering Shortcuts: A, B, C, D or 1, 2, 3, 4
+      if (['1', '2', '3', '4', 'a', 'b', 'c', 'd'].includes(key) && !isCtrlOrMeta) {
+        if (!isExpiredRef.current && !screenBlurred && !showSubmitModal) {
+          let optIndex = -1
+          if (key === '1' || key === 'a') optIndex = 0
+          else if (key === '2' || key === 'b') optIndex = 1
+          else if (key === '3' || key === 'c') optIndex = 2
+          else if (key === '4' || key === 'd') optIndex = 3
+
+          if (optIndex >= 0 && optionsRef.current[optIndex]) {
+            e.preventDefault()
+            handleSelectOption(optionsRef.current[optIndex].key)
+          }
+        }
+        return
+      }
+
+      // Fast Navigation Shortcuts: Right Arrow or Enter (Next), Left Arrow (Prev)
+      if ((key === 'arrowright' || key === 'enter') && !isCtrlOrMeta) {
+        if (!screenBlurred && !showSubmitModal) {
+          e.preventDefault()
+          handleNext()
+        }
+        return
+      }
+
+      if (key === 'arrowleft' && !isCtrlOrMeta) {
+        if (!screenBlurred && !showSubmitModal) {
+          e.preventDefault()
+          handlePrev()
+        }
+        return
       }
     }
 
@@ -341,38 +519,7 @@ export default function LiveQuizPage({
       window.removeEventListener('touchstart', handleMultiTouch, { capture: true })
       window.removeEventListener('touchmove', handleMultiTouch, { capture: true })
     }
-  }, [isSubmitting, blurReason])
-
-  // 5. Select Option & Autosave
-  const handleSelectOption = async (option: 'A' | 'B' | 'C' | 'D') => {
-    const currentQ = questions[currentIndex]
-    if (!currentQ || !attemptId || !studentId) return
-
-    // Optimistic UI update & localStorage backup
-    setAnswers(prev => {
-      const updated = { ...prev, [currentQ.id]: option }
-      try {
-        localStorage.setItem(`quiz_answers_${attemptId}`, JSON.stringify(updated))
-      } catch {}
-      return updated
-    })
-    setAutosaveStatus('saving')
-
-    try {
-      const { error: saveError } = await supabase.rpc('autosave_quiz_response', {
-        p_attempt_id: attemptId,
-        p_student_id: studentId,
-        p_question_id: currentQ.id,
-        p_selected_option: option,
-      })
-
-      if (saveError) throw saveError
-      setAutosaveStatus('saved')
-    } catch (err) {
-      console.error('Autosave failed:', err)
-      setAutosaveStatus('error')
-    }
-  }
+  }, [isSubmitting, blurReason, screenBlurred, showSubmitModal, handleSelectOption, handleNext, handlePrev])
 
   if (loading) {
     return (
@@ -402,14 +549,6 @@ export default function LiveQuizPage({
       </div>
     )
   }
-
-  const currentQ = questions[currentIndex]
-  const answeredCount = Object.keys(answers).length
-  const totalQuestions = questions.length || 30
-  const isUrgentTime = timeRemaining <= 120 // Less than 2 minutes
-
-  // Deterministically shuffled MCQ options per participant & question (preserving true key for grading)
-  const options = getShuffledOptions(currentQ, attemptId || studentId || competitionId)
 
   return (
     <div
@@ -509,6 +648,39 @@ export default function LiveQuizPage({
         <div className="lg:col-span-8 space-y-4 min-w-0">
           <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-8 shadow-xs">
             
+            {/* Dynamic Question Fair Timer Header & Progress Line */}
+            <div className="rounded-xl border border-blue-100 bg-linear-to-r from-blue-50/80 to-indigo-50/50 p-3 mb-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Clock className={`w-4 h-4 ${remainingQTime <= 5 ? 'text-red-600 animate-pulse' : remainingQTime <= 10 ? 'text-amber-600' : 'text-blue-700'}`} />
+                  <span className="text-xs font-bold text-gray-800">Question Timer:</span>
+                  <span className={`text-xs font-mono font-extrabold ${remainingQTime <= 5 ? 'text-red-600 animate-pulse' : remainingQTime <= 10 ? 'text-amber-600' : 'text-blue-700'}`}>
+                    {remainingQTime}s left
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
+                    (allocated {allocatedTime}s by length)
+                  </span>
+                </div>
+                {isQuestionExpired ? (
+                  <span className="text-[10px] sm:text-[11px] font-bold text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Question Locked
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-gray-500 hidden sm:inline">
+                    Auto-moves when time ends
+                  </span>
+                )}
+              </div>
+              <div className="w-full bg-gray-200/80 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-1000 ease-linear rounded-full ${
+                    remainingQTime <= 5 ? 'bg-red-500' : remainingQTime <= 10 ? 'bg-amber-500' : 'bg-blue-600'
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(100, (remainingQTime / allocatedTime) * 100))}%` }}
+                />
+              </div>
+            </div>
+
             {/* Topic, Autosave (mobile) & Display number */}
             <div className="flex items-center justify-between gap-2 mb-3.5 sm:mb-4 pb-3 border-b border-gray-100 flex-wrap">
               <span className="text-[10px] sm:text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider truncate max-w-[65%]">
@@ -534,16 +706,19 @@ export default function LiveQuizPage({
             {/* MCQ Options */}
             <div className="space-y-2.5 sm:space-y-3">
               {options.map((opt) => {
-                const isSelected = answers[currentQ.id] === opt.key
+                const isSelected = answers[currentQ?.id || ''] === opt.key
                 return (
                   <button
                     key={opt.key}
                     type="button"
+                    disabled={isQuestionExpired}
                     onClick={() => handleSelectOption(opt.key)}
-                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-[13px] sm:text-sm flex items-start gap-3 sm:gap-3.5 transition-all active:scale-[0.99] ${
-                      isSelected
-                        ? 'bg-blue-50/70 border-blue-600 text-blue-950 font-semibold ring-1 ring-blue-600 shadow-xs'
-                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl border text-[13px] sm:text-sm flex items-start gap-3 sm:gap-3.5 transition-all ${
+                      isQuestionExpired
+                        ? 'opacity-60 cursor-not-allowed bg-gray-50 border-gray-200'
+                        : isSelected
+                        ? 'bg-blue-50/70 border-blue-600 text-blue-950 font-semibold ring-1 ring-blue-600 shadow-xs active:scale-[0.99] cursor-pointer'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50 active:scale-[0.99] cursor-pointer'
                     }`}
                   >
                     <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
@@ -554,6 +729,9 @@ export default function LiveQuizPage({
                       {opt.displayLabel}
                     </span>
                     <span className="pt-0.5 leading-snug break-words min-w-0 flex-1">{opt.text}</span>
+                    <span className="hidden sm:inline-block text-[10px] font-mono text-gray-400 border border-gray-200 rounded px-1.5 py-0.5 self-center">
+                      {opt.displayLabel}
+                    </span>
                   </button>
                 )
               })}
@@ -563,7 +741,7 @@ export default function LiveQuizPage({
             <div className="flex items-center justify-between gap-3 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                onClick={handlePrev}
                 disabled={currentIndex === 0}
                 className="flex-1 sm:flex-none justify-center px-4 py-2.5 sm:py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 active:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors cursor-pointer"
               >
@@ -573,13 +751,35 @@ export default function LiveQuizPage({
 
               <button
                 type="button"
-                onClick={() => setCurrentIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
+                onClick={handleNext}
                 disabled={currentIndex === totalQuestions - 1}
                 className="flex-1 sm:flex-none justify-center px-5 py-2.5 sm:py-2 rounded-xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
                 <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Desktop Keyboard Shortcuts Bar */}
+            <div className="hidden sm:flex items-center justify-between text-[11px] text-gray-500 pt-4 mt-2 border-t border-gray-100 flex-wrap gap-2">
+              <div className="flex items-center gap-1.5">
+                <Keyboard className="w-3.5 h-3.5 text-blue-600" />
+                <span className="font-semibold text-gray-700">Desktop Keys:</span>
+                <span className="text-gray-500">Press</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">A</kbd>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">B</kbd>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">C</kbd>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">D</kbd>
+                <span className="text-gray-500">or</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">1-4</kbd>
+                <span className="text-gray-500">to select &bull;</span>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">&rarr;</kbd>
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-800 font-mono text-[10px] font-bold">Enter</kbd>
+                <span className="text-gray-500">Next</span>
+              </div>
+              <span className="text-[10px] text-gray-400">
+                Anti-Cheat Dynamic Speed Control
+              </span>
             </div>
 
           </div>
@@ -611,6 +811,9 @@ export default function LiveQuizPage({
               {questions.map((q, idx) => {
                 const isAnswered = !!answers[q.id]
                 const isCurrent = idx === currentIndex
+                const qAllocated = computeQuestionTimeSeconds(q)
+                const qRemaining = questionTimes[q.id] !== undefined ? questionTimes[q.id] : qAllocated
+                const isExpired = qRemaining <= 0
 
                 return (
                   <button
@@ -621,19 +824,27 @@ export default function LiveQuizPage({
                         ? 'ring-2 ring-blue-600 ring-offset-1 text-white bg-blue-700'
                         : isAnswered
                         ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                        : isExpired
+                        ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     {idx + 1}
+                    {isExpired && !isAnswered && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500"></span>
+                    )}
                   </button>
                 )
               })}
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-4 text-[10px] text-gray-500 pt-5 mt-4 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-3 text-[10px] text-gray-500 pt-5 mt-4 border-t border-gray-100 flex-wrap">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Answered
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Locked
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-gray-300"></span> Unanswered
