@@ -91,6 +91,75 @@ async function fetchPngAsDataUrlWithDimensions(url: string): Promise<LoadedPng |
   }
 }
 
+async function loadSignatoryPng(sig: CertificateSignatory): Promise<LoadedPng | null> {
+  let url = sig.signatureUrl
+  if (!url) {
+    const nameLower = (sig.name || '').toLowerCase()
+    if (nameLower.includes('sandeep') || nameLower.includes('bhoyar')) {
+      url = '/signatures/dr_sandeep_bhoyar_signature.png'
+    } else if (nameLower.includes('deepak') || nameLower.includes('selokar')) {
+      url = '/signatures/dr_deepak_selokar_signature.png'
+    }
+  }
+  if (!url) return null
+
+  // Fast local disk check if relative or filename matches known local signatures
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    const rel = url.replace(/^\/+/, '')
+    const localPath = path.join(process.cwd(), 'public', rel)
+    if (fs.existsSync(localPath)) {
+      try {
+        const buf = fs.readFileSync(localPath)
+        const { width, height } = parsePngDimensions(buf)
+        return {
+          dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+          width,
+          height,
+        }
+      } catch (err) {
+        console.warn('Local disk read failed for signature:', err)
+      }
+    }
+    url = `${FALLBACK_PUBLIC_BASE_URL}/${rel}`
+  }
+
+  // Also check local disk for known signature URLs to save HTTP roundtrip
+  if (url.includes('dr_sandeep_bhoyar_signature')) {
+    const localPath = path.join(process.cwd(), 'public', 'signatures', 'dr_sandeep_bhoyar_signature.png')
+    if (fs.existsSync(localPath)) {
+      try {
+        const buf = fs.readFileSync(localPath)
+        const { width, height } = parsePngDimensions(buf)
+        return {
+          dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+          width,
+          height,
+        }
+      } catch {
+        // fallback to fetch
+      }
+    }
+  }
+  if (url.includes('dr_deepak_selokar_signature')) {
+    const localPath = path.join(process.cwd(), 'public', 'signatures', 'dr_deepak_selokar_signature.png')
+    if (fs.existsSync(localPath)) {
+      try {
+        const buf = fs.readFileSync(localPath)
+        const { width, height } = parsePngDimensions(buf)
+        return {
+          dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+          width,
+          height,
+        }
+      } catch {
+        // fallback to fetch
+      }
+    }
+  }
+
+  return fetchPngAsDataUrlWithDimensions(url)
+}
+
 export async function generateCertificatePdfBuffer({
   studentName,
   collegeName,
@@ -335,9 +404,7 @@ export async function generateCertificatePdfBuffer({
 
     // Fetch all PNG signatures in parallel
     const sigImages = await Promise.all(
-      activeSignatories.map((s) =>
-        s.signatureUrl ? fetchPngAsDataUrlWithDimensions(s.signatureUrl) : Promise.resolve(null)
-      )
+      activeSignatories.map((s) => loadSignatoryPng(s))
     )
 
     activeSignatories.forEach((sig, i) => {

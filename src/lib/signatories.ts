@@ -15,19 +15,19 @@ export const SIGNATORIES_CONFIG_PATH = 'config/signatories.json'
 export const DEFAULT_SIGNATORIES: CertificateSignatory[] = [
   {
     id: 'sig-1',
-    name: 'Dr. Anuja Maitreya',
-    designation: 'Epidemiologist, MSU Nagpur',
+    name: 'Dr. Sandeep Bhoyar',
+    designation: 'Microbiologist',
     organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
     organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
-    signatureUrl: null,
+    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_sandeep_bhoyar_signature_1795086316365.png',
   },
   {
     id: 'sig-2',
-    name: 'Nodal Officer (Health)',
-    designation: 'National AMR Program',
-    organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
-    organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
-    signatureUrl: null,
+    name: 'Dr. Deepak Selokar',
+    designation: 'Medical Officer Health (MOH)',
+    organization: 'Nagpur Municipal Corporation, Nagpur',
+    organizationLine2: '',
+    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_deepak_selokar_signature_1795156982474.png',
   },
 ]
 

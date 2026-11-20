@@ -304,7 +304,7 @@ export default function StudentResultPage({
             designation: 'Medical Officer Health (MOH)',
             organization: 'Nagpur Municipal Corporation, Nagpur',
             organizationLine2: '',
-            signatureUrl: null,
+            signatureUrl: '/signatures/dr_deepak_selokar_signature.png',
           },
         ]
 
@@ -648,8 +648,11 @@ export default function StudentResultPage({
                     <div className="flex items-end justify-center sm:justify-end gap-5 sm:gap-8 flex-wrap w-full sm:w-auto">
                       {activeSignatories.map((sig: any, idx: number) => {
                         const isDrSandeep = sig.name?.toLowerCase().includes('sandeep')
+                        const isDrDeepak = sig.name?.toLowerCase().includes('deepak') || sig.name?.toLowerCase().includes('selokar')
                         const sigImg = isDrSandeep
                           ? '/signatures/dr_sandeep_bhoyar_signature.png'
+                          : isDrDeepak
+                          ? '/signatures/dr_deepak_selokar_signature.png'
                           : (sig.signatureUrl || null)
 
                         return (
