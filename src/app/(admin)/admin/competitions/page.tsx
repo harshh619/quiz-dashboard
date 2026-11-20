@@ -21,6 +21,8 @@ import {
   X,
   FileText,
   Share2,
+  Clock,
+  Zap,
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -38,6 +40,14 @@ export default function AdminCompetitionsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [enlargedComp, setEnlargedComp] = useState<any | null>(null)
   const [downloadingQrId, setDownloadingQrId] = useState<string | null>(null)
+
+  // Reschedule state
+  const [rescheduleComp, setRescheduleComp] = useState<any | null>(null)
+  const [rescheduleStart, setRescheduleStart] = useState('')
+  const [rescheduleDuration, setRescheduleDuration] = useState(10)
+  const [rescheduleStatus, setRescheduleStatus] = useState('scheduled')
+  const [rescheduleResetAttempts, setRescheduleResetAttempts] = useState(true)
+  const [isRescheduling, setIsRescheduling] = useState(false)
 
   const [newComp, setNewComp] = useState({
     title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
@@ -392,6 +402,80 @@ export default function AdminCompetitionsPage() {
     }
   }
 
+  const handleOpenReschedule = (comp: any) => {
+    setRescheduleComp(comp)
+    const d = new Date(comp.scheduled_start)
+    const offset = d.getTimezoneOffset() * 60000
+    const localIso = new Date(d.getTime() - offset).toISOString().slice(0, 16)
+    setRescheduleStart(localIso)
+    setRescheduleDuration(Math.round((comp.duration_seconds || 600) / 60))
+    setRescheduleStatus(comp.status || 'scheduled')
+    setRescheduleResetAttempts(true)
+  }
+
+  const handleStartQuizNow = async (comp: any) => {
+    if (
+      !confirm(
+        `Start "${comp.title}" RIGHT NOW for testing?\n\nThis will set start time to current time and clear previous test attempts so you can take the quiz immediately.`
+      )
+    ) {
+      return
+    }
+    setIsRescheduling(true)
+    try {
+      const now = new Date()
+      const res = await fetch('/api/admin/competitions/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          competitionId: comp.id,
+          scheduledStart: now.toISOString(),
+          durationMinutes: Math.round((comp.duration_seconds || 600) / 60) || 10,
+          status: 'scheduled',
+          resetAttempts: true,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to start quiz now')
+      setStatusMsg(`⚡ Quiz is now LIVE! (${json.message})`)
+      setRescheduleComp(null)
+      await loadCompetitions()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to start quiz now')
+    } finally {
+      setIsRescheduling(false)
+    }
+  }
+
+  const handleSaveReschedule = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rescheduleComp || !rescheduleStart) return
+    setIsRescheduling(true)
+    try {
+      const startTime = new Date(rescheduleStart)
+      const res = await fetch('/api/admin/competitions/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          competitionId: rescheduleComp.id,
+          scheduledStart: startTime.toISOString(),
+          durationMinutes: Number(rescheduleDuration) || 10,
+          status: rescheduleStatus,
+          resetAttempts: rescheduleResetAttempts,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to reschedule quiz')
+      setStatusMsg(json.message || 'Competition rescheduled successfully!')
+      setRescheduleComp(null)
+      await loadCompetitions()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to reschedule quiz')
+    } finally {
+      setIsRescheduling(false)
+    }
+  }
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -508,6 +592,15 @@ export default function AdminCompetitionsPage() {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                        <button
+                          onClick={() => handleOpenReschedule(comp)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                          title="Change quiz start time, duration or start instantly for live testing"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Reschedule Quiz</span>
+                        </button>
+
                         <button
                           onClick={() => handleToggleLock(comp.id, isLocked)}
                           disabled={togglingLockId === comp.id}
@@ -795,6 +888,157 @@ export default function AdminCompetitionsPage() {
                 <span>{copiedId === enlargedComp.id ? 'Copied' : 'Copy Link'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Competition Modal */}
+      {rescheduleComp && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setRescheduleComp(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-gray-900 leading-snug">
+                  Reschedule Quiz Competition
+                </h3>
+                <p className="text-xs text-gray-500 truncate max-w-sm">
+                  {rescheduleComp.title}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick 1-Click Action for Testing */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="min-w-0">
+                <span className="flex items-center gap-1 text-xs font-bold text-amber-900">
+                  <Zap className="w-4 h-4 text-amber-600 fill-amber-500" />
+                  Instant Live Test Mode
+                </span>
+                <p className="text-[11px] text-amber-800/90 mt-0.5 leading-snug">
+                  Start quiz <strong>RIGHT NOW</strong> and clear test attempts to play immediately!
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleStartQuizNow(rescheduleComp)}
+                disabled={isRescheduling}
+                className="w-full sm:w-auto px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+              >
+                <Zap className="w-3.5 h-3.5 fill-white" />
+                <span>Make Live Right Now</span>
+              </button>
+            </div>
+
+            {/* Custom Reschedule Form */}
+            <form onSubmit={handleSaveReschedule} className="space-y-3.5 text-xs pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-gray-700 mb-1">New Start Time *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={rescheduleStart}
+                    onChange={(e) => setRescheduleStart(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                  />
+                  <span className="text-[10px] text-gray-500 mt-0.5 block">
+                    Starting date &amp; time
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-gray-700">Duration (Minutes) *</label>
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold text-xs">
+                      {rescheduleDuration} Mins
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="180"
+                      step="1"
+                      value={rescheduleDuration}
+                      onChange={(e) => setRescheduleDuration(Number(e.target.value))}
+                      className="w-full accent-blue-600 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="300"
+                      required
+                      value={rescheduleDuration}
+                      onChange={(e) => setRescheduleDuration(Math.max(1, Number(e.target.value)))}
+                      className="w-16 p-2 rounded-xl border border-gray-300 text-center font-bold text-xs"
+                    />
+                  </div>
+                  {rescheduleStart && (
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 block mt-2">
+                      New End Time: <strong>{new Date(new Date(rescheduleStart).getTime() + (Number(rescheduleDuration) || 10) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong> ({new Date(new Date(rescheduleStart).getTime() + (Number(rescheduleDuration) || 10) * 60000).toLocaleDateString()})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">Status</label>
+                <select
+                  value={rescheduleStatus}
+                  onChange={(e) => setRescheduleStatus(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 text-xs bg-white font-medium text-gray-800"
+                >
+                  <option value="scheduled">Scheduled (Auto Live by Time)</option>
+                  <option value="draft">Draft (Testing / Not Published)</option>
+                  <option value="results_published">Result Published</option>
+                </select>
+              </div>
+
+              {/* Reset Previous Test Attempts Toggle */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={rescheduleResetAttempts}
+                  onChange={(e) => setRescheduleResetAttempts(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 accent-blue-600 rounded cursor-pointer"
+                />
+                <div className="text-[11px] leading-snug">
+                  <span className="font-bold text-gray-900 block">
+                    Reset prior test attempts for this competition
+                  </span>
+                  <span className="text-gray-500">
+                    Recommended for testing: Clears your previous test attempt so you can enter the waiting room &amp; play the quiz again fresh.
+                  </span>
+                </div>
+              </label>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRescheduleComp(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRescheduling}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-700 text-white text-xs font-bold hover:bg-blue-800 transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                >
+                  {isRescheduling ? 'Updating Schedule...' : 'Save & Reschedule'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
