@@ -423,12 +423,16 @@ export default function AdminCompetitionsPage() {
     // If admin is declaring results early (or finalizing rankings)
     if (status === 'results_published') {
       const title = targetComp?.title || 'the competition'
+      const certMsg = targetComp?.certificate_enabled
+        ? '• Official PDF certificates with QR codes will be issued.\n'
+        : '• Digital certificates are disabled for this competition.\n'
+
       if (
         !confirm(
           `⚡ DECLARE RESULTS NOW for "${title}"?\n\n` +
           `• All submitted and in-progress attempts will be evaluated.\n` +
           `• Final ranks (#1, #2, #3, etc.) will be computed immediately.\n` +
-          `• Official PDF certificates with QR codes will be issued.\n` +
+          certMsg +
           `• Participants will immediately see their results (no waiting for 10 min countdown).\n\n` +
           `Proceed with declaring results?`
         )
@@ -445,7 +449,7 @@ export default function AdminCompetitionsPage() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Failed to finalize')
-        setStatusMsg(`🎉 Results successfully declared! ${data.total_finalized} certificates issued.`)
+        setStatusMsg(`🎉 Results successfully declared! ${data.total_finalized} participants ranked.`)
         await loadCompetitions()
         return
       } catch (err: unknown) {
@@ -753,7 +757,7 @@ export default function AdminCompetitionsPage() {
                           onClick={() => handleUpdateStatus(comp.id, 'results_published')}
                           disabled={declaringResultId === comp.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                          title="Declare results now (evaluates all submissions, computes ranks & issues certificates)"
+                          title="Declare results now (evaluates all submissions, computes ranks & unlocks scores)"
                         >
                           <Award className="w-3.5 h-3.5" />
                           <span>{declaringResultId === comp.id ? 'Declaring Results...' : '⚡ Declare Results'}</span>

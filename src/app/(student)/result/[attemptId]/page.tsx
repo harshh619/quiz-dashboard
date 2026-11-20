@@ -118,7 +118,12 @@ export default function StudentResultPage({
         : 0
       setServerOffsetMs(offset)
 
-      if (data.unlockAt && (!data.certificate || !data.answerKeyUnlocked || !data.scoreUnlocked)) {
+      const isCertActive = data.competition?.certificate_enabled === true
+      const isAlreadyUnlocked = isCertActive
+        ? Boolean(data.certificate && data.answerKeyUnlocked && data.scoreUnlocked)
+        : Boolean(data.answerKeyUnlocked && data.scoreUnlocked)
+
+      if (data.unlockAt && !isAlreadyUnlocked) {
         const diff = Math.max(
           0,
           Math.ceil((new Date(data.unlockAt).getTime() - (Date.now() + offset)) / 1000)
@@ -152,9 +157,14 @@ export default function StudentResultPage({
     loadResult(false)
   }, [loadResult])
 
-  // Live countdown to auto-unlock score, official certificate & answer key once exam window closes!
+  // Live countdown to auto-unlock score, rankings & answer key once exam window closes!
   useEffect(() => {
-    if ((certificate && answerKeyUnlocked && scoreUnlocked) || !unlockAt) return
+    const isCertActive = competition?.certificate_enabled === true
+    const isFullyUnlocked = isCertActive
+      ? Boolean(certificate && answerKeyUnlocked && scoreUnlocked)
+      : Boolean(answerKeyUnlocked && scoreUnlocked)
+
+    if (isFullyUnlocked || !unlockAt) return
 
     const unlockMs = new Date(unlockAt).getTime()
     let triggered = false
@@ -171,7 +181,7 @@ export default function StudentResultPage({
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [certificate, answerKeyUnlocked, scoreUnlocked, unlockAt, serverOffsetMs, loadResult])
+  }, [competition, certificate, answerKeyUnlocked, scoreUnlocked, unlockAt, serverOffsetMs, loadResult])
 
   // Render official PDF certificate as image for preview (once certificate is available and enabled)
   useEffect(() => {

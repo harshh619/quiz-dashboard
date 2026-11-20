@@ -80,7 +80,7 @@ export async function ensureCompetitionAutoFinalized(competitionId: string): Pro
 
   const { data: comp } = await admin
     .from('competitions')
-    .select('id, status, scheduled_end')
+    .select('id, status, scheduled_end, certificate_enabled')
     .eq('id', competitionId)
     .single()
 
@@ -163,20 +163,35 @@ export async function ensureCompetitionAutoFinalized(competitionId: string): Pro
       return { finalized: false, justFinalized: false, unlockAtIso }
     }
 
-    // 3. Fix any localhost QR verification URLs on issued certificates
-    const { data: certs } = await admin
-      .from('certificates')
-      .select('id, certificate_number, qr_verification_url')
-      .eq('competition_id', competitionId)
+    // 3. Handle certificates and verification URLs
+    if (comp.certificate_enabled === false) {
+      // Certificates are strictly disabled for this competition:
+      // Strip out any certificate records and cancel all certificate email jobs
+      await admin
+        .from('certificates')
+        .delete()
+        .eq('competition_id', competitionId)
 
-    if (certs) {
-      for (const cert of certs) {
-        const expectedUrl = `${PRODUCTION_APP_URL}/verify/${cert.certificate_number}`
-        if (cert.qr_verification_url !== expectedUrl) {
-          await admin
-            .from('certificates')
-            .update({ qr_verification_url: expectedUrl })
-            .eq('id', cert.id)
+      await admin
+        .from('email_jobs')
+        .delete()
+        .eq('type', 'certificate')
+    } else {
+      // Fix any localhost QR verification URLs on issued certificates
+      const { data: certs } = await admin
+        .from('certificates')
+        .select('id, certificate_number, qr_verification_url')
+        .eq('competition_id', competitionId)
+
+      if (certs) {
+        for (const cert of certs) {
+          const expectedUrl = `${PRODUCTION_APP_URL}/verify/${cert.certificate_number}`
+          if (cert.qr_verification_url !== expectedUrl) {
+            await admin
+              .from('certificates')
+              .update({ qr_verification_url: expectedUrl })
+              .eq('id', cert.id)
+          }
         }
       }
     }

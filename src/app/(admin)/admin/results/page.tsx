@@ -102,6 +102,39 @@ export default function AdminResultsPage() {
         submitted,
         inProgress,
       })
+
+      // Automatic result declaration: if competition time has ended and results not yet published, auto-declare!
+      const targetComp = comps.find((c) => c.id === activeCompId)
+      const isPastEnd = targetComp?.scheduled_end && new Date(targetComp.scheduled_end).getTime() <= Date.now()
+      const needsAutoFinalize =
+        targetComp &&
+        targetComp.status !== 'results_published' &&
+        targetComp.status !== 'draft' &&
+        isPastEnd
+
+      if (needsAutoFinalize) {
+        try {
+          const finRes = await fetch('/api/admin/finalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ competitionId: activeCompId }),
+          })
+          if (finRes.ok) {
+            const [newRes, newComps] = await Promise.all([
+              supabase
+                .from('competition_results')
+                .select('*, student:profiles(*)')
+                .eq('competition_id', activeCompId)
+                .order('rank', { ascending: true }),
+              supabase.from('competitions').select('*').order('created_at', { ascending: false }),
+            ])
+            if (newRes.data && newRes.data.length > 0) setResults(newRes.data)
+            if (newComps.data) setCompetitions(newComps.data)
+          }
+        } catch (e) {
+          console.error('Auto-finalize in admin results failed:', e)
+        }
+      }
     } catch (err) {
       console.error('Error loading results & analytics:', err)
     } finally {
@@ -124,11 +157,15 @@ export default function AdminResultsPage() {
     const comp = competitions.find((c) => c.id === targetId)
     const title = comp?.title || 'the competition'
 
+    const certNote = comp?.certificate_enabled
+      ? '• Generates verified official PDF certificates with QR codes for participants.\n'
+      : '• Digital certificates are disabled for this competition (no certificates will be issued).\n'
+
     const confirmMsg =
       `⚡ DECLARE RESULTS NOW for:\n"${title}"?\n\n` +
       `• Auto-submits any in-progress participant attempts.\n` +
       `• Computes final ranks (#1, #2, #3, etc.) based on score & speed.\n` +
-      `• Generates verified official PDF certificates for all participants.\n` +
+      certNote +
       `• Unlocks result, score & answer key immediately on participant screens.\n\n` +
       `Do you want to proceed and publish results now?`
 
@@ -151,7 +188,7 @@ export default function AdminResultsPage() {
 
       setStatusMsg({
         type: 'success',
-        text: `🎉 Official Results Published! ${data.total_finalized} participants ranked and certificates issued instantly.`,
+        text: `🎉 Official Results Published! ${data.total_finalized} participants ranked successfully.`,
       })
 
       await loadResults(targetId)
@@ -374,7 +411,7 @@ export default function AdminResultsPage() {
               )}
               <span>
                 {finalizing
-                  ? 'Declaring Results & Issuing Certificates...'
+                  ? 'Declaring Results & Finalizing Ranks...'
                   : results.length > 0
                     ? '⚡ Re-Calculate / Update Results'
                     : '⚡ Declare Results Now'}
@@ -544,7 +581,7 @@ export default function AdminResultsPage() {
                       <th className="px-5 py-3">Name of Health Facility</th>
                       <th className="px-5 py-3">Score</th>
                       <th className="px-5 py-3">Submission Timestamp</th>
-                      <th className="px-5 py-3">Award Type</th>
+                      <th className="px-5 py-3">Position / Merit</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -571,7 +608,7 @@ export default function AdminResultsPage() {
                                   </span>
                                 ) : (
                                   <span>
-                                    Aap 10 minute khatam hone ka intezar kiye bina kisi bhi samay yahan se result declare kar sakte hain. Testing me bhi kaam aayega.
+                                    Quiz khatam hote hi results automatically declare ho jayenge. Agar testing me pehle result dekhna ho to yahan se turant declare kar sakte hain.
                                   </span>
                                 )}
                               </p>
@@ -590,8 +627,8 @@ export default function AdminResultsPage() {
                               )}
                               <span>
                                 {finalizing
-                                  ? 'Declaring Results & Issuing Certificates...'
-                                  : '⚡ Declare Results & Issue Certificates Now'}
+                                  ? 'Declaring Results & Finalizing Ranks...'
+                                  : '⚡ Declare Results Now'}
                               </span>
                             </button>
                           </div>
@@ -616,12 +653,16 @@ export default function AdminResultsPage() {
                             {new Date(r.submitted_at).toLocaleTimeString('en-IN')}
                           </td>
                           <td className="px-5 py-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${r.certificate_type === 'first_prize' ? 'bg-amber-100 text-amber-800' :
-                                r.certificate_type === 'second_prize' ? 'bg-slate-200 text-slate-800' :
-                                  r.certificate_type === 'third_prize' ? 'bg-orange-100 text-orange-800' :
-                                    'bg-blue-50 text-blue-800'
-                              }`}>
-                              {r.certificate_type.replace('_', ' ')}
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase shadow-2xs ${
+                              r.rank === 1 ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                              r.rank === 2 ? 'bg-slate-200 text-slate-800 border border-slate-300' :
+                              r.rank === 3 ? 'bg-orange-100 text-orange-900 border border-orange-300' :
+                              'bg-blue-50 text-blue-800 border border-blue-200'
+                            }`}>
+                              {r.rank === 1 ? '🥇 1st Rank (Winner)' :
+                               r.rank === 2 ? '🥈 2nd Rank (Runner-up)' :
+                               r.rank === 3 ? '🥉 3rd Rank' :
+                               `Rank #${r.rank}`}
                             </span>
                           </td>
                         </tr>

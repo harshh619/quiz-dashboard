@@ -98,7 +98,19 @@ export async function POST(request: Request) {
       .select('id, certificate_number, qr_verification_url')
       .eq('competition_id', competitionId)
 
-    if (certs) {
+    if (compRow?.certificate_enabled === false) {
+      // Certificates strictly disabled for this competition:
+      // Strip out all certificate records and remove all certificate email jobs
+      await admin
+        .from('certificates')
+        .delete()
+        .eq('competition_id', competitionId)
+
+      await admin
+        .from('email_jobs')
+        .delete()
+        .eq('type', 'certificate')
+    } else if (certs) {
       for (const cert of certs) {
         const expectedUrl = `${PRODUCTION_APP_URL}/verify/${cert.certificate_number}`
         if (cert.qr_verification_url !== expectedUrl) {
@@ -107,16 +119,6 @@ export async function POST(request: Request) {
             .update({ qr_verification_url: expectedUrl })
             .eq('id', cert.id)
         }
-      }
-
-      // If certificates are disabled for this competition, remove any queued certificate email jobs
-      if (compRow?.certificate_enabled === false) {
-        const certNums = certs.map((c) => c.certificate_number)
-        await admin
-          .from('email_jobs')
-          .delete()
-          .eq('type', 'certificate')
-          .in('payload->>certificate_number', certNums)
       }
     }
 

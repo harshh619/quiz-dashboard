@@ -76,8 +76,10 @@ export async function GET(
     ])
 
     // Anti-cheating lock: NEVER expose score, accuracy, or answer keys until the competition timer ends (or admin publishes results)
-    const answerKeyUnlocked = isCompetitionEnded || finalized || Boolean(cert)
+    const answerKeyUnlocked = isCompetitionEnded || finalized || Boolean(cert) || Boolean(compResult)
     const scoreUnlocked = answerKeyUnlocked
+
+    const isCertEnabled = Boolean(attempt.competition?.certificate_enabled)
 
     let responses: unknown[] = []
     if (answerKeyUnlocked) {
@@ -118,7 +120,7 @@ export async function GET(
 
     let qrPayload: string | null = null
     let authCode: string | null = null
-    if (cert) {
+    if (isCertEnabled && cert) {
       const issuedDateStr = cert.issued_at
         ? new Date(cert.issued_at).toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -149,20 +151,22 @@ export async function GET(
       ? attempt
       : { ...attempt, score: null, rank: null }
 
+    const effectiveCert = isCertEnabled ? (cert || null) : null
+
     return NextResponse.json({
       attempt: safeAttempt,
       profile: attempt.student,
       competition: attempt.competition,
-      certificate: cert || null,
-      qrPayload,
-      authCode,
+      certificate: effectiveCert,
+      qrPayload: isCertEnabled ? qrPayload : null,
+      authCode: isCertEnabled ? authCode : null,
       rank: scoreUnlocked ? (compResult?.rank ?? attempt.rank ?? null) : null,
       isWinner: scoreUnlocked ? (compResult?.is_winner ?? false) : false,
       responses,
       scoreUnlocked,
       answerKeyUnlocked,
-      isFinalized: finalized || Boolean(cert),
-      signatories: cert ? await getCertificateSignatories() : [],
+      isFinalized: finalized || Boolean(compResult) || Boolean(cert),
+      signatories: (isCertEnabled && cert) ? await getCertificateSignatories() : [],
       unlockAt: computedUnlockAt,
       serverTime: new Date().toISOString(),
     })
