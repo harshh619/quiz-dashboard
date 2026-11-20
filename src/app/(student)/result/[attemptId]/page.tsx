@@ -196,16 +196,122 @@ export default function StudentResultPage({
     if (!certificate) return
     setDownloadingImage(true)
     setDownloadError(null)
+
+    const originalGetComputedStyle = window.getComputedStyle
+
     try {
       const html2canvas = (await import('html2canvas')).default
       const certElem = document.getElementById('certificate-card-preview')
       if (!certElem) throw new Error('Certificate element not found')
+
+      // Offscreen canvas for color conversions from modern CSS lab/oklch to RGB
+      let convCanvas: HTMLCanvasElement | null = null
+      let convCtx: CanvasRenderingContext2D | null = null
+      try {
+        convCanvas = document.createElement('canvas')
+        convCanvas.width = 1
+        convCanvas.height = 1
+        convCtx = convCanvas.getContext('2d')
+      } catch {}
+
+      const sanitizeColorOrStyle = (val: string, prop?: string): string => {
+        if (!val || typeof val !== 'string') return val
+        const lower = val.toLowerCase()
+        if (
+          !lower.includes('lab(') &&
+          !lower.includes('oklch(') &&
+          !lower.includes('oklab(') &&
+          !lower.includes('lch(') &&
+          !lower.includes('color(')
+        ) {
+          return val
+        }
+        const propLower = (prop || '').toLowerCase()
+        if (
+          propLower.includes('shadow') ||
+          propLower.includes('filter') ||
+          lower.includes('shadow') ||
+          lower.includes('drop-shadow')
+        ) {
+          return 'none'
+        }
+        if (convCtx) {
+          try {
+            convCtx.fillStyle = '#1e293b'
+            convCtx.fillStyle = val
+            const converted = convCtx.fillStyle
+            if (converted && !converted.includes('lab') && !converted.includes('oklch')) {
+              return converted
+            }
+          } catch {}
+        }
+        return '#1e293b'
+      }
+
+      const wrapComputedStyle = (style: CSSStyleDeclaration): CSSStyleDeclaration => {
+        return new Proxy(style, {
+          get(target, prop) {
+            if (prop === 'getPropertyValue') {
+              return (propertyName: string) => {
+                const raw = target.getPropertyValue(propertyName)
+                return sanitizeColorOrStyle(raw, propertyName)
+              }
+            }
+            const val = Reflect.get(target, prop, target)
+            if (typeof val === 'function') {
+              return val.bind(target)
+            }
+            if (typeof prop === 'string' && typeof val === 'string') {
+              return sanitizeColorOrStyle(val, prop)
+            }
+            return val
+          },
+        })
+      }
+
+      // Intercept window.getComputedStyle while html2canvas runs
+      window.getComputedStyle = function (elt: Element, pseudoElt?: string | null) {
+        const res = originalGetComputedStyle.call(window, elt, pseudoElt)
+        return wrapComputedStyle(res)
+      }
 
       const canvas = await html2canvas(certElem, {
         scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        onclone: (clonedDoc, clonedElement) => {
+          // Intercept iframe window's getComputedStyle as well
+          if (clonedDoc.defaultView) {
+            const iframeGCS = clonedDoc.defaultView.getComputedStyle
+            clonedDoc.defaultView.getComputedStyle = function (elt: Element, pseudoElt?: string | null) {
+              const res = iframeGCS.call(clonedDoc.defaultView, elt, pseudoElt)
+              return wrapComputedStyle(res)
+            }
+          }
+
+          if (clonedDoc.documentElement) {
+            clonedDoc.documentElement.style.backgroundColor = '#ffffff'
+            clonedDoc.documentElement.style.color = '#000000'
+          }
+          if (clonedDoc.body) {
+            clonedDoc.body.style.backgroundColor = '#ffffff'
+            clonedDoc.body.style.color = '#000000'
+          }
+
+          // Strip any modern filter or box-shadow with lab/oklch on cloned elements
+          const elements = [clonedElement, ...Array.from(clonedElement.querySelectorAll<HTMLElement>('*'))]
+          for (const el of elements) {
+            const inlineBoxShadow = el.style.boxShadow
+            if (inlineBoxShadow && (inlineBoxShadow.includes('lab') || inlineBoxShadow.includes('oklch'))) {
+              el.style.boxShadow = 'none'
+            }
+            const inlineFilter = el.style.filter
+            if (inlineFilter && (inlineFilter.includes('lab') || inlineFilter.includes('oklch'))) {
+              el.style.filter = 'none'
+            }
+          }
+        },
       })
 
       const dataUrl = canvas.toDataURL('image/png')
@@ -216,9 +322,11 @@ export default function StudentResultPage({
       a.click()
       a.remove()
     } catch (err: unknown) {
+      console.error('Save certificate image error:', err)
       const msg = err instanceof Error ? err.message : 'Failed to save certificate image'
       setDownloadError(msg)
     } finally {
+      window.getComputedStyle = originalGetComputedStyle
       setDownloadingImage(false)
     }
   }
@@ -503,12 +611,16 @@ export default function StudentResultPage({
               {/* Official Certificate Preview Card (1:1 Identical to Downloaded Official PDF) */}
               <div
                 id="certificate-card-preview"
-                className="relative bg-[#feffff] p-2 sm:p-3 rounded-2xl border-[4px] border-[#1e3a8a] shadow-xl text-center select-none overflow-hidden"
+                className="relative bg-[#feffff] p-2 sm:p-3 rounded-2xl border-[4px] border-[#1e3a8a] text-center select-none overflow-hidden"
+                style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
               >
                 {/* Inner Golden Amber Border matching PDF */}
                 <div className="relative border-2 border-[#d97706] p-4 sm:p-7 rounded-xl bg-[#feffff]">
                   {/* Top 4 Official Partner Logos */}
-                  <div className="flex items-center justify-between gap-2 sm:gap-4 pb-2 border-b border-amber-200/60">
+                  <div
+                    className="flex items-center justify-between gap-2 sm:gap-4 pb-2 border-b"
+                    style={{ borderColor: 'rgba(253, 230, 138, 0.6)' }}
+                  >
                     {/* Left Logos: NMC & NCDC */}
                     <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -516,14 +628,14 @@ export default function StudentResultPage({
                         src="/nmc.png"
                         alt="NMC Nagpur"
                         crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                        className="h-9 sm:h-12 w-auto object-contain"
                       />
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src="/ncdc.png"
                         alt="NCDC"
                         crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                        className="h-9 sm:h-12 w-auto object-contain"
                       />
                     </div>
 
@@ -532,10 +644,10 @@ export default function StudentResultPage({
                       <div className="text-[10px] sm:text-xs md:text-sm font-black tracking-wide text-[#1e3a8a] uppercase leading-tight">
                         NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR
                       </div>
-                      <div className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wider text-slate-700 uppercase mt-0.5">
+                      <div className="text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wider text-[#334155] uppercase mt-0.5">
                         METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR
                       </div>
-                      <div className="text-[7px] sm:text-[9px] font-medium text-slate-500 hidden sm:block mt-0.5">
+                      <div className="text-[7px] sm:text-[9px] font-medium text-[#64748b] hidden sm:block mt-0.5">
                         National Awareness Initiative · Antimicrobial Resistance (AMR) Containment
                       </div>
                     </div>
@@ -547,14 +659,14 @@ export default function StudentResultPage({
                         src="/nhm.png"
                         alt="NHM"
                         crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                        className="h-9 sm:h-12 w-auto object-contain"
                       />
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src="/onehealth.png"
                         alt="One Health Mission"
                         crossOrigin="anonymous"
-                        className="h-9 sm:h-12 w-auto object-contain drop-shadow-xs"
+                        className="h-9 sm:h-12 w-auto object-contain"
                       />
                     </div>
                   </div>
@@ -565,12 +677,12 @@ export default function StudentResultPage({
                   </div>
 
                   {/* Certificate Title */}
-                  <h2 className="text-sm sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight mt-1 font-serif">
+                  <h2 className="text-sm sm:text-lg md:text-xl font-black text-[#0f172a] uppercase tracking-tight mt-1 font-serif">
                     {certificateTitle}
                   </h2>
 
                   {/* Presentation Line */}
-                  <div className="text-xs sm:text-sm italic font-serif text-slate-500 mt-2 sm:mt-2.5">
+                  <div className="text-xs sm:text-sm italic font-serif text-[#64748b] mt-2 sm:mt-2.5">
                     This is proudly presented to
                   </div>
 
@@ -583,14 +695,14 @@ export default function StudentResultPage({
                   </div>
 
                   {/* Designation / Health Facility */}
-                  <div className="text-xs sm:text-sm font-bold text-slate-700 break-words px-2">
+                  <div className="text-xs sm:text-sm font-bold text-[#334155] break-words px-2">
                     {(!profile?.course || profile.course.toLowerCase() === 'pharmacy officer' || profile.course.toLowerCase() === 'pharmacist')
                       ? `Pharmacy Officer, ${profile?.college_name || 'Nagpur'}`
                       : `${profile?.college_name}${profile?.course ? ` (${profile.course})` : ''}`}
                   </div>
 
                   {/* Commendation Paragraph */}
-                  <p className="text-[11px] sm:text-xs text-slate-600 max-w-xl mx-auto leading-relaxed mt-2 px-2">
+                  <p className="text-[11px] sm:text-xs text-[#475569] max-w-xl mx-auto leading-relaxed mt-2 px-2">
                     {achievementPhrase} the Online Quiz Competition for Pharmacy Officers on Antimicrobial Resistance (AMR) and demonstrating commitment to Rational Drug Use and Antimicrobial Stewardship.
                   </p>
 
@@ -600,14 +712,17 @@ export default function StudentResultPage({
                   </div>
 
                   {/* Official One Health / AMR Slogan Block */}
-                  <div className="mt-3 sm:mt-4 py-2 border-y border-amber-200/60 font-serif font-bold text-[#0b2566] leading-tight space-y-0.5">
+                  <div
+                    className="mt-3 sm:mt-4 py-2 border-y font-serif font-bold text-[#0b2566] leading-tight space-y-0.5"
+                    style={{ borderColor: 'rgba(253, 230, 138, 0.6)' }}
+                  >
                     <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase">
                       ONE HEALTH, ONE ACTION
                     </div>
-                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase text-amber-800">
+                    <div className="text-[11px] sm:text-xs md:text-sm tracking-wider uppercase text-[#92400e]">
                       PREVENT AMR NOW!
                     </div>
-                    <div className="text-[9px] sm:text-[11px] font-sans font-medium text-slate-600 tracking-normal pt-0.5">
+                    <div className="text-[9px] sm:text-[11px] font-sans font-medium text-[#475569] tracking-normal pt-0.5">
                       Protect • Humans • Animals • Environment
                     </div>
                   </div>
@@ -622,10 +737,11 @@ export default function StudentResultPage({
                           src={qrCodeDataUrl}
                           alt="Offline Verification QR"
                           crossOrigin="anonymous"
-                          className="w-18 h-18 sm:w-22 sm:h-22 border border-blue-200 rounded-lg p-1 bg-white shadow-xs shrink-0"
+                          className="w-18 h-18 sm:w-22 sm:h-22 border border-[#bfdbfe] rounded-lg p-1 bg-white shrink-0"
+                          style={{ boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
                         />
                       ) : (
-                        <div className="w-18 h-18 sm:w-22 sm:h-22 border border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-[10px]">
+                        <div className="w-18 h-18 sm:w-22 sm:h-22 border border-dashed border-[#cbd5e1] rounded-lg flex items-center justify-center text-[#94a3b8] text-[10px]">
                           QR Code
                         </div>
                       )}
@@ -633,11 +749,11 @@ export default function StudentResultPage({
                         <div className="text-[10px] sm:text-xs font-bold text-[#1e3a8a] uppercase tracking-wide">
                           Scan QR to Verify
                         </div>
-                        <div className="text-[9px] sm:text-[11px] font-mono text-slate-600 break-all">
-                          ID: <span className="font-bold text-slate-900">{certificate.certificate_number}</span>
+                        <div className="text-[9px] sm:text-[11px] font-mono text-[#475569] break-all">
+                          ID: <span className="font-bold text-[#0f172a]">{certificate.certificate_number}</span>
                         </div>
                         {authCode && (
-                          <div className="text-[8px] sm:text-[10px] font-mono font-medium text-blue-700 break-all">
+                          <div className="text-[8px] sm:text-[10px] font-mono font-medium text-[#1d4ed8] break-all">
                             Seal: {authCode.replace(/^MSU-/i, 'NMC-Nagpur-')}
                           </div>
                         )}
@@ -665,7 +781,7 @@ export default function StudentResultPage({
                                   src={sigImg}
                                   alt={sig.name}
                                   crossOrigin="anonymous"
-                                  className={`${isDrDeepak ? 'h-10 sm:h-14 max-w-[140px]' : 'h-7 sm:h-10 max-w-[140px]'} w-auto object-contain drop-shadow-xs block`}
+                                  className={`${isDrDeepak ? 'h-10 sm:h-14 max-w-[140px]' : 'h-7 sm:h-10 max-w-[140px]'} w-auto object-contain block`}
                                 />
                               ) : (
                                 <div className="h-5" />
@@ -673,22 +789,22 @@ export default function StudentResultPage({
                             </div>
 
                             {/* Signature Line */}
-                            <div className="border-t border-slate-400 w-full mt-0 mb-1" />
+                            <div className="border-t border-[#94a3b8] w-full mt-0 mb-1" />
 
                             {/* Signatory Name */}
-                            <div className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                            <div className="text-xs sm:text-sm font-bold text-[#0f172a] leading-tight">
                               {sig.name}
                             </div>
 
                             {/* Designation & Organization */}
-                            <div className="text-[9px] sm:text-[10px] text-slate-600 font-medium leading-tight mt-0.5">
+                            <div className="text-[9px] sm:text-[10px] text-[#475569] font-medium leading-tight mt-0.5">
                               {sig.designation}
                             </div>
-                            <div className="text-[8px] sm:text-[9px] text-slate-500 leading-tight mt-0.5">
+                            <div className="text-[8px] sm:text-[9px] text-[#64748b] leading-tight mt-0.5">
                               {sig.organization}
                             </div>
                             {sig.organizationLine2 && (
-                              <div className="text-[8px] sm:text-[9px] text-slate-400 leading-tight">
+                              <div className="text-[8px] sm:text-[9px] text-[#94a3b8] leading-tight">
                                 {sig.organizationLine2}
                               </div>
                             )}
@@ -699,7 +815,7 @@ export default function StudentResultPage({
                   </div>
 
                   {/* Bottom Center Date of Issue */}
-                  <div className="mt-3 pt-2 border-t border-slate-100 text-[9px] sm:text-xs text-slate-400 text-center">
+                  <div className="mt-3 pt-2 border-t border-[#f1f5f9] text-[9px] sm:text-xs text-[#94a3b8] text-center">
                     Date of Issue: {issuedDateStr}
                   </div>
                 </div>
