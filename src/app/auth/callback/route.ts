@@ -16,17 +16,25 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // Check if user is an admin or msunagpur@gmail.com
+      // Check user role & profile completion
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, college_name, course')
           .eq('id', user.id)
           .single()
 
         if (profile?.role === 'admin' || user.email === 'msunagpur@gmail.com') {
           return NextResponse.redirect(`${origin}/admin/dashboard`)
+        }
+
+        // If profile is incomplete, route directly to register (preserving target destination)
+        if (!profile || !profile.college_name || !profile.course) {
+          const regTarget = next && next !== '/dashboard'
+            ? `${origin}/register?redirect=${encodeURIComponent(next)}`
+            : `${origin}/register`
+          return NextResponse.redirect(regTarget)
         }
       }
 

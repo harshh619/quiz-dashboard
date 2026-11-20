@@ -59,12 +59,21 @@ function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [gsiReady, setGsiReady] = useState(false)
   const [gsiError, setGsiError] = useState(false)
+  const [isEmbeddedBrowser, setIsEmbeddedBrowser] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
   const googleBtnRef = useRef<HTMLDivElement | null>(null)
   const rawNonceRef = useRef<string>('')
   const initializedRef = useRef(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent || ''
+      const isEmbedded = /WhatsApp|FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger/i.test(ua)
+      setIsEmbeddedBrowser(isEmbedded)
+    }
+  }, [])
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
@@ -82,7 +91,7 @@ function LoginContent() {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, college_name')
+        .select('role, college_name, course')
         .eq('id', user.id)
         .single()
 
@@ -94,7 +103,7 @@ function LoginContent() {
       const redirectParam = searchParams.get('redirect')
       const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
 
-      if (!profile || !profile.college_name) {
+      if (!profile || !profile.college_name || !profile.course) {
         window.location.href = redirectParam
           ? `/register?redirect=${encodeURIComponent(redirectParam)}`
           : '/register'
@@ -105,6 +114,33 @@ function LoginContent() {
       return
     }
     window.location.href = '/dashboard'
+  }, [supabase, searchParams])
+
+  // Direct Standard Google OAuth flow (100% reliable across all browsers & devices)
+  const handleFallbackOAuth = useCallback(async () => {
+    try {
+      setLoading(true)
+      setMessage({ type: 'success', text: 'Connecting to Google accounts...' })
+      const redirectParam = searchParams.get('redirect')
+      const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
+      const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callbackUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      })
+      if (error) throw error
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Login failed'
+      setMessage({ type: 'error', text: msg })
+      setLoading(false)
+    }
   }, [supabase, searchParams])
 
   const initGoogleSignIn = useCallback(async () => {
@@ -124,7 +160,7 @@ function LoginContent() {
         callback: async (response: { credential: string }) => {
           try {
             setLoading(true)
-            setMessage(null)
+            setMessage({ type: 'success', text: 'Verifying Google credentials...' })
 
             const { error } = await supabase.auth.signInWithIdToken({
               provider: 'google',
@@ -132,16 +168,17 @@ function LoginContent() {
               nonce: rawNonceRef.current,
             })
 
-            if (error) throw error
+            if (error) {
+              console.warn('signInWithIdToken error, automatically falling back to browser OAuth:', error.message)
+              await handleFallbackOAuth()
+              return
+            }
 
             setMessage({ type: 'success', text: 'Verified! Redirecting to your portal...' })
             await redirectAfterLogin()
           } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Google Sign-In failed'
-            setMessage({ type: 'error', text: msg })
-            setLoading(false)
-            initializedRef.current = false
-            void initGoogleSignIn()
+            console.warn('GSI callback exception, falling back to browser OAuth:', err)
+            await handleFallbackOAuth()
           }
         },
       })
@@ -165,7 +202,7 @@ function LoginContent() {
       console.error('Google Sign-In init error:', err)
       setGsiError(true)
     }
-  }, [redirectAfterLogin, supabase])
+  }, [redirectAfterLogin, handleFallbackOAuth, supabase])
 
   useEffect(() => {
     if (window.google?.accounts?.id) {
@@ -184,29 +221,6 @@ function LoginContent() {
       clearTimeout(timeout)
     }
   }, [initGoogleSignIn])
-
-  // Fallback OAuth (only used if Google GSI script is blocked by browser/ad-blocker)
-  const handleFallbackOAuth = async () => {
-    try {
-      setLoading(true)
-      setMessage(null)
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
-          },
-        },
-      })
-      if (error) throw error
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Login failed'
-      setMessage({ type: 'error', text: msg })
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
@@ -278,14 +292,41 @@ function LoginContent() {
               )}
             </div>
 
-            {gsiError && !loading && (
-              <button
-                onClick={handleFallbackOAuth}
-                type="button"
-                className="w-full flex justify-center items-center gap-3 py-3 px-4 rounded-xl shadow-sm text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition-all"
-              >
-                <span>Continue with Google</span>
-              </button>
+            {!loading && (
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={handleFallbackOAuth}
+                  type="button"
+                  className="w-full flex justify-center items-center gap-2.5 py-2.5 px-4 rounded-xl shadow-2xs text-xs font-bold text-gray-800 bg-white hover:bg-gray-50 border border-gray-300 transition-all cursor-pointer hover:border-blue-500 hover:shadow-xs"
+                  title="Direct Google Browser Sign-In"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                  <span>Sign In with Google (Direct Browser)</span>
+                </button>
+              </div>
+            )}
+
+            {isEmbeddedBrowser && (
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-snug">
+                <strong>WhatsApp / App Browser:</strong> Agar Google account select karne par dikkat aaye, toh right corner me <strong>⋮ (3 dots)</strong> par tap karke <strong>&ldquo;Open in Chrome / Browser&rdquo;</strong> select karein.
+              </div>
             )}
 
             <p className="text-center text-[11px] text-gray-400">

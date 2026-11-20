@@ -29,7 +29,11 @@ export default function RegisterProfilePage() {
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.push('/login')
+        const search = typeof window !== 'undefined' ? window.location.search : ''
+        const redirectParam = search
+          ? `/login?redirect=${encodeURIComponent(`/register${search}`)}`
+          : '/login?redirect=/register'
+        router.push(redirectParam)
         return
       }
 
