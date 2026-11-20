@@ -27,7 +27,7 @@ export const DEFAULT_SIGNATORIES: CertificateSignatory[] = [
     designation: 'Medical Officer Health (MOH)',
     organization: 'Nagpur Municipal Corporation, Nagpur',
     organizationLine2: '',
-    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_deepak_selokar_signature_1795156982474.png',
+    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_deepak_selokar_signature_1795157465250.png',
   },
 ]
 

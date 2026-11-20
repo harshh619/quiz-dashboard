@@ -658,17 +658,17 @@ export default function StudentResultPage({
                         return (
                           <div key={sig.id || idx} className="text-center min-w-[125px] sm:min-w-[155px] max-w-[185px]">
                             {/* Signature Image above the line */}
-                            <div className="h-9 sm:h-11 flex items-end justify-center mb-1">
+                            <div className="h-12 sm:h-16 flex items-end justify-center mb-1">
                               {sigImg ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={sigImg}
                                   alt={sig.name}
                                   crossOrigin="anonymous"
-                                  className="h-8 sm:h-10 w-auto object-contain max-w-[130px] drop-shadow-xs"
+                                  className={`${isDrDeepak ? 'h-11 sm:h-15 max-w-[145px]' : 'h-8 sm:h-11 max-w-[140px]'} w-auto object-contain drop-shadow-xs`}
                                 />
                               ) : (
-                                <div className="h-5" />
+                                <div className="h-6" />
                               )}
                             </div>
 
