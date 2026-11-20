@@ -90,7 +90,8 @@ export async function buildSignedQrVerificationUrl(input: {
     : `${PERMANENT_VERIFIER_BASE_URL}/`
 
   const qrUrl = `${base}?p=${payloadB64}&s=${sigB64}`
-  const authCode = `MSU-${sigB64.replace(/[^A-Za-z0-9]/g, '').slice(0, 10).toUpperCase()}`
+  const shortCode = sigB64.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase()
+  const authCode = `NMC-Nagpur-${shortCode}`
 
   return { qrUrl, authCode }
 }

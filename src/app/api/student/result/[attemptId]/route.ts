@@ -141,7 +141,7 @@ export async function GET(
         eventName: attempt.competition?.title || 'World AMR Awareness Week (WAAW) 2026',
       })
       qrPayload = built.qrUrl
-      authCode = built.authCode
+      authCode = built.authCode.replace(/^MSU-/i, 'NMC-Nagpur-')
     }
 
     const safeAttempt = scoreUnlocked

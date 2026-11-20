@@ -382,7 +382,8 @@ export async function generateCertificatePdfBuffer({
   doc.setTextColor(100, 116, 139)
   doc.text(`ID: ${certificateNumber}`, 39.5, 181.8, { align: 'center' })
   if (authCode) {
-    doc.text(`Seal: ${authCode}`, 39.5, 185.4, { align: 'center' })
+    const displaySeal = authCode.replace(/^MSU-/i, 'NMC-Nagpur-')
+    doc.text(`Seal: ${displaySeal}`, 39.5, 185.4, { align: 'center' })
   }
 
   // 10. Dynamic Official Signatories (Supports 1 to 4 Signatories with Transparent PNG Signatures!)

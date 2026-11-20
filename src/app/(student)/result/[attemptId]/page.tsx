@@ -638,7 +638,7 @@ export default function StudentResultPage({
                         </div>
                         {authCode && (
                           <div className="text-[8px] sm:text-[10px] font-mono font-medium text-blue-700 break-all">
-                            Seal: {authCode}
+                            Seal: {authCode.replace(/^MSU-/i, 'NMC-Nagpur-')}
                           </div>
                         )}
                       </div>
