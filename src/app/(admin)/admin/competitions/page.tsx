@@ -304,12 +304,12 @@ export default function AdminCompetitionsPage() {
       ctx.drawImage(qrImg, 255, 421, 390, 390)
 
       // Scan Instructions Callout
-      ctx.fillStyle = '#059669'
-      ctx.font = 'bold 24px sans-serif'
-      ctx.fillText('📲 SCAN WITH PHONE OR CLICK LINK TO JOIN', 450, 874)
+      ctx.fillStyle = '#047857'
+      ctx.font = 'bold 24px "Segoe UI", "Nirmala UI", sans-serif'
+      ctx.fillText('📲 आज ही रजिस्टर करें  ·  REGISTER TODAY!', 450, 874)
 
-      ctx.fillStyle = '#475569'
-      ctx.font = '15px sans-serif'
+      ctx.fillStyle = '#1e3a8a'
+      ctx.font = 'bold 15px "Segoe UI", "Nirmala UI", sans-serif'
       ctx.fillText('Exclusively for Pharmacy Officers · Scan QR or tap direct link below', 450, 906)
 
       // Direct Join Link Container
@@ -372,7 +372,8 @@ export default function AdminCompetitionsPage() {
       hour: '2-digit',
       minute: '2-digit',
     })
-    const text = `🏆 *${comp.title}*\n⚕️ *Target Group: EXCLUSIVELY FOR PHARMACY OFFICERS*\n🏛️ *Nagpur Municipal Corporation (NMC) & MSU Nagpur*\n\n🗓️ *Starts:* ${startStr}\n⏱️ *Duration:* ${Math.round(comp.duration_seconds / 60)} Mins (${comp.total_questions} MCQs)\n\n📲 *Join Live Quiz Waiting Room (Click Link below):*\n👉 ${joinUrl}\n\n⚠️ *Notice:* This competition is strictly & exclusively for *Pharmacy Officers* under Nagpur Municipal Corporation.`
+    const durMin = Math.round((comp.duration_seconds || 600) / 60)
+    const text = `🏆 *${comp.title}*\n⚕️ *Target Group: EXCLUSIVELY FOR PHARMACY OFFICERS*\n🏛️ *Nagpur Municipal Corporation (NMC) & MSU Nagpur*\n\n📢 *महत्वपूर्ण सूचना: सभी फार्मेसी अधिकारी आज ही अपना रजिस्ट्रेशन कर लें!*\n_(Advance registration is open — register today to confirm your slot)_\n\n🗓️ *Quiz Starts:* ${startStr}\n⏱️ *Duration:* ${durMin} Mins (${comp.total_questions} MCQs)\n\n📲 *Direct Registration & Waiting Room Link (Click below):*\n👉 ${joinUrl}\n\n⚠️ *Eligibility:* This competition is strictly & exclusively for *Pharmacy Officers* under Nagpur Municipal Corporation.\n🏅 *Certificates:* Top 3 Rank Certificates + Official Participation Certificates for all valid participants!`
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
     window.open(waUrl, '_blank')
   }
@@ -742,9 +743,12 @@ export default function AdminCompetitionsPage() {
                           <QrCode className="w-3.5 h-3.5 text-blue-700" />
                           <span>Participant Join QR</span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
                             Pharmacy Officers
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                            आज ही रजिस्टर करें
                           </span>
                           <a
                             href={`/waiting-room/${comp.id}`}
@@ -863,9 +867,14 @@ export default function AdminCompetitionsPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold border border-blue-200">
-              <QrCode className="w-3.5 h-3.5" />
-              <span>Scan QR Code or Click Link to Join</span>
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold border border-blue-200">
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Scan QR Code or Click Link to Join</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-bold border border-emerald-300 shadow-2xs">
+                <span>📝 आज ही रजिस्टर करें</span>
+              </div>
             </div>
 
             <div>
@@ -901,7 +910,7 @@ export default function AdminCompetitionsPage() {
               title="Click to open waiting room directly in new tab"
             >
               <div className="flex items-center justify-center gap-1.5 font-sans font-bold text-blue-700 text-[11px] mb-1">
-                <span>👉 Click Here to Open Quiz / Join Waiting Room</span>
+                <span>👉 आज ही रजिस्टर करें · Click Here to Join Waiting Room</span>
                 <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </div>
               <div className="underline decoration-blue-300 group-hover:decoration-blue-700 break-all text-[11px]">

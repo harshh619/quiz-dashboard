@@ -179,6 +179,9 @@ export default function WaitingRoomPage({
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/25 text-amber-300 rounded-full text-xs font-bold border border-amber-400/40 shadow-xs">
               <span>⚕️ Exclusively for Pharmacy Officers</span>
             </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/25 text-emerald-300 rounded-full text-xs font-bold border border-emerald-400/40 shadow-xs">
+              <span>📝 आज ही रजिस्टर कर लें</span>
+            </div>
           </div>
           <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight leading-snug">
             {competition?.title || 'World AMR Awareness Week Quiz'}
