@@ -4,7 +4,23 @@ import { useState, useEffect, useMemo } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import { createClient } from '@/lib/supabase/client'
 import { extractAllCategories, parseCategoryTopic } from '@/lib/questionCategories'
-import { Calendar, Plus, CheckCircle2, Trash2, Lock, Unlock, ShieldCheck } from 'lucide-react'
+import {
+  Calendar,
+  Plus,
+  CheckCircle2,
+  Trash2,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  QrCode,
+  Download,
+  Copy,
+  Check,
+  ExternalLink,
+  Maximize2,
+  X,
+} from 'lucide-react'
+import QRCode from 'qrcode'
 
 export default function AdminCompetitionsPage() {
   const supabase = createClient()
@@ -16,6 +32,10 @@ export default function AdminCompetitionsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [qrCodeUrls, setQrCodeUrls] = useState<Record<string, string>>({})
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [enlargedComp, setEnlargedComp] = useState<any | null>(null)
+  const [downloadingQrId, setDownloadingQrId] = useState<string | null>(null)
 
   const [newComp, setNewComp] = useState({
     title: 'World AMR Awareness Week 2026 – Online Quiz Competition',
@@ -99,6 +119,210 @@ export default function AdminCompetitionsPage() {
   useEffect(() => {
     loadCompetitions()
   }, [])
+
+  // Generate high-res QR codes for each competition
+  useEffect(() => {
+    if (typeof window === 'undefined' || competitions.length === 0) return
+
+    const origin = window.location.origin
+    const map: Record<string, string> = {}
+
+    Promise.all(
+      competitions.map(async (comp) => {
+        try {
+          const joinUrl = `${origin}/waiting-room/${comp.id}`
+          const url = await QRCode.toDataURL(joinUrl, {
+            width: 320,
+            margin: 1,
+            color: {
+              dark: '#1e3a8a', // Deep royal navy
+              light: '#ffffff',
+            },
+            errorCorrectionLevel: 'M',
+          })
+          map[comp.id] = url
+        } catch (err) {
+          console.error('Error generating QR for competition', comp.id, err)
+        }
+      })
+    ).then(() => {
+      setQrCodeUrls(map)
+    })
+  }, [competitions])
+
+  const handleCopyLink = async (compId: string) => {
+    const origin = window.location.origin
+    const url = `${origin}/waiting-room/${compId}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedId(compId)
+      setTimeout(() => setCopiedId(null), 2500)
+    } catch {
+      const input = document.createElement('input')
+      input.value = url
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand('copy')
+      document.body.removeChild(input)
+      setCopiedId(compId)
+      setTimeout(() => setCopiedId(null), 2500)
+    }
+  }
+
+  const handleDownloadBrandedQR = async (comp: any) => {
+    const origin = window.location.origin
+    const joinUrl = `${origin}/waiting-room/${comp.id}`
+    const qrDataUrl = qrCodeUrls[comp.id]
+    if (!qrDataUrl) return
+
+    setDownloadingQrId(comp.id)
+
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = 900
+      canvas.height = 1150
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      // Background
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Outer Decorative Border (Royal Navy)
+      ctx.strokeStyle = '#1e3a8a'
+      ctx.lineWidth = 14
+      ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32)
+
+      // Inner Decorative Border (Gold Amber)
+      ctx.strokeStyle = '#d97706'
+      ctx.lineWidth = 4
+      ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68)
+
+      // Top Authority Header Box
+      ctx.fillStyle = '#f8fafc'
+      ctx.fillRect(38, 38, canvas.width - 76, 200)
+
+      // Header Text
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#1e3a8a'
+      ctx.font = 'bold 25px sans-serif'
+      ctx.fillText('NAGPUR MUNICIPAL CORPORATION (NMC), NAGPUR', 450, 90)
+
+      ctx.fillStyle = '#334155'
+      ctx.font = 'bold 20px sans-serif'
+      ctx.fillText('METROPOLITAN SURVEILLANCE UNIT (MSU), NAGPUR', 450, 126)
+
+      ctx.fillStyle = '#b45309'
+      ctx.font = 'bold 18px sans-serif'
+      ctx.fillText('WORLD AMR AWARENESS WEEK (WAAW) 2026', 450, 164)
+
+      ctx.fillStyle = '#64748b'
+      ctx.font = '14px sans-serif'
+      ctx.fillText('National Awareness Initiative · Antimicrobial Resistance (AMR) Containment', 450, 200)
+
+      // Divider Line
+      ctx.strokeStyle = '#cbd5e1'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(60, 238)
+      ctx.lineTo(840, 238)
+      ctx.stroke()
+
+      // Quiz Title
+      ctx.fillStyle = '#0f172a'
+      ctx.font = 'bold 26px sans-serif'
+      const maxTitleWidth = 780
+      if (ctx.measureText(comp.title).width > maxTitleWidth) {
+        ctx.font = 'bold 21px sans-serif'
+      }
+      ctx.fillText(comp.title, 450, 280)
+
+      // Timing & Info Pill
+      ctx.fillStyle = '#eff6ff'
+      ctx.beginPath()
+      ctx.roundRect(100, 310, 700, 48, 12)
+      ctx.fill()
+      ctx.strokeStyle = '#bfdbfe'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+
+      ctx.fillStyle = '#1e40af'
+      ctx.font = 'bold 16px sans-serif'
+      const startStr = new Date(comp.scheduled_start).toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      const durMin = Math.round(comp.duration_seconds / 60)
+      ctx.fillText(`🗓 Starts: ${startStr}   ⏱ Duration: ${durMin} Mins (${comp.total_questions} MCQs)`, 450, 341)
+
+      // Load QR Image
+      const qrImg = new Image()
+      qrImg.crossOrigin = 'anonymous'
+      await new Promise<void>((resolve, reject) => {
+        qrImg.onload = () => resolve()
+        qrImg.onerror = reject
+        qrImg.src = qrDataUrl
+      })
+
+      // QR Code Card Container
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.roundRect(220, 385, 460, 460, 20)
+      ctx.fill()
+      ctx.strokeStyle = '#94a3b8'
+      ctx.lineWidth = 2.5
+      ctx.stroke()
+
+      ctx.drawImage(qrImg, 245, 410, 410, 410)
+
+      // Scan Instructions Callout
+      ctx.fillStyle = '#059669'
+      ctx.font = 'bold 25px sans-serif'
+      ctx.fillText('📲 SCAN WITH PHONE TO JOIN QUIZ', 450, 885)
+
+      ctx.fillStyle = '#475569'
+      ctx.font = '16px sans-serif'
+      ctx.fillText('Open Camera or Google Lens on your smartphone & scan this QR code', 450, 920)
+
+      // Direct Join Link Container
+      ctx.fillStyle = '#f1f5f9'
+      ctx.beginPath()
+      ctx.roundRect(90, 948, 720, 46, 10)
+      ctx.fill()
+      ctx.strokeStyle = '#cbd5e1'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      ctx.fillStyle = '#1e3a8a'
+      ctx.font = 'bold 14px monospace'
+      ctx.fillText(joinUrl, 450, 977)
+
+      // Bottom One Health Slogan
+      ctx.fillStyle = '#0b2566'
+      ctx.font = 'bold 16px sans-serif'
+      ctx.fillText('ONE HEALTH, ONE ACTION  ·  PREVENT AMR NOW!', 450, 1045)
+
+      ctx.fillStyle = '#64748b'
+      ctx.font = '13px sans-serif'
+      ctx.fillText('Protect • Humans • Animals • Environment  ·  UPHC & Nagpur Municipal Corporation', 450, 1075)
+
+      // Download Trigger
+      const a = document.createElement('a')
+      a.href = canvas.toDataURL('image/png')
+      a.download = `AMR_Quiz_QR_${comp.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (err) {
+      console.error('Download QR failed:', err)
+      alert('Failed to generate downloadable QR code')
+    } finally {
+      setDownloadingQrId(null)
+    }
+  }
 
   const handleUpdateStatus = async (compId: string, status: string) => {
     try {
@@ -225,114 +449,268 @@ export default function AdminCompetitionsPage() {
         <div className="space-y-4">
           {competitions.map((comp) => {
             const isLocked = lockedIds.includes(comp.id)
+            const qrUrl = qrCodeUrls[comp.id]
             return (
               <div
                 key={comp.id}
-                className={`bg-white rounded-2xl border p-5 sm:p-6 shadow-xs space-y-4 transition-all ${
+                className={`bg-white rounded-2xl border p-5 sm:p-6 shadow-xs transition-all ${
                   isLocked ? 'border-emerald-300 ring-1 ring-emerald-200/80' : 'border-gray-200'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-bold text-gray-900">{comp.title}</h3>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                        {comp.status}
-                      </span>
-                      {isLocked && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          <ShieldCheck className="w-3 h-3" />
-                          Protected Official Quiz
-                        </span>
-                      )}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-start justify-between gap-6">
+                  {/* Left Column: Competition Details & Status Management */}
+                  <div className="flex-1 min-w-0 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-bold text-gray-900">{comp.title}</h3>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                            {comp.status}
+                          </span>
+                          {isLocked && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <ShieldCheck className="w-3 h-3" />
+                              Protected Official Quiz
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                        <button
+                          onClick={() => handleToggleLock(comp.id, isLocked)}
+                          disabled={togglingLockId === comp.id}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
+                            isLocked
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                          }`}
+                          title={
+                            isLocked
+                              ? 'Protected from Clear Test Data & deletion. Click to unlock.'
+                              : 'Lock to protect all participant certificates & data from Clear Test Data'
+                          }
+                        >
+                          {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                          <span>
+                            {togglingLockId === comp.id
+                              ? 'Updating...'
+                              : isLocked
+                              ? 'Locked (Protected)'
+                              : 'Lock Official Quiz'}
+                          </span>
+                        </button>
+
+                        {!isLocked && (
+                          <button
+                            onClick={() => handleDeleteCompetition(comp.id, comp.title)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                            title="Delete Competition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Quiz</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{comp.description}</p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">Start Time</span>
+                        <span className="font-semibold text-gray-800">{new Date(comp.scheduled_start).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">End Time</span>
+                        <span className="font-semibold text-gray-800">{new Date(comp.scheduled_end).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">Duration &amp; Qs</span>
+                        <span className="font-semibold text-gray-800">{comp.duration_seconds / 60} Mins ({comp.total_questions} MCQs)</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block text-[10px] uppercase font-semibold">Capacity</span>
+                        <span className="font-semibold text-gray-800">Max {comp.max_participants} Participants</span>
+                      </div>
+                    </div>
+
+                    {/* Status Controls */}
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+                      <span className="text-xs text-gray-500 font-medium mr-2">Status:</span>
+                      {([
+                        { key: 'draft', label: 'Draft' },
+                        { key: 'scheduled', label: 'Scheduled (Auto Live by Time)' },
+                        { key: 'results_published', label: 'Result Published' },
+                      ] as const).map((st) => (
+                        <button
+                          key={st.key}
+                          onClick={() => handleUpdateStatus(comp.id, st.key)}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                            comp.status === st.key
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
-                    <button
-                      onClick={() => handleToggleLock(comp.id, isLocked)}
-                      disabled={togglingLockId === comp.id}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
-                        isLocked
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-xs'
-                          : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
-                      }`}
-                      title={
-                        isLocked
-                          ? 'Protected from Clear Test Data & deletion. Click to unlock.'
-                          : 'Lock to protect all participant certificates & data from Clear Test Data'
-                      }
+                  {/* Right Column: Participant Join QR Code Card */}
+                  <div className="w-full lg:w-72 shrink-0 bg-gradient-to-b from-blue-50/70 via-slate-50 to-white rounded-2xl border border-blue-200/80 p-4 flex flex-col items-center text-center shadow-xs">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">
+                      <QrCode className="w-4 h-4 text-blue-700" />
+                      <span>Participant Join QR</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mb-3">
+                      Scan to open waiting room &amp; quiz
+                    </p>
+
+                    {/* QR Code Preview */}
+                    <div
+                      className="relative group cursor-pointer"
+                      onClick={() => setEnlargedComp(comp)}
+                      title="Click to view large size"
                     >
-                      {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                      <span>
-                        {togglingLockId === comp.id
-                          ? 'Updating...'
-                          : isLocked
-                          ? 'Locked (Protected)'
-                          : 'Lock Official Quiz'}
-                      </span>
-                    </button>
+                      <div className="p-2.5 bg-white rounded-xl border border-blue-200 shadow-xs transition-transform group-hover:scale-102">
+                        {qrUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={qrUrl}
+                            alt={`Join QR for ${comp.title}`}
+                            className="w-32 h-32 sm:w-36 sm:h-36 object-contain rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center bg-gray-50 text-gray-400 text-xs">
+                            Generating QR...
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute inset-0 bg-blue-900/15 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <span className="bg-white/95 text-blue-900 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                          <Maximize2 className="w-3 h-3" /> Enlarge
+                        </span>
+                      </div>
+                    </div>
 
-                    {!isLocked && (
+                    {/* Action Buttons */}
+                    <div className="w-full space-y-2 mt-3 pt-2.5 border-t border-blue-100">
+                      {/* Download High-Res Poster Button */}
                       <button
-                        onClick={() => handleDeleteCompetition(comp.id, comp.title)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-                        title="Delete Competition"
+                        onClick={() => handleDownloadBrandedQR(comp)}
+                        disabled={downloadingQrId === comp.id || !qrUrl}
+                        className="w-full py-2 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Download High-Resolution Printable QR Poster"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete Quiz</span>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{downloadingQrId === comp.id ? 'Generating PNG...' : 'Download QR Poster'}</span>
                       </button>
-                    )}
+
+                      {/* Copy Link & Preview Link */}
+                      <div className="flex items-center gap-1.5 w-full">
+                        <button
+                          onClick={() => handleCopyLink(comp.id)}
+                          className="flex-1 py-1.5 px-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Copy Direct Join URL"
+                        >
+                          {copiedId === comp.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-700 font-bold">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-gray-500" />
+                              <span>Copy Link</span>
+                            </>
+                          )}
+                        </button>
+
+                        <a
+                          href={`/waiting-room/${comp.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-1.5 px-2.5 bg-white hover:bg-gray-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                          title="Preview Waiting Room in New Tab"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Preview</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-gray-100">
-                <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Start Time</span>
-                  <span className="font-semibold text-gray-800">{new Date(comp.scheduled_start).toLocaleString('en-IN')}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">End Time</span>
-                  <span className="font-semibold text-gray-800">{new Date(comp.scheduled_end).toLocaleString('en-IN')}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Duration &amp; Qs</span>
-                  <span className="font-semibold text-gray-800">{comp.duration_seconds / 60} Mins ({comp.total_questions} MCQs)</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 block text-[10px] uppercase font-semibold">Capacity</span>
-                  <span className="font-semibold text-gray-800">Max {comp.max_participants} Participants</span>
-                </div>
               </div>
-
-              {/* Status Controls */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-500 font-medium mr-2">Status:</span>
-                {([
-                  { key: 'draft', label: 'Draft' },
-                  { key: 'scheduled', label: 'Scheduled (Auto Live by Time)' },
-                  { key: 'results_published', label: 'Result Published' },
-                ] as const).map((st) => (
-                  <button
-                    key={st.key}
-                    onClick={() => handleUpdateStatus(comp.id, st.key)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                      comp.status === st.key
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {st.label}
-                  </button>
-                ))}
-              </div>
-            </div>
             )
           })}
         </div>
 
       </main>
+
+      {/* Enlarged QR Code Presentation Modal */}
+      {enlargedComp && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center relative border border-gray-200">
+            <button
+              onClick={() => setEnlargedComp(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold border border-blue-200">
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Scan to Join Quiz Competition</span>
+            </div>
+
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                {enlargedComp.title}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Starts: {new Date(enlargedComp.scheduled_start).toLocaleString('en-IN')} · Duration: {Math.round(enlargedComp.duration_seconds / 60)} Mins
+              </p>
+            </div>
+
+            {/* Large QR Display */}
+            <div className="p-4 bg-white rounded-2xl border-2 border-blue-600 shadow-md inline-block mx-auto">
+              {qrCodeUrls[enlargedComp.id] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={qrCodeUrls[enlargedComp.id]}
+                  alt="QR Code"
+                  className="w-64 h-64 sm:w-72 sm:h-72 object-contain"
+                />
+              )}
+            </div>
+
+            {/* Direct URL */}
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-gray-700 break-all select-all">
+              {typeof window !== 'undefined' ? `${window.location.origin}/waiting-room/${enlargedComp.id}` : ''}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => handleDownloadBrandedQR(enlargedComp)}
+                className="flex-1 py-2.5 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Poster (PNG)</span>
+              </button>
+
+              <button
+                onClick={() => handleCopyLink(enlargedComp.id)}
+                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                {copiedId === enlargedComp.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedId === enlargedComp.id ? 'Copied' : 'Copy Link'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (

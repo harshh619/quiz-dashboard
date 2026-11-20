@@ -114,7 +114,9 @@ export default function RegisterProfilePage() {
 
       if (updateError) throw updateError
 
-      router.push('/dashboard')
+      const redirectParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('redirect') : null
+      const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
+      router.push(target)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save profile'
       setError(msg)

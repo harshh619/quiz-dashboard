@@ -90,13 +90,22 @@ function LoginContent() {
         window.location.href = '/admin/dashboard'
         return
       }
+
+      const redirectParam = searchParams.get('redirect')
+      const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
+
       if (!profile || !profile.college_name) {
-        window.location.href = '/register'
+        window.location.href = redirectParam
+          ? `/register?redirect=${encodeURIComponent(redirectParam)}`
+          : '/register'
         return
       }
+
+      window.location.href = target
+      return
     }
     window.location.href = '/dashboard'
-  }, [supabase])
+  }, [supabase, searchParams])
 
   const initGoogleSignIn = useCallback(async () => {
     if (initializedRef.current || !window.google?.accounts?.id || !googleBtnRef.current) return

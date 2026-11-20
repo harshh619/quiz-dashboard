@@ -51,7 +51,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/admin')
 
   if (!user && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    if (pathname.startsWith('/waiting-room') || pathname.startsWith('/quiz')) {
+      loginUrl.searchParams.set('redirect', pathname)
+    }
+    return NextResponse.redirect(loginUrl)
   }
 
   // If non-admin tries to access /admin, redirect them to student dashboard
