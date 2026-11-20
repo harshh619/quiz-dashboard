@@ -557,61 +557,78 @@ export default function AdminCompetitionsPage() {
                     </div>
                   </div>
 
-                  {/* Right Column: Participant Join QR Code Card */}
-                  <div className="w-full lg:w-72 shrink-0 bg-gradient-to-b from-blue-50/70 via-slate-50 to-white rounded-2xl border border-blue-200/80 p-4 flex flex-col items-center text-center shadow-xs">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">
-                      <QrCode className="w-4 h-4 text-blue-700" />
-                      <span>Participant Join QR</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mb-3">
-                      Scan to open waiting room &amp; quiz
-                    </p>
+                  {/* Right Column: Compact Participant Join QR Widget (Fits within Title-to-Status vertical bounds) */}
+                  <div className="w-full lg:w-auto shrink-0 bg-slate-50/90 hover:bg-blue-50/50 rounded-2xl border border-blue-100/90 p-3 flex flex-col justify-between gap-2.5 transition-colors self-start min-w-[220px]">
+                    
+                    {/* Top: Header & Direct Clickable Join Link */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                          <QrCode className="w-3.5 h-3.5 text-blue-700" />
+                          <span>Participant Join QR</span>
+                        </div>
+                        <a
+                          href={`/waiting-room/${comp.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline mt-0.5 cursor-pointer"
+                          title="Direct Click to Join Waiting Room"
+                        >
+                          <span>Click to Join Quiz</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
 
-                    {/* QR Code Preview */}
-                    <div
-                      className="relative group cursor-pointer"
-                      onClick={() => setEnlargedComp(comp)}
-                      title="Click to view large size"
-                    >
-                      <div className="p-2.5 bg-white rounded-xl border border-blue-200 shadow-xs transition-transform group-hover:scale-102">
+                      <button
+                        type="button"
+                        onClick={() => setEnlargedComp(comp)}
+                        className="p-1 text-gray-400 hover:text-blue-700 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-colors cursor-pointer"
+                        title="Enlarge QR Code"
+                      >
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* QR Thumbnail + Stacked Actions Side-by-Side */}
+                    <div className="flex items-center gap-2.5">
+                      {/* Compact QR Thumbnail */}
+                      <div
+                        className="relative group cursor-pointer shrink-0 bg-white p-1 rounded-xl border border-blue-200 shadow-2xs transition-transform group-hover:scale-102"
+                        onClick={() => setEnlargedComp(comp)}
+                        title="Click to Enlarge QR Code"
+                      >
                         {qrUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={qrUrl}
                             alt={`Join QR for ${comp.title}`}
-                            className="w-32 h-32 sm:w-36 sm:h-36 object-contain rounded-lg"
+                            className="w-16 h-16 sm:w-18 sm:h-18 object-contain rounded-lg"
                           />
                         ) : (
-                          <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center bg-gray-50 text-gray-400 text-xs">
-                            Generating QR...
+                          <div className="w-16 h-16 sm:w-18 sm:h-18 flex items-center justify-center text-[10px] text-gray-400">
+                            Loading...
                           </div>
                         )}
+                        <div className="absolute inset-0 bg-blue-900/15 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <span className="text-[9px] font-bold text-white bg-blue-900/80 px-1 py-0.5 rounded">View</span>
+                        </div>
                       </div>
-                      <div className="absolute inset-0 bg-blue-900/15 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <span className="bg-white/95 text-blue-900 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-                          <Maximize2 className="w-3 h-3" /> Enlarge
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="w-full space-y-2 mt-3 pt-2.5 border-t border-blue-100">
-                      {/* Download High-Res Poster Button */}
-                      <button
-                        onClick={() => handleDownloadBrandedQR(comp)}
-                        disabled={downloadingQrId === comp.id || !qrUrl}
-                        className="w-full py-2 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                        title="Download High-Resolution Printable QR Poster"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloadingQrId === comp.id ? 'Generating PNG...' : 'Download QR Poster'}</span>
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex-1 flex flex-col gap-1.5 min-w-[110px]">
+                        <button
+                          onClick={() => handleDownloadBrandedQR(comp)}
+                          disabled={downloadingQrId === comp.id || !qrUrl}
+                          className="w-full py-1.5 px-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold shadow-2xs flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Download Printable Poster (PNG)"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>{downloadingQrId === comp.id ? 'Saving...' : 'Download Poster'}</span>
+                        </button>
 
-                      {/* Copy Link & Preview Link */}
-                      <div className="flex items-center gap-1.5 w-full">
                         <button
                           onClick={() => handleCopyLink(comp.id)}
-                          className="flex-1 py-1.5 px-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="w-full py-1 px-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           title="Copy Direct Join URL"
                         >
                           {copiedId === comp.id ? (
@@ -626,19 +643,9 @@ export default function AdminCompetitionsPage() {
                             </>
                           )}
                         </button>
-
-                        <a
-                          href={`/waiting-room/${comp.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="py-1.5 px-2.5 bg-white hover:bg-gray-50 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
-                          title="Preview Waiting Room in New Tab"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Preview</span>
-                        </a>
                       </div>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -661,7 +668,7 @@ export default function AdminCompetitionsPage() {
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-bold border border-blue-200">
               <QrCode className="w-3.5 h-3.5" />
-              <span>Scan to Join Quiz Competition</span>
+              <span>Scan QR Code or Click Link to Join</span>
             </div>
 
             <div>
@@ -680,21 +687,33 @@ export default function AdminCompetitionsPage() {
                 <img
                   src={qrCodeUrls[enlargedComp.id]}
                   alt="QR Code"
-                  className="w-64 h-64 sm:w-72 sm:h-72 object-contain"
+                  className="w-60 h-60 sm:w-68 sm:h-68 object-contain"
                 />
               )}
             </div>
 
-            {/* Direct URL */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-gray-700 break-all select-all">
-              {typeof window !== 'undefined' ? `${window.location.origin}/waiting-room/${enlargedComp.id}` : ''}
-            </div>
+            {/* Direct Clickable URL Box */}
+            <a
+              href={`/waiting-room/${enlargedComp.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-mono text-blue-900 transition-all group cursor-pointer text-center shadow-xs"
+              title="Click to open waiting room directly in new tab"
+            >
+              <div className="flex items-center justify-center gap-1.5 font-sans font-bold text-blue-700 text-[11px] mb-1">
+                <span>👉 Click Here to Open Quiz / Join Waiting Room</span>
+                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </div>
+              <div className="underline decoration-blue-300 group-hover:decoration-blue-700 break-all text-[11px]">
+                {typeof window !== 'undefined' ? `${window.location.origin}/waiting-room/${enlargedComp.id}` : ''}
+              </div>
+            </a>
 
             {/* Modal Actions */}
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => handleDownloadBrandedQR(enlargedComp)}
-                className="flex-1 py-2.5 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                className="flex-1 py-2.5 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Poster (PNG)</span>
@@ -702,7 +721,7 @@ export default function AdminCompetitionsPage() {
 
               <button
                 onClick={() => handleCopyLink(enlargedComp.id)}
-                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedId === enlargedComp.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 <span>{copiedId === enlargedComp.id ? 'Copied' : 'Copy Link'}</span>
