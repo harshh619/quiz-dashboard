@@ -19,6 +19,8 @@ import {
   ExternalLink,
   Maximize2,
   X,
+  FileText,
+  Share2,
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -169,13 +171,13 @@ export default function AdminCompetitionsPage() {
     }
   }
 
-  const handleDownloadBrandedQR = async (comp: any) => {
+  const handleDownloadBrandedQR = async (comp: any, format: 'png' | 'pdf' = 'png') => {
     const origin = window.location.origin
     const joinUrl = `${origin}/waiting-room/${comp.id}`
     const qrDataUrl = qrCodeUrls[comp.id]
     if (!qrDataUrl) return
 
-    setDownloadingQrId(comp.id)
+    setDownloadingQrId(`${comp.id}_${format}`)
 
     try {
       const canvas = document.createElement('canvas')
@@ -281,11 +283,11 @@ export default function AdminCompetitionsPage() {
       // Scan Instructions Callout
       ctx.fillStyle = '#059669'
       ctx.font = 'bold 25px sans-serif'
-      ctx.fillText('📲 SCAN WITH PHONE TO JOIN QUIZ', 450, 885)
+      ctx.fillText('📲 SCAN WITH PHONE OR CLICK LINK TO JOIN', 450, 885)
 
       ctx.fillStyle = '#475569'
       ctx.font = '16px sans-serif'
-      ctx.fillText('Open Camera or Google Lens on your smartphone & scan this QR code', 450, 920)
+      ctx.fillText('Scan this QR code with camera or tap the direct link below', 450, 920)
 
       // Direct Join Link Container
       ctx.fillStyle = '#f1f5f9'
@@ -309,19 +311,47 @@ export default function AdminCompetitionsPage() {
       ctx.font = '13px sans-serif'
       ctx.fillText('Protect • Humans • Animals • Environment  ·  UPHC & Nagpur Municipal Corporation', 450, 1075)
 
-      // Download Trigger
-      const a = document.createElement('a')
-      a.href = canvas.toDataURL('image/png')
-      a.download = `AMR_Quiz_QR_${comp.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}.png`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
+      if (format === 'pdf') {
+        const { jsPDF } = await import('jspdf')
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height],
+        })
+        doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height)
+        // Add live clickable URI hyperlinks in PDF!
+        doc.link(90, 948, 720, 46, { url: joinUrl })
+        doc.link(220, 385, 460, 460, { url: joinUrl })
+        doc.save(`AMR_Quiz_Poster_${comp.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}.pdf`)
+      } else {
+        const a = document.createElement('a')
+        a.href = canvas.toDataURL('image/png')
+        a.download = `AMR_Quiz_QR_${comp.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30)}.png`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      }
     } catch (err) {
-      console.error('Download QR failed:', err)
-      alert('Failed to generate downloadable QR code')
+      console.error('Download poster failed:', err)
+      alert('Failed to generate downloadable poster')
     } finally {
       setDownloadingQrId(null)
     }
+  }
+
+  const handleWhatsAppShare = (comp: any) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://quiz-msu-nagpur.vercel.app'
+    const joinUrl = `${origin}/waiting-room/${comp.id}`
+    const startStr = new Date(comp.scheduled_start).toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const text = `🏆 *${comp.title}*\n🏛️ *Nagpur Municipal Corporation (NMC) & MSU Nagpur*\n\n🗓️ *Starts:* ${startStr}\n⏱️ *Duration:* ${Math.round(comp.duration_seconds / 60)} Mins (${comp.total_questions} MCQs)\n\n📲 *Join Live Quiz Waiting Room (Click Link below):*\n👉 ${joinUrl}\n\n_Scan QR code or click link directly on mobile/PC to participate._`
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
+    window.open(waUrl, '_blank')
   }
 
   const handleUpdateStatus = async (compId: string, status: string) => {
@@ -615,34 +645,51 @@ export default function AdminCompetitionsPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex-1 flex flex-col gap-1.5 min-w-[110px]">
-                        <button
-                          onClick={() => handleDownloadBrandedQR(comp)}
-                          disabled={downloadingQrId === comp.id || !qrUrl}
-                          className="w-full py-1.5 px-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold shadow-2xs flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
-                          title="Download Printable Poster (PNG)"
-                        >
-                          <Download className="w-3 h-3" />
-                          <span>{downloadingQrId === comp.id ? 'Saving...' : 'Download Poster'}</span>
-                        </button>
+                      <div className="flex-1 flex flex-col gap-1.5 min-w-[125px]">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDownloadBrandedQR(comp, 'pdf')}
+                            disabled={downloadingQrId === `${comp.id}_pdf`}
+                            className="flex-1 py-1.5 px-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold shadow-2xs flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Download PDF Poster with Live Clickable Link"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>{downloadingQrId === `${comp.id}_pdf` ? '...' : 'PDF Poster'}</span>
+                          </button>
 
-                        <button
-                          onClick={() => handleCopyLink(comp.id)}
-                          className="w-full py-1 px-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                          title="Copy Direct Join URL"
-                        >
-                          {copiedId === comp.id ? (
-                            <>
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-bold">Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3 text-gray-500" />
-                              <span>Copy Link</span>
-                            </>
-                          )}
-                        </button>
+                          <button
+                            onClick={() => handleDownloadBrandedQR(comp, 'png')}
+                            disabled={downloadingQrId === `${comp.id}_png`}
+                            className="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold shadow-2xs flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                            title="Download PNG Image Poster"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>{downloadingQrId === `${comp.id}_png` ? '...' : 'PNG'}</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleWhatsAppShare(comp)}
+                            className="flex-1 py-1 px-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            title="Share Invitation & Direct Link on WhatsApp"
+                          >
+                            <Share2 className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>WhatsApp</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleCopyLink(comp.id)}
+                            className="py-1 px-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            title="Copy Direct Join URL"
+                          >
+                            {copiedId === comp.id ? (
+                              <Check className="w-2.5 h-2.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -710,18 +757,39 @@ export default function AdminCompetitionsPage() {
             </a>
 
             {/* Modal Actions */}
-            <div className="flex gap-2 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
               <button
-                onClick={() => handleDownloadBrandedQR(enlargedComp)}
-                className="flex-1 py-2.5 px-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                onClick={() => handleDownloadBrandedQR(enlargedComp, 'pdf')}
+                disabled={downloadingQrId === `${enlargedComp.id}_pdf`}
+                className="py-2.5 px-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                title="Download PDF Poster with Live Clickable Hyperlink"
+              >
+                <FileText className="w-4 h-4" />
+                <span>{downloadingQrId === `${enlargedComp.id}_pdf` ? '...' : 'PDF Poster'}</span>
+              </button>
+
+              <button
+                onClick={() => handleDownloadBrandedQR(enlargedComp, 'png')}
+                disabled={downloadingQrId === `${enlargedComp.id}_png`}
+                className="py-2.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                title="Download PNG Image"
               >
                 <Download className="w-4 h-4" />
-                <span>Download Poster (PNG)</span>
+                <span>{downloadingQrId === `${enlargedComp.id}_png` ? '...' : 'PNG Poster'}</span>
+              </button>
+
+              <button
+                onClick={() => handleWhatsAppShare(enlargedComp)}
+                className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer"
+                title="Share Invitation & Direct Link on WhatsApp"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>WhatsApp</span>
               </button>
 
               <button
                 onClick={() => handleCopyLink(enlargedComp.id)}
-                className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="py-2.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
               >
                 {copiedId === enlargedComp.id ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                 <span>{copiedId === enlargedComp.id ? 'Copied' : 'Copy Link'}</span>
