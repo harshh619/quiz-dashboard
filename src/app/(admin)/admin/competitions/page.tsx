@@ -23,6 +23,7 @@ import {
   Share2,
   Clock,
   Zap,
+  Award,
 } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -40,6 +41,7 @@ export default function AdminCompetitionsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [enlargedComp, setEnlargedComp] = useState<any | null>(null)
   const [downloadingQrId, setDownloadingQrId] = useState<string | null>(null)
+  const [declaringResultId, setDeclaringResultId] = useState<string | null>(null)
 
   // Reschedule state
   const [rescheduleComp, setRescheduleComp] = useState<any | null>(null)
@@ -398,6 +400,43 @@ export default function AdminCompetitionsPage() {
       }
     }
 
+    // If admin is declaring results early (or finalizing rankings)
+    if (status === 'results_published') {
+      const title = targetComp?.title || 'the competition'
+      if (
+        !confirm(
+          `⚡ DECLARE RESULTS NOW for "${title}"?\n\n` +
+          `• All submitted and in-progress attempts will be evaluated.\n` +
+          `• Final ranks (#1, #2, #3, etc.) will be computed immediately.\n` +
+          `• Official PDF certificates with QR codes will be issued.\n` +
+          `• Participants will immediately see their results (no waiting for 10 min countdown).\n\n` +
+          `Proceed with declaring results?`
+        )
+      ) {
+        return
+      }
+
+      try {
+        setDeclaringResultId(compId)
+        const res = await fetch('/api/admin/finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ competitionId: compId }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to finalize')
+        setStatusMsg(`🎉 Results successfully declared! ${data.total_finalized} certificates issued.`)
+        await loadCompetitions()
+        return
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to finalize'
+        alert(`Error declaring results: ${msg}`)
+        return
+      } finally {
+        setDeclaringResultId(null)
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('competitions')
@@ -669,6 +708,16 @@ export default function AdminCompetitionsPage() {
                               ? 'Locked (Protected)'
                               : 'Lock Official Quiz'}
                           </span>
+                        </button>
+
+                        <button
+                          onClick={() => handleUpdateStatus(comp.id, 'results_published')}
+                          disabled={declaringResultId === comp.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl text-xs font-black shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                          title="Declare results now (evaluates all submissions, computes ranks & issues certificates)"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>{declaringResultId === comp.id ? 'Declaring Results...' : '⚡ Declare Results'}</span>
                         </button>
 
                         {!isLocked && (

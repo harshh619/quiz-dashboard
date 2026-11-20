@@ -63,6 +63,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: rpcError.message }, { status: 500 })
     }
 
+    // 1.5 If admin declared results early (before 10 min deadline), clamp scheduled_end to NOW()
+    // so student result screens unlock immediately with zero countdown delay!
+    const { data: compRow } = await admin
+      .from('competitions')
+      .select('scheduled_end')
+      .eq('id', competitionId)
+      .single()
+
+    const nowIso = new Date().toISOString()
+    const scheduledEndMs = compRow?.scheduled_end ? new Date(compRow.scheduled_end).getTime() : 0
+    if (scheduledEndMs > Date.now()) {
+      await admin
+        .from('competitions')
+        .update({
+          status: 'results_published',
+          scheduled_end: nowIso,
+          updated_at: nowIso,
+        })
+        .eq('id', competitionId)
+    } else {
+      await admin
+        .from('competitions')
+        .update({
+          status: 'results_published',
+          updated_at: nowIso,
+        })
+        .eq('id', competitionId)
+    }
+
     // 2. Fix any localhost verification URLs in certificates for this competition
     const { data: certs } = await admin
       .from('certificates')

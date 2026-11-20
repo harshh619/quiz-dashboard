@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Trophy, Download, Award, Search, RefreshCw, Medal,
   Building2, BrainCircuit, Sparkles, CheckCircle2, AlertTriangle,
-  BarChart3, Users, ChevronRight, FileSpreadsheet
+  BarChart3, Users, ChevronRight, FileSpreadsheet, Loader2, Zap, Clock
 } from 'lucide-react'
 
 // Categorization helper for the 6 core AMR domains
@@ -36,13 +36,22 @@ export default function AdminResultsPage() {
   const [results, setResults] = useState<any[]>([])
   const [questions, setQuestions] = useState<any[]>([])
   const [responses, setResponses] = useState<any[]>([])
+  const [competitions, setCompetitions] = useState<any[]>([])
+  const [selectedCompId, setSelectedCompId] = useState<string>('')
+  const [attemptStats, setAttemptStats] = useState<{ total: number; submitted: number; inProgress: number }>({
+    total: 0,
+    submitted: 0,
+    inProgress: 0,
+  })
+  const [finalizing, setFinalizing] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  const loadResults = async () => {
+  const loadResults = async (targetCompId?: string) => {
     setLoading(true)
     try {
-      const [resData, qData, respData] = await Promise.all([
+      const [resData, qData, respData, compData, attData] = await Promise.all([
         supabase
           .from('competition_results')
           .select('*, student:profiles(*), attempt:quiz_attempts(*)')
@@ -53,11 +62,46 @@ export default function AdminResultsPage() {
         supabase
           .from('quiz_responses')
           .select('question_id, selected_option'),
+        supabase
+          .from('competitions')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('quiz_attempts')
+          .select('id, status, score, competition_id'),
       ])
 
-      setResults(resData.data || [])
+      const comps = compData.data || []
+      setCompetitions(comps)
+
+      const activeCompId = targetCompId || selectedCompId || comps[0]?.id || ''
+      if (!selectedCompId && activeCompId) {
+        setSelectedCompId(activeCompId)
+      }
+
+      // Filter results for selected competition if any
+      const allResults = resData.data || []
+      const filteredByComp = activeCompId
+        ? allResults.filter((r) => r.competition_id === activeCompId)
+        : allResults
+
+      setResults(filteredByComp.length > 0 ? filteredByComp : allResults)
       setQuestions(qData.data || [])
       setResponses(respData.data || [])
+
+      // Count attempts for selected or latest competition
+      const attempts = attData.data || []
+      const compAttempts = activeCompId
+        ? attempts.filter((a) => a.competition_id === activeCompId)
+        : attempts
+
+      const submitted = compAttempts.filter((a) => a.status === 'submitted' || a.score !== null).length
+      const inProgress = compAttempts.filter((a) => a.status === 'in_progress').length
+      setAttemptStats({
+        total: compAttempts.length,
+        submitted,
+        inProgress,
+      })
     } catch (err) {
       console.error('Error loading results & analytics:', err)
     } finally {
@@ -68,6 +112,56 @@ export default function AdminResultsPage() {
   useEffect(() => {
     loadResults()
   }, [])
+
+  // Action: 1-Click Instant Declare Results & Finalize Rankings
+  const handleDeclareResults = async (compId?: string) => {
+    const targetId = compId || selectedCompId || competitions[0]?.id
+    if (!targetId) {
+      alert('No competition found to finalize.')
+      return
+    }
+
+    const comp = competitions.find((c) => c.id === targetId)
+    const title = comp?.title || 'the competition'
+
+    const confirmMsg =
+      `⚡ DECLARE RESULTS NOW for:\n"${title}"?\n\n` +
+      `• Auto-submits any in-progress participant attempts.\n` +
+      `• Computes final ranks (#1, #2, #3, etc.) based on score & speed.\n` +
+      `• Generates verified official PDF certificates for all participants.\n` +
+      `• Unlocks result, score & answer key immediately on participant screens.\n\n` +
+      `Do you want to proceed and publish results now?`
+
+    if (!confirm(confirmMsg)) return
+
+    setFinalizing(true)
+    setStatusMsg(null)
+
+    try {
+      const res = await fetch('/api/admin/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ competitionId: targetId }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to declare results')
+      }
+
+      setStatusMsg({
+        type: 'success',
+        text: `🎉 Official Results Published! ${data.total_finalized} participants ranked and certificates issued instantly.`,
+      })
+
+      await loadResults(targetId)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error declaring results'
+      setStatusMsg({ type: 'error', text: msg })
+    } finally {
+      setFinalizing(false)
+    }
+  }
 
   // 1. UPHC Facility Aggregations
   const facilityStats = useMemo(() => {
@@ -244,6 +338,50 @@ export default function AdminResultsPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Quick Competition Switcher if multiple exist */}
+            {competitions.length > 1 && (
+              <select
+                value={selectedCompId}
+                onChange={(e) => {
+                  const id = e.target.value
+                  setSelectedCompId(id)
+                  loadResults(id)
+                }}
+                className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-2xs"
+              >
+                {competitions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} ({c.status})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* 1-Click Instant Declare Results Button */}
+            <button
+              onClick={() => handleDeclareResults()}
+              disabled={finalizing || loading || competitions.length === 0}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black shadow-sm transition-all disabled:opacity-50 cursor-pointer ${
+                results.length > 0
+                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
+                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 shadow-amber-500/25 ring-2 ring-amber-400/50'
+              }`}
+              title="Declare final results now without waiting for 10-minute countdown to expire"
+            >
+              {finalizing ? (
+                <Loader2 className="w-4 h-4 animate-spin text-current" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-current" />
+              )}
+              <span>
+                {finalizing
+                  ? 'Declaring Results & Issuing Certificates...'
+                  : results.length > 0
+                  ? '⚡ Re-Calculate / Update Results'
+                  : '⚡ Declare Results Now'}
+              </span>
+            </button>
+
             <a
               href="/api/admin/participants/export"
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
@@ -260,7 +398,7 @@ export default function AdminResultsPage() {
               <span>{activeTab === 'facilities' ? 'Export UPHC CSV' : 'Export Leaderboard CSV'}</span>
             </button>
             <button
-              onClick={loadResults}
+              onClick={() => loadResults()}
               className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 cursor-pointer"
               title="Refresh Data"
             >
@@ -268,6 +406,32 @@ export default function AdminResultsPage() {
             </button>
           </div>
         </div>
+
+        {/* Status Notification Banner */}
+        {statusMsg && (
+          <div
+            className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-3 shadow-2xs ${
+              statusMsg.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {statusMsg.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              )}
+              <span className="font-semibold">{statusMsg.text}</span>
+            </div>
+            <button
+              onClick={() => setStatusMsg(null)}
+              className="text-gray-400 hover:text-gray-600 text-xs font-bold px-1.5 py-0.5 rounded cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Tab Selector */}
         <div className="flex items-center gap-2 border-b border-gray-200 pb-2">
@@ -391,8 +555,51 @@ export default function AdminResultsPage() {
                   <tbody className="divide-y divide-gray-100 text-gray-700">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
-                          No results published yet. Click &quot;Finalize Rankings&quot; from the Overview tab once the quiz concludes.
+                        <td colSpan={6} className="px-5 py-12 text-center bg-slate-50/50">
+                          <div className="max-w-md mx-auto space-y-3">
+                            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+                              <Trophy className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-gray-900">
+                                No Results Declared Yet
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                {attemptStats.submitted > 0 ? (
+                                  <span className="text-emerald-700 font-semibold">
+                                    ✅ {attemptStats.submitted} participant submission{attemptStats.submitted === 1 ? '' : 's'} recorded!
+                                    {' '}Aap 10 minute ka timer khatam hone se pehle abhi result declare kar sakte hain:
+                                  </span>
+                                ) : attemptStats.inProgress > 0 ? (
+                                  <span>
+                                    ⚡ {attemptStats.inProgress} participant(s) currently taking the quiz. Aap chahein to abhi result finalize kar sakte hain.
+                                  </span>
+                                ) : (
+                                  <span>
+                                    Aap 10 minute khatam hone ka intezar kiye bina kisi bhi samay yahan se result declare kar sakte hain. Testing me bhi kaam aayega.
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeclareResults()}
+                              disabled={finalizing || loading || competitions.length === 0}
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {finalizing ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                              ) : (
+                                <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
+                              )}
+                              <span>
+                                {finalizing
+                                  ? 'Declaring Results & Issuing Certificates...'
+                                  : '⚡ Declare Results & Issue Certificates Now'}
+                              </span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ) : (
