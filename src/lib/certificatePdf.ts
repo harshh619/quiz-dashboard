@@ -414,8 +414,8 @@ export async function generateCertificatePdfBuffer({
       // Render uploaded transparent PNG signature centered just above the signature line
       if (img) {
         const aspect = img.width / img.height
-        // Allow taller headroom for multi-tier / squarer signatures (aspect < 1.7) so the actual signature name isn't shrunk
-        const effectiveMaxH = aspect < 1.7 ? (sigCount === 4 ? 18 : 22) : (sigCount === 4 ? 14 : 16.5)
+        // Allow taller headroom for multi-tier signatures (aspect < 1.7) so the signature is balanced with landscape signatures
+        const effectiveMaxH = aspect < 1.7 ? (sigCount === 4 ? 17 : 20.5) : (sigCount === 4 ? 13 : 15.5)
         const effectiveMaxW = maxSigImgW
         let drawW = effectiveMaxW
         let drawH = drawW / aspect
@@ -424,11 +424,12 @@ export async function generateCertificatePdfBuffer({
           drawW = drawH * aspect
         }
         try {
+          // Exactly 0.2mm above lineY so signature rests cleanly directly on the line with zero floating gap
           doc.addImage(
             img.dataUrl,
             'PNG',
             centerX - drawW / 2,
-            lineY - drawH - 1.0,
+            lineY - drawH - 0.2,
             drawW,
             drawH
           )

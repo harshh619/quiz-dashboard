@@ -19,7 +19,7 @@ export const DEFAULT_SIGNATORIES: CertificateSignatory[] = [
     designation: 'Microbiologist',
     organization: 'Metropolitan Surveillance Unit (MSU), Nagpur',
     organizationLine2: 'Nagpur Municipal Corporation, Nagpur',
-    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_sandeep_bhoyar_signature_1795086316365.png',
+    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_sandeep_bhoyar_signature_1795157734860.png',
   },
   {
     id: 'sig-2',
@@ -27,7 +27,7 @@ export const DEFAULT_SIGNATORIES: CertificateSignatory[] = [
     designation: 'Medical Officer Health (MOH)',
     organization: 'Nagpur Municipal Corporation, Nagpur',
     organizationLine2: '',
-    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_deepak_selokar_signature_1795157465250.png',
+    signatureUrl: 'https://ulrrjbsjcssxwdjivrzc.supabase.co/storage/v1/object/public/certificate-assets/signatures/dr_deepak_selokar_signature_1795157734860.png',
   },
 ]
 
