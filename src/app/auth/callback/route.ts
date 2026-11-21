@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isProfileComplete } from '@/lib/profileValidation'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, college_name, course')
+          .select('role, college_name, course, mobile, profile_completed, full_name')
           .eq('id', user.id)
           .single()
 
@@ -55,9 +56,9 @@ export async function GET(request: Request) {
           return adminResp
         }
 
-        // 2. Incomplete profile check:
-        // If college_name is missing, user needs to complete registration
-        if (!profile || !profile.college_name) {
+        // 2. Strict Incomplete profile check:
+        // Must have complete name, valid health facility, designation, and 10-digit mobile
+        if (!isProfileComplete(profile)) {
           const regTarget = next && next !== '/dashboard'
             ? `/register?redirect=${encodeURIComponent(next)}`
             : '/register'

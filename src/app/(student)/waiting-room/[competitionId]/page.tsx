@@ -4,6 +4,7 @@ import { useState, useEffect, use, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { isProfileComplete } from '@/lib/profileValidation'
 import { Competition } from '@/types'
 import { ShieldAlert, CheckCircle2, ArrowRight, ArrowLeft, CalendarClock } from 'lucide-react'
 import SandGlassAnimation from '@/components/quiz/SandGlassAnimation'
@@ -69,6 +70,17 @@ export default function WaitingRoomPage({
         // Ensure student is registered for this competition (handles direct link entries)
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, college_name, course, mobile, profile_completed, full_name')
+            .eq('id', user.id)
+            .single()
+
+          if (!isProfileComplete(profile)) {
+            router.push(`/register?redirect=${encodeURIComponent(`/waiting-room/${competitionId}`)}`)
+            return
+          }
+
           void supabase.rpc('register_student_for_competition', {
             p_competition_id: competitionId,
             p_student_id: user.id,

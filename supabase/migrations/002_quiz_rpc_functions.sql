@@ -15,6 +15,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_comp RECORD;
+  v_profile RECORD;
   v_existing_reg UUID;
   v_reg_count INT;
   v_reg_id UUID;
@@ -27,6 +28,24 @@ BEGIN
 
   IF v_comp.status NOT IN ('draft', 'scheduled', 'waiting_room', 'active') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Registration is closed for this competition');
+  END IF;
+
+  -- Verify student profile is 100% complete with compulsory designation, health facility, and mobile
+  SELECT * INTO v_profile FROM profiles WHERE id = p_student_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Profile not found. Please register first.');
+  END IF;
+
+  IF v_profile.role != 'admin' THEN
+    IF v_profile.college_name IS NULL OR TRIM(v_profile.college_name) = '' OR UPPER(TRIM(v_profile.college_name)) = 'OTHER'
+       OR v_profile.course IS NULL OR TRIM(v_profile.course) = '' OR UPPER(TRIM(v_profile.course)) = 'OTHER'
+       OR v_profile.mobile IS NULL OR regexp_replace(v_profile.mobile, '\D', '', 'g') !~ '^[0-9]{10}$'
+       OR v_profile.profile_completed IS NOT TRUE THEN
+      RETURN jsonb_build_object(
+        'success', false, 
+        'error', 'Incomplete profile. Please complete your registration with Designation, Health Facility Name, and 10-digit Mobile Number.'
+      );
+    END IF;
   END IF;
 
   -- Check already registered
@@ -65,6 +84,7 @@ SET search_path = public
 AS $$
 DECLARE
   v_comp RECORD;
+  v_profile RECORD;
   v_attempt RECORD;
   v_existing_attempt_id UUID;
   v_new_attempt_id UUID;
@@ -78,6 +98,24 @@ BEGIN
   SELECT * INTO v_comp FROM competitions WHERE id = p_competition_id;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Competition not found');
+  END IF;
+
+  -- Verify student profile is 100% complete with compulsory designation, health facility, and mobile
+  SELECT * INTO v_profile FROM profiles WHERE id = p_student_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Profile not found. Please register first.');
+  END IF;
+
+  IF v_profile.role != 'admin' THEN
+    IF v_profile.college_name IS NULL OR TRIM(v_profile.college_name) = '' OR UPPER(TRIM(v_profile.college_name)) = 'OTHER'
+       OR v_profile.course IS NULL OR TRIM(v_profile.course) = '' OR UPPER(TRIM(v_profile.course)) = 'OTHER'
+       OR v_profile.mobile IS NULL OR regexp_replace(v_profile.mobile, '\D', '', 'g') !~ '^[0-9]{10}$'
+       OR v_profile.profile_completed IS NOT TRUE THEN
+      RETURN jsonb_build_object(
+        'success', false, 
+        'error', 'Incomplete profile. Please complete your registration with Designation, Health Facility Name, and 10-digit Mobile Number.'
+      );
+    END IF;
   END IF;
 
   -- Validate timing: allow a 5-second leeway to eliminate client-server clock jitter

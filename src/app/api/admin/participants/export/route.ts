@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import ExcelJS from 'exceljs'
+import { isProfileComplete } from '@/lib/profileValidation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatCollegeName, formatPersonName } from '@/lib/textFormat'
@@ -117,7 +118,7 @@ export async function GET() {
       return NextResponse.json({ error: profErr.message }, { status: 500 })
     }
 
-    const students = profiles || []
+    const students = (profiles || []).filter((p) => isProfileComplete(p))
 
     // Build lookup maps keyed by student_id (latest attempt / best result / certificate)
     const attemptByStudent = new Map<string, any>()

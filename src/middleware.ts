@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { isProfileComplete } from '@/lib/profileValidation'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -68,6 +69,25 @@ export async function middleware(request: NextRequest) {
 
     if (profile?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // If authenticated student accesses dashboard, quiz, or waiting room with incomplete profile -> force to /register
+  if (user && (pathname.startsWith('/dashboard') || pathname.startsWith('/quiz') || pathname.startsWith('/waiting-room'))) {
+    if (user.email !== 'msunagpur@gmail.com') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, college_name, course, mobile, profile_completed, full_name')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'admin' && !isProfileComplete(profile)) {
+        const regUrl = new URL('/register', request.url)
+        if (pathname.startsWith('/waiting-room') || pathname.startsWith('/quiz')) {
+          regUrl.searchParams.set('redirect', pathname)
+        }
+        return NextResponse.redirect(regUrl)
+      }
     }
   }
 

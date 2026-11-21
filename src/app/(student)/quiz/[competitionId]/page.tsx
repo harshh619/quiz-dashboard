@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { isProfileComplete } from '@/lib/profileValidation'
 import { formatTime } from '@/lib/utils'
 import { parseCategoryTopic } from '@/lib/questionCategories'
 import { 
@@ -119,6 +120,17 @@ export default function LiveQuizPage({
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
           router.push('/login')
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, college_name, course, mobile, profile_completed, full_name')
+          .eq('id', user.id)
+          .single()
+
+        if (!isProfileComplete(profile)) {
+          router.push(`/register?redirect=${encodeURIComponent(`/quiz/${competitionId}`)}`)
           return
         }
         setStudentId(user.id)

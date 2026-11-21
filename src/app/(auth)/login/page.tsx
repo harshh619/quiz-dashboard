@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, APP_TAGLINE } from '@/constants'
+import { isProfileComplete } from '@/lib/profileValidation'
 import { AlertCircle, CheckCircle, ShieldCheck, Building2, Lock } from 'lucide-react'
 
 function LoginContent() {
@@ -53,7 +54,7 @@ function LoginContent() {
 
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role, college_name, course')
+            .select('role, college_name, course, mobile, profile_completed, full_name')
             .eq('id', user.id)
             .single()
 
@@ -65,7 +66,7 @@ function LoginContent() {
           const redirectParam = searchParams.get('redirect')
           const target = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/dashboard'
 
-          if (!profile || !profile.college_name) {
+          if (!isProfileComplete(profile)) {
             window.location.href = redirectParam
               ? `/register?redirect=${encodeURIComponent(redirectParam)}`
               : '/register'

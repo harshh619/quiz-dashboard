@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { APP_NAME, ROUTES } from '@/constants'
+import { isProfileComplete } from '@/lib/profileValidation'
 import { Profile, Competition, QuizAttempt, Certificate } from '@/types'
 import { 
   Trophy, Clock, Award, CheckCircle2, AlertTriangle, 
@@ -55,7 +56,7 @@ export default function StudentDashboardPage() {
           return
         }
 
-        if (!prof || !prof.college_name) {
+        if (!isProfileComplete(prof)) {
           router.push('/register')
           return
         }
@@ -121,7 +122,10 @@ export default function StudentDashboardPage() {
   }, [router, supabase])
 
   const handleRegister = async (compId: string) => {
-    if (!profile) return
+    if (!profile || !isProfileComplete(profile)) {
+      router.push('/register')
+      return
+    }
     setActionLoading(compId)
     try {
       const { data, error } = await supabase.rpc('register_student_for_competition', {
